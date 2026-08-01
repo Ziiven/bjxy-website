@@ -1,0 +1,181 @@
+// ziven-bjxy-website admin.less
+// 后台 settings 样式 (admin extension page)
+
+.BjxySettings {
+    padding: 20px;
+    max-width: 900px;
+
+    h1 { font-size: 20px; font-weight: 700; margin-bottom: 4px; }
+    .desc { font-size: 12px; color: var(--control-color-soft); margin-bottom: 20px; }
+
+    .BjxySection {
+        background: var(--control-bg);
+        border: 1px solid var(--control-color-soft);
+        border-radius: 8px;
+        margin-bottom: 16px;
+        overflow: hidden;
+    }
+    .BjxySection-head {
+        padding: 12px 16px;
+        background: var(--control-bg-soft, #f6f7f9);
+        border-bottom: 1px solid var(--control-color-soft);
+        font-size: 13px;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    .BjxySection-body {
+        padding: 16px;
+        display: grid;
+        grid-template-columns: 140px 1fr;
+        gap: 10px 14px;
+        align-items: start;
+    }
+    .BjxyField-label { font-size: 12px; padding-top: 7px; }
+    .BjxyField-input, .BjxyField-textarea, .BjxyField-select {
+        width: 100%;
+        padding: 6px 10px;
+        border: 1px solid var(--control-color-soft);
+        border-radius: 4px;
+        font-size: 12px;
+        background: var(--control-bg);
+        color: var(--control-color);
+    }
+    .BjxyField-textarea { min-height: 60px; font-family: 'SF Mono', monospace; }
+    .BjxyField-file {
+        padding: 8px 10px;
+        border: 1px dashed var(--control-color-soft);
+        border-radius: 4px;
+        font-size: 12px;
+        text-align: center;
+        cursor: pointer;
+        background: var(--control-bg-soft, #f6f7f9);
+    }
+    .BjxyField-file:hover { border-color: var(--color-primary); }
+    .BjxyField-file-preview {
+        margin-top: 6px;
+        font-size: 11px;
+        color: var(--control-color-soft);
+        word-break: break-all;
+    }
+    .BjxyField-file-preview img {
+        max-width: 200px;
+        max-height: 80px;
+        margin-top: 4px;
+        border: 1px solid var(--control-color-soft);
+        border-radius: 4px;
+    }
+    .BjxyField-array { grid-column: 2; }
+    .BjxyField-array-row {
+        display: grid;
+        grid-template-columns: 30px 1fr 1fr 1fr 32px;
+        gap: 6px;
+        margin-bottom: 6px;
+    }
+    .BjxyField-array-row input {
+        padding: 5px 8px;
+        font-size: 11px;
+        border: 1px solid var(--control-color-soft);
+        border-radius: 3px;
+        background: var(--control-bg);
+        color: var(--control-color);
+    }
+    .BjxyField-array-row .ic-mini {
+        width: 26px; height: 26px;
+        background: var(--color-primary);
+        color: #fff;
+        border-radius: 4px;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 11px; font-weight: 700;
+    }
+    .BjxyField-array-row .del {
+        background: transparent;
+        border: 1px solid var(--control-color-soft);
+        color: var(--control-color-soft);
+        border-radius: 3px;
+        cursor: pointer;
+        font-size: 12px;
+    }
+    .BjxyField-array-add {
+        grid-column: 2;
+        padding: 6px;
+        background: var(--control-bg-soft, #f6f7f9);
+        color: var(--color-primary);
+        border-radius: 4px;
+        font-size: 11px;
+        text-align: center;
+        cursor: pointer;
+        border: 1px dashed var(--color-primary);
+    }
+    .BjxyField-group-select {
+        padding: 8px;
+        background: var(--control-bg-soft, #f6f7f9);
+        border-radius: 4px;
+    }
+    .BjxyField-group-select .opt {
+        padding: 6px 10px;
+        margin: 2px 0;
+        background: var(--control-bg);
+        border-radius: 4px;
+        border: 1px solid var(--control-color-soft);
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 12px;
+        cursor: pointer;
+    }
+    .BjxyField-group-select .opt:hover { border-color: var(--color-primary); }
+    .BjxyField-group-select .opt .ck {
+        width: 14px; height: 14px;
+        border: 1.5px solid var(--control-color-soft);
+        border-radius: 3px;
+        background: #fff;
+        display: inline-flex; align-items: center; justify-content: center;
+        font-size: 9px; color: #fff;
+    }
+    .BjxyField-group-select .opt.on { border-color: var(--color-primary); background: rgba(45, 123, 229, 0.05); }
+    .BjxyField-group-select .opt.on .ck { background: var(--color-primary); border-color: var(--color-primary); }
+    .BjxyField-group-pick {
+        margin-top: 6px;
+        padding: 6px 10px;
+        background: var(--color-primary);
+        color: #fff;
+        border-radius: 4px;
+        font-size: 11px;
+        text-align: center;
+        cursor: pointer;
+    }
+    .BjxyField-group-pick:hover { filter: brightness(0.95); }
+    .BjxyField-hint { font-size: 10px; color: var(--control-color-soft); margin-top: 4px; line-height: 1.5; }
+
+    .BjxySavebar {
+        padding: 12px 16px;
+        background: var(--control-bg-soft, #f6f7f9);
+        border-top: 1px solid var(--control-color-soft);
+        display: flex;
+        justify-content: flex-end;
+        gap: 8px;
+        position: sticky;
+        bottom: 0;
+    }
+    .BjxySavebar .btn-primary {
+        padding: 6px 16px;
+        background: var(--color-primary);
+        color: #fff;
+        border-radius: 4px;
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+        border: none;
+    }
+    .BjxySavebar .btn-secondary {
+        padding: 6px 16px;
+        background: var(--control-bg);
+        color: var(--control-color-soft);
+        border: 1px solid var(--control-color-soft);
+        border-radius: 4px;
+        font-size: 12px;
+        cursor: pointer;
+    }
+}

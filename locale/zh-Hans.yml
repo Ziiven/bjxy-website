@@ -1,0 +1,22 @@
+extension:
+  name: 北极雪屿官网
+  title: 北极雪屿官网
+  description: 滑雪培训官网 (Flarum 2.0 page extension)
+
+admin:
+  settings:
+    title: 北极雪屿官网配置
+    brand: 品牌信息
+    hero: Hero 区域
+    about: 关于我们
+    features: 办学特色
+    curriculum: 教学体系
+    coaches: 教练展示
+    contact: 联系方式
+    reviews: 学员评价
+    students: 学员展示
+    save: 保存
+    saved: 已保存
+    upload_logo: 上传 Logo
+    upload_banner: 上传 Banner
+    upload_avatar: 上传图片

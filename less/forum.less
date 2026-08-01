@@ -1,0 +1,573 @@
+// ====================================================================
+// ziven-bjxy-website — forum.less
+// ====================================================================
+//
+// v0.1.0 范围 (Trello #397, 辉哥 2026-08-01 拍板):
+//   模仿 flarum.org 风格: 极简白底 + 8px 圆角 + Inter 字体
+//   浅色/暗色 双版适配 (Flarum [data-theme] 切换)
+//   8 section: 公告条 / 导航 / Hero / 办学特色 / 教学体系 / 教练 / 评价 / 学员展示 / 联系
+//
+// 配色: 店照蓝 #2D7BE5 (保留品牌), 替代 flarum 的橙
+//   --bjxy-blue: 主色
+//   --bjxy-blue-dark: 深蓝
+//   --bjxy-text: 主文字
+//   --bjxy-text-soft: 副文字
+//   --bjxy-text-mute: 弱化文字
+//   --bjxy-border: 边框
+//   --bjxy-bg: 主背景
+//   --bjxy-bg-soft: 浅灰背景 (section 间隔)
+//   --bjxy-blue-soft: 蓝色弱化背景
+// ====================================================================
+
+// ===== Light theme (默认) =====
+.bjxy-page {
+    --bjxy-blue: #2D7BE5;
+    --bjxy-blue-dark: #1E5AA8;
+    --bjxy-blue-light: #5A8FD8;
+    --bjxy-blue-soft: #E0EBF8;
+    --bjxy-text: #1A202C;
+    --bjxy-text-soft: #4A5568;
+    --bjxy-text-mute: #718096;
+    --bjxy-border: #EDF2F7;
+    --bjxy-bg: #FFFFFF;
+    --bjxy-bg-soft: #F7FAFC;
+    --bjxy-text-inverse: #FFFFFF;
+    --bjxy-shadow: 0 8px 30px rgba(11, 36, 71, 0.08);
+}
+
+// ===== Dark theme (Flarum [data-theme^=dark]) =====
+[data-theme^="dark"] .bjxy-page {
+    --bjxy-blue: #5A8FD8;
+    --bjxy-blue-dark: #2D7BE5;
+    --bjxy-blue-light: #7BC8FF;
+    --bjxy-blue-soft: #1E3D78;
+    --bjxy-text: #E2E8F0;
+    --bjxy-text-soft: #A0AEC0;
+    --bjxy-text-mute: #718096;
+    --bjxy-border: #2D3748;
+    --bjxy-bg: #0F1419;
+    --bjxy-bg-soft: #1A202C;
+    --bjxy-text-inverse: #1A202C;
+    --bjxy-shadow: 0 8px 30px rgba(0, 0, 0, 0.5);
+}
+
+// ===== 基础 =====
+.bjxy-page {
+    font-family: 'Inter', 'PingFang SC', 'Mukta', -apple-system, BlinkMacSystemFont, sans-serif;
+    color: var(--bjxy-text);
+    background: var(--bjxy-bg);
+    line-height: 1.6;
+    min-height: 100vh;
+}
+
+.bjxy-page * { box-sizing: border-box; }
+
+// ===== 公告条 =====
+.bjxy-announce {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 24px;
+    background: var(--bjxy-bg-soft);
+    border-bottom: 1px solid var(--bjxy-border);
+    font-size: 13px;
+    color: var(--bjxy-text-soft);
+}
+.bjxy-announce-badge {
+    background: var(--bjxy-blue);
+    color: #fff;
+    padding: 2px 10px;
+    border-radius: 4px;
+    font-weight: 600;
+    font-size: 11px;
+}
+.bjxy-announce-link { color: var(--bjxy-blue); text-decoration: none; margin-left: 4px; }
+.bjxy-announce-arrow { margin-left: auto; color: var(--bjxy-text-mute); }
+
+// ===== 导航 =====
+.bjxy-nav {
+    display: flex;
+    align-items: center;
+    padding: 16px 32px;
+    background: var(--bjxy-bg);
+    border-bottom: 1px solid var(--bjxy-border);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    backdrop-filter: blur(8px);
+}
+.bjxy-logo {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 800;
+    font-size: 15px;
+    color: var(--bjxy-blue);
+    text-decoration: none;
+}
+.bjxy-logo-img {
+    width: 28px;
+    height: 28px;
+    object-fit: contain;
+    border-radius: 4px;
+}
+.bjxy-logo-fallback {
+    width: 28px;
+    height: 28px;
+    background: var(--bjxy-blue);
+    border-radius: 6px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-size: 14px;
+    font-weight: 800;
+}
+.bjxy-logo-slogan {
+    margin-left: 4px;
+    font-size: 11px;
+    color: var(--bjxy-text-mute);
+    font-weight: 500;
+}
+.bjxy-nav-links {
+    margin-left: 32px;
+    display: flex;
+    gap: 20px;
+    font-size: 13px;
+}
+.bjxy-nav-links a {
+    color: var(--bjxy-text-soft);
+    text-decoration: none;
+    padding: 4px 0;
+}
+.bjxy-nav-links a:hover { color: var(--bjxy-text); }
+.bjxy-nav-right {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.bjxy-theme-toggle {
+    padding: 6px 10px;
+    background: var(--bjxy-bg-soft);
+    border: 1px solid var(--bjxy-border);
+    border-radius: 6px;
+    font-size: 13px;
+    cursor: pointer;
+    color: var(--bjxy-text-soft);
+}
+.bjxy-theme-toggle:hover { color: var(--bjxy-text); }
+.bjxy-btn {
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.15s;
+    border: 1px solid transparent;
+    cursor: pointer;
+}
+.bjxy-btn-primary {
+    background: var(--bjxy-blue);
+    color: #fff;
+}
+.bjxy-btn-primary:hover { background: var(--bjxy-blue-dark); }
+.bjxy-btn-outline {
+    background: transparent;
+    color: var(--bjxy-text);
+    border-color: var(--bjxy-border);
+}
+.bjxy-btn-outline:hover { border-color: var(--bjxy-text-mute); }
+
+// ===== Hero (左文 + 右产品 mock) =====
+.bjxy-hero {
+    display: grid;
+    grid-template-columns: 1.2fr 1fr;
+    gap: 48px;
+    padding: 64px 32px;
+    align-items: center;
+    max-width: 1280px;
+    margin: 0 auto;
+}
+.bjxy-hero-text h1 {
+    font-size: 48px;
+    font-weight: 800;
+    line-height: 1.15;
+    margin-bottom: 16px;
+    letter-spacing: -0.5px;
+    color: var(--bjxy-text);
+}
+.bjxy-hero-text h1 .bjxy-accent { color: var(--bjxy-blue); }
+.bjxy-hero-text p {
+    font-size: 16px;
+    color: var(--bjxy-text-soft);
+    line-height: 1.7;
+    margin-bottom: 28px;
+    max-width: 540px;
+}
+.bjxy-hero-cta-row {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 32px;
+    flex-wrap: wrap;
+}
+.bjxy-hero-features {
+    display: flex;
+    gap: 24px;
+    flex-wrap: wrap;
+}
+.bjxy-hero-feature {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    color: var(--bjxy-text-soft);
+}
+.bjxy-hero-feature .check { color: var(--bjxy-blue); font-weight: 800; }
+.bjxy-hero-feature strong { color: var(--bjxy-text); font-weight: 800; font-size: 16px; }
+
+// Hero banner (深浅双版切换)
+.bjxy-hero-banner {
+    position: relative;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: var(--bjxy-shadow);
+    aspect-ratio: 16 / 10;
+}
+.bjxy-hero-banner img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.bjxy-hero-banner-light, .bjxy-hero-banner-dark { display: block; }
+.bjxy-hero-banner-dark { display: none; }
+[data-theme^="dark"] .bjxy-hero-banner-light { display: none; }
+[data-theme^="dark"] .bjxy-hero-banner-dark { display: block; }
+
+// Hero banner fallback (没传图时显示)
+.bjxy-hero-banner-fallback {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, #B8D4F0 0%, #2D7BE5 100%);
+    display: flex;
+    align-items: center;
+    padding: 32px;
+    color: #fff;
+    font-size: 18px;
+    font-weight: 700;
+}
+[data-theme^="dark"] .bjxy-hero-banner-fallback {
+    background: linear-gradient(135deg, #0A1A3F 0%, #1E5AA8 100%);
+}
+
+// ===== 通用 section =====
+.bjxy-section {
+    padding: 56px 32px;
+    max-width: 1280px;
+    margin: 0 auto;
+}
+.bjxy-section-alt { background: var(--bjxy-bg-soft); }
+.bjxy-section h2 {
+    font-size: 28px;
+    font-weight: 800;
+    margin-bottom: 4px;
+    color: var(--bjxy-text);
+    letter-spacing: -0.3px;
+}
+.bjxy-section .bjxy-sub {
+    font-size: 12px;
+    color: var(--bjxy-text-mute);
+    margin-bottom: 24px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+}
+.bjxy-section p {
+    font-size: 14px;
+    color: var(--bjxy-text-soft);
+    line-height: 1.7;
+    max-width: 720px;
+}
+
+// About stats
+.bjxy-stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-top: 24px;
+    max-width: 540px;
+}
+.bjxy-stat {
+    text-align: center;
+    padding: 16px;
+    background: var(--bjxy-bg-soft);
+    border-radius: 8px;
+}
+.bjxy-stat-num { font-size: 28px; font-weight: 800; color: var(--bjxy-blue); }
+.bjxy-stat-label { font-size: 11px; color: var(--bjxy-text-mute); margin-top: 2px; }
+
+// ===== 办学特色 =====
+.bjxy-feature-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    margin-top: 20px;
+}
+.bjxy-feature {
+    padding: 24px;
+    background: var(--bjxy-bg-soft);
+    border-radius: 8px;
+    border: 1px solid var(--bjxy-border);
+    transition: all 0.2s;
+}
+.bjxy-feature:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--bjxy-shadow);
+    border-color: var(--bjxy-blue-light);
+}
+.bjxy-feature-icon {
+    width: 40px;
+    height: 40px;
+    background: var(--bjxy-blue-soft);
+    color: var(--bjxy-blue);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    margin-bottom: 12px;
+}
+.bjxy-feature h3 { font-size: 15px; font-weight: 700; margin-bottom: 4px; }
+.bjxy-feature p { font-size: 12px; color: var(--bjxy-text-soft); }
+
+// ===== 教学体系 (tab + 8/9 级卡片网格) =====
+.bjxy-curri-tabs {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 20px;
+    border-bottom: 1px solid var(--bjxy-border);
+}
+.bjxy-curri-tab {
+    padding: 10px 20px;
+    font-size: 13px;
+    color: var(--bjxy-text-soft);
+    border-bottom: 2px solid transparent;
+    cursor: pointer;
+    background: transparent;
+    border-left: none;
+    border-right: none;
+    border-top: none;
+    font-family: inherit;
+}
+.bjxy-curri-tab:hover { color: var(--bjxy-text); }
+.bjxy-curri-tab.active {
+    color: var(--bjxy-blue);
+    border-bottom-color: var(--bjxy-blue);
+    font-weight: 700;
+}
+.bjxy-curri-list {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+}
+.bjxy-level-card {
+    padding: 18px 16px 16px;
+    background: var(--bjxy-bg);
+    border: 1px solid var(--bjxy-border);
+    border-radius: 8px;
+    position: relative;
+    transition: all 0.2s;
+}
+.bjxy-level-card:hover { border-color: var(--bjxy-blue-light); transform: translateY(-2px); }
+.bjxy-level-num {
+    position: absolute;
+    top: 8px;
+    right: 14px;
+    font-size: 22px;
+    font-weight: 900;
+    color: var(--bjxy-blue);
+    opacity: 0.25;
+    line-height: 1;
+}
+.bjxy-level-lvl {
+    font-size: 10px;
+    color: var(--bjxy-text-mute);
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    margin-bottom: 4px;
+}
+.bjxy-level-name { font-size: 14px; font-weight: 700; margin-bottom: 6px; color: var(--bjxy-text); }
+.bjxy-level-desc { font-size: 11px; color: var(--bjxy-text-soft); line-height: 1.6; }
+
+// ===== 教练 =====
+.bjxy-coach-grid {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 16px;
+    margin-top: 16px;
+}
+.bjxy-coach {
+    text-align: center;
+    cursor: pointer;
+    padding: 12px;
+    border-radius: 8px;
+    transition: background 0.15s;
+}
+.bjxy-coach:hover { background: var(--bjxy-bg-soft); }
+.bjxy-coach-avatar {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--bjxy-blue), var(--bjxy-blue-light));
+    margin: 0 auto 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-size: 22px;
+    font-weight: 800;
+    overflow: hidden;
+}
+.bjxy-coach-avatar img { width: 100%; height: 100%; object-fit: cover; }
+.bjxy-coach-name { font-size: 12px; font-weight: 600; }
+.bjxy-coach-title { font-size: 10px; color: var(--bjxy-text-mute); margin-top: 2px; }
+
+// ===== 学员评价 =====
+.bjxy-review-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    margin-top: 16px;
+}
+.bjxy-review {
+    padding: 20px;
+    background: var(--bjxy-bg);
+    border: 1px solid var(--bjxy-border);
+    border-radius: 8px;
+}
+.bjxy-review-stars { color: #F6AD55; font-size: 12px; margin-bottom: 8px; }
+.bjxy-review-quote { font-size: 13px; line-height: 1.6; margin-bottom: 12px; color: var(--bjxy-text); }
+.bjxy-review-author {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 11px;
+    color: var(--bjxy-text-mute);
+}
+.bjxy-review-author-av {
+    width: 22px;
+    height: 22px;
+    background: var(--bjxy-blue);
+    color: #fff;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    font-weight: 700;
+}
+
+// 学员评价 HTML 自由区
+.bjxy-reviews-html {
+    margin-top: 16px;
+    font-size: 14px;
+    color: var(--bjxy-text);
+    line-height: 1.7;
+}
+
+// ===== 学员展示 =====
+.bjxy-student-grid {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 8px;
+    margin-top: 16px;
+}
+.bjxy-student {
+    aspect-ratio: 1;
+    background: linear-gradient(135deg, var(--bjxy-blue-soft), var(--bjxy-bg));
+    border-radius: 6px;
+    position: relative;
+    overflow: hidden;
+}
+.bjxy-student img { width: 100%; height: 100%; object-fit: cover; }
+.bjxy-student-label {
+    position: absolute;
+    bottom: 4px;
+    left: 4px;
+    right: 4px;
+    padding: 3px 6px;
+    background: rgba(0, 0, 0, 0.6);
+    color: #fff;
+    border-radius: 3px;
+    font-size: 9px;
+    text-align: center;
+}
+
+// ===== 联系我们 =====
+.bjxy-contact-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin-top: 16px;
+}
+.bjxy-contact-item {
+    padding: 18px;
+    background: var(--bjxy-bg-soft);
+    border-radius: 8px;
+    border: 1px solid var(--bjxy-border);
+}
+.bjxy-contact-label {
+    font-size: 10px;
+    color: var(--bjxy-text-mute);
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    margin-bottom: 6px;
+}
+.bjxy-contact-value { font-size: 14px; font-weight: 600; color: var(--bjxy-text); word-break: break-all; }
+
+// ===== Footer =====
+.bjxy-footer {
+    padding: 32px;
+    background: var(--bjxy-text);
+    color: var(--bjxy-bg);
+    text-align: center;
+    font-size: 12px;
+    margin-top: 48px;
+}
+.bjxy-footer .bjxy-footer-link { color: var(--bjxy-bg-soft); margin: 0 8px; text-decoration: none; }
+
+// ===== 教练 modal =====
+.bjxy-coach-modal .Modal-body { padding: 32px; text-align: center; }
+.bjxy-coach-modal-av {
+    width: 96px;
+    height: 96px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--bjxy-blue), var(--bjxy-blue-light));
+    margin: 0 auto 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-size: 32px;
+    font-weight: 800;
+    overflow: hidden;
+}
+.bjxy-coach-modal-av img { width: 100%; height: 100%; object-fit: cover; }
+.bjxy-coach-modal-name { font-size: 22px; font-weight: 800; margin-bottom: 4px; }
+.bjxy-coach-modal-username { font-size: 13px; color: var(--bjxy-text-soft); margin-bottom: 16px; }
+.bjxy-coach-modal-bio { font-size: 13px; color: var(--bjxy-text-soft); line-height: 1.7; }
+
+// ===== 响应式 =====
+@media @phone {
+    .bjxy-nav { padding: 12px 16px; }
+    .bjxy-nav-links { display: none; }
+    .bjxy-hero { grid-template-columns: 1fr; gap: 24px; padding: 32px 16px; }
+    .bjxy-hero-text h1 { font-size: 32px; }
+    .bjxy-section { padding: 32px 16px; }
+    .bjxy-feature-grid { grid-template-columns: 1fr 1fr; }
+    .bjxy-curri-list { grid-template-columns: 1fr; }
+    .bjxy-coach-grid { grid-template-columns: repeat(3, 1fr); }
+    .bjxy-review-grid { grid-template-columns: 1fr; }
+    .bjxy-student-grid { grid-template-columns: repeat(3, 1fr); }
+    .bjxy-contact-grid { grid-template-columns: 1fr 1fr; }
+    .bjxy-stats { grid-template-columns: 1fr 1fr 1fr; }
+    .bjxy-footer { padding: 24px 16px; }
+}
