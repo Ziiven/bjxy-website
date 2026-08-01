@@ -2,11 +2,12 @@
 
 namespace Ziiven\BjxyWebsite\Api\Controllers;
 
-use Flarum\Api\Controller\AbstractShowController;
 use Flarum\Http\RequestUtil;
 use Flarum\Settings\SettingsRepositoryInterface;
+use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Message\UploadedFileInterface;
+use Psr\Http\Server\RequestHandlerInterface;
 use Laminas\Diactoros\Response\JsonResponse;
 use Ziven\Community\Core\Services\TencentCOSService;
 
@@ -15,13 +16,13 @@ use Ziven\Community\Core\Services\TencentCOSService;
  * POST /api/bjxy/upload
  * multipart: file=@logo.png, key=bjxy_brand_logo_url
  */
-class UploadController
+class UploadController implements RequestHandlerInterface
 {
     public function __construct(
         protected SettingsRepositoryInterface $settings
     ) {}
 
-    public function handle(ServerRequestInterface $request): JsonResponse
+    public function handle(ServerRequestInterface $request): ResponseInterface
     {
         $actor = RequestUtil::getActor($request);
         $actor->assertAdmin();

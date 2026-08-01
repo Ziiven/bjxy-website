@@ -2,20 +2,30 @@
 
 namespace Ziiven\BjxyWebsite\Api\Controllers;
 
-use Flarum\Api\Controller\AbstractCreateController;
 use Flarum\Foundation\ValidationException;
 use Flarum\Http\RequestUtil;
 use Flarum\Settings\SettingsRepositoryInterface;
+use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
+use Psr\Http\Server\RequestHandlerInterface;
 use Laminas\Diactoros\Response\JsonResponse;
 
 /**
  * GET /api/bjxy/settings — 读取所有 bjxy_ 前缀 settings
  * POST /api/bjxy/settings — 保存 (key => value)
  */
-class SettingsController
+class SettingsController implements RequestHandlerInterface
 {
     public function __construct(protected SettingsRepositoryInterface $settings) {}
+
+    public function handle(ServerRequestInterface $request): ResponseInterface
+    {
+        $method = strtoupper($request->getMethod());
+        if ($method === 'POST') {
+            return $this->handlePost($request);
+        }
+        return $this->handleGet($request);
+    }
 
     public function handleGet(ServerRequestInterface $request): JsonResponse
     {
