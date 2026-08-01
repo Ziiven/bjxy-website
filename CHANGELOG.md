@@ -72,14 +72,37 @@
 
 ### 已知问题 / v0.1.1 待做
 
-- 后台 settings 8 section UI (BjxySettings.jsx) — 已写但本版本没跑通 (webpack 编译时某处 throw `Cannot read properties of undefined (reading 'length')`, 临时用简化 placeholder 跑通 minimum)
-  - 调试: line 5832 in minified forum.js, view() 函数某处
-  - v0.1.1 修: 渐进加 section 找问题点
+- 后台 settings 8 section UI (BjxySettings.jsx) — v0.1.0e 修通
+  - v0.1.0a: 改 view() → m() 形式修 `length` throw
+  - v0.1.0b: 改 `app.extensionSettings` → `app.registry.for(...).registerPage()` 修 "初始化失败"
+  - v0.1.0c: 改 `extends Component` → `extends ExtensionPage` 修 page 不渲染
+  - v0.1.0d: lazy bind `app.forum.attribute` 修 module top-level `app undefined` throw
+  - **v0.1.0e**: 修 namespace 拼错 'ziven-bjxy-website' → 'ziiven-bjxy-website'
+    - root cause: 错拼 → admin app registry 找不到 namespace → 显示 "此扩展无设置项"
+    - 修法: 2 处 (`initializers.add` name + `registry.for` key)
+    - Playwright 验证: /admin#/extension/ziiven-bjxy-website 渲染 9 section + intro h2 "北极雪屿官网配置"
 - 弹 modal 选用户组 (替代 v0.1.0 inline checkbox)
 - 拖拽排序教练 (sortablejs)
 - 教练 modal 详细内容字段
 - 评价/学员展示默认卡片模板 (目前只有 HTML 自由区, 没填时空白)
-- 8 section settings 后台 UI 完整化 (目前还是 placeholder)
+
+### 部署踩的坑 (续 v0.1.0e SOP 沉淀)
+
+- **SOP 67. bjxy admin extension namespace 拼错 → vendor registry 找不到 → 显示 "此扩展无设置项"**:
+  - 命名规则: vendor 目录 `vendor/ziiven/<name>` → namespace key = `ziiven-<name>` (中划线连)
+  - bjxy v0.1.0b 写错: `'ziven-bjxy-website'` (少 'i')
+  - 正确: `'ziiven-bjxy-website'` (跟 `ziiven-ziven-core` / `ziiven-dress-up` 同款)
+  - 修法: 同时改 `initializers.add(name)` + `registry.for(key)` (2 处必须一致)
+- **SOP 68. Flarum 2.0 admin 验证测试必须走 /login HTML form flow, 不能只走 /api/token**:
+  - `/api/token` 只返 token JSON, 不 set session
+  - 必须走 `/login` (LogInController) 才会调 `SessionAuthenticator::logIn()` 把 token 写进 session
+  - Playwright 模拟: 点 header 登录按钮 → modal 弹出 → 填 form → submit
+  - 错用 fetch('/api/token') + 带 cookie navigate /admin → 403 (session 空)
+- **SOP 69. Flarum 2.0 vendor asset 强制 compile 命令**:
+  - 错用 `makeJs()->commit(true)` 在 `AssetManager` 上 (不存在该方法)
+  - 正确: `Assets` class (单数) 才有 `makeJs()` / `makeCss()`
+  - 入口: `flarum.assets.admin` / `flarum.assets.forum` container
+  - 完整: `/usr/bin/php -r '... $assets = $container->make("flarum.assets.admin"); $assets->makeJs()->commit(true); ...'`
 
 ### 关键 commit hashes
 
