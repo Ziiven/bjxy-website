@@ -30,6 +30,43 @@ return [
             $document->payload['bjxyFeatures'] = \Ziiven\BjxyWebsite\CurriculumData::getFeatures();
         }),
 
+    // v0.1.0l 修: 把 bjxy_* settings 序列化到 forum API document attributes
+    //   之前 BjxyPage 走 app.forum.attribute('bjxy_*') 但 bjxy settings 不在 vendor forum.attributes
+    //   (Flarum 2.0 forum API document 只含 core 字段), 永远拿 undefined → fallback
+    //   辉哥 21:50 反馈深色模式背景色改了前台没变 → 实际所有 settings 都没生效
+    //   修法: 用 vendor Extend\Settings::serializeToForum() 把 bjxy_* 加进 forum.attributes
+    //   之后前台 app.forum.attribute('bjxy_*') 就能拿到 (跟走 vendor settings 一样)
+    (new Extend\Settings())
+        ->serializeToForum('bjxy_brand_name', 'bjxy_brand_name')
+        ->serializeToForum('bjxy_brand_slogan', 'bjxy_brand_slogan')
+        ->serializeToForum('bjxy_brand_logo_url', 'bjxy_brand_logo_url')
+        ->serializeToForum('bjxy_elite_text', 'bjxy_elite_text')
+        ->serializeToForum('bjxy_hero_title', 'bjxy_hero_title')
+        ->serializeToForum('bjxy_hero_subtitle', 'bjxy_hero_subtitle')
+        ->serializeToForum('bjxy_hero_banner_light', 'bjxy_hero_banner_light')
+        ->serializeToForum('bjxy_hero_banner_dark', 'bjxy_hero_banner_dark')
+        ->serializeToForum('bjxy_hero_cta_text', 'bjxy_hero_cta_text')
+        ->serializeToForum('bjxy_hero_cta_link', 'bjxy_hero_cta_link')
+        ->serializeToForum('bjxy_about_sub', 'bjxy_about_sub')
+        ->serializeToForum('bjxy_about_title', 'bjxy_about_title')
+        ->serializeToForum('bjxy_about_desc', 'bjxy_about_desc')
+        ->serializeToForum('bjxy_about_stat_1_num', 'bjxy_about_stat_1_num')
+        ->serializeToForum('bjxy_about_stat_1_label', 'bjxy_about_stat_1_label')
+        ->serializeToForum('bjxy_about_stat_2_num', 'bjxy_about_stat_2_num')
+        ->serializeToForum('bjxy_about_stat_2_label', 'bjxy_about_stat_2_label')
+        ->serializeToForum('bjxy_about_stat_3_num', 'bjxy_about_stat_3_num')
+        ->serializeToForum('bjxy_about_stat_3_label', 'bjxy_about_stat_3_label')
+        ->serializeToForum('bjxy_contact_address', 'bjxy_contact_address')
+        ->serializeToForum('bjxy_contact_phone', 'bjxy_contact_phone')
+        ->serializeToForum('bjxy_contact_wechat', 'bjxy_contact_wechat')
+        ->serializeToForum('bjxy_contact_email', 'bjxy_contact_email')
+        ->serializeToForum('bjxy_reviews_html', 'bjxy_reviews_html')
+        ->serializeToForum('bjxy_students_html', 'bjxy_students_html')
+        ->serializeToForum('bjxy_bg_gradient_light_start', 'bjxy_bg_gradient_light_start')
+        ->serializeToForum('bjxy_bg_gradient_light_end', 'bjxy_bg_gradient_light_end')
+        ->serializeToForum('bjxy_bg_gradient_dark_start', 'bjxy_bg_gradient_dark_start')
+        ->serializeToForum('bjxy_bg_gradient_dark_end', 'bjxy_bg_gradient_dark_end'),
+
     (new Extend\Frontend('admin'))
         ->js(__DIR__ . '/js/dist/admin.js')
         ->css(__DIR__ . '/less/admin.less'),

@@ -20,6 +20,9 @@ export default class BjxyPage extends Component {
   }
 
   view() {
+    // v0.1.0l 修: extend.php 用 Extend\Settings::serializeToForum() 把 bjxy_* 加进
+    //   forum.attributes, 前台 app.forum.attribute('bjxy_*') 直接拿到 (跟走 vendor 一样)
+    //   之前 v0.1.0k 走 content() payload hack 失败 (container null), 现在用 vendor 正规 API
     const s = (key, fallback) => app.forum.attribute(key) || fallback;
     const curriculum = (app.data && app.data.bjxyCurriculum) || { single: [], double: [] };
     const features = (app.data && app.data.bjxyFeatures) || [];
