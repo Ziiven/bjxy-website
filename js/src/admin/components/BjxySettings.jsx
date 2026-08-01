@@ -1,5 +1,6 @@
 // BjxySettings.jsx — 后台 settings UI
 // 8 section: 品牌 / Hero / 关于 / 特色 / 教学体系 / 教练 / 评价 / 学员展示 / 联系
+// 纯 m() 形式 (跟 BjxyPage.jsx 一致, 不用 JSX 嵌套 array of vnodes - 避免 mithril "length" 错)
 import app from 'flarum/admin/app';
 import Component from 'flarum/common/Component';
 // mithril 走 vendor 注入的 global m (zct 同款, 不 import)
@@ -49,218 +50,220 @@ export default class BjxySettings extends Component {
 
   view() {
     if (this.loading) {
-      return <div class="BjxySettings"><p>加载中...</p></div>;
+      return m('div', { class: 'BjxySettings' }, m('p', null, '加载中...'));
     }
-    return (
-      <div class="BjxySettings">
-        <h1>北极雪屿官网配置</h1>
-        <p class="desc">配置 /bjxy 页面所有内容 (8 section + 后台上传走 ziven-core COS)</p>
 
-        <div class="BjxySection">
-          <div class="BjxySection-head">🏔 品牌信息 (全局)</div>
-          <div class="BjxySection-body">
-            {this.field('品牌名', 'bjxy_brand_name', '北极雪屿')}
-            {this.field('品牌副标', 'bjxy_brand_slogan', '室内滑雪 · 全国连锁')}
-            {this.fileField('Logo 图片', 'bjxy_brand_logo_url', 'logo.svg / png (走 ziven-core COS)')}
-            {this.field('ELITE 文字', 'bjxy_elite_text', 'ELITE')}
-          </div>
-        </div>
+    const field = (label, key, defaultValue) => m('div', { class: 'BjxyField-row' }, [
+      m('div', { class: 'BjxyField-label' }, label),
+      m('input', {
+        class: 'BjxyField-input',
+        value: this.data[key] || '',
+        placeholder: defaultValue,
+        oninput: (e) => { this.data[key] = e.target.value; },
+      }),
+    ]);
 
-        <div class="BjxySection">
-          <div class="BjxySection-head">🏔 Hero 区域</div>
-          <div class="BjxySection-body">
-            {this.field('主标题', 'bjxy_hero_title', '探索极致的滑雪体验。')}
-            {this.field('副标题', 'bjxy_hero_subtitle', '专注滑雪领域的全国连锁机构...')}
-            {this.fileField('浅色模式 banner', 'bjxy_hero_banner_light', '1920×600 推荐')}
-            {this.fileField('深色模式 banner', 'bjxy_hero_banner_dark', '1920×600 推荐')}
-            {this.field('CTA 文字', 'bjxy_hero_cta_text', '立即咨询')}
-            {this.field('CTA 链接', 'bjxy_hero_cta_link', '#contact')}
-          </div>
-        </div>
+    const textareaField = (label, key, defaultValue) => m('div', { class: 'BjxyField-row' }, [
+      m('div', { class: 'BjxyField-label' }, label),
+      m('textarea', {
+        class: 'BjxyField-textarea',
+        value: this.data[key] || '',
+        placeholder: defaultValue,
+        oninput: (e) => { this.data[key] = e.target.value; },
+      }),
+    ]);
 
-        <div class="BjxySection">
-          <div class="BjxySection-head">📖 关于我们</div>
-          <div class="BjxySection-body">
-            {this.field('小标题', 'bjxy_about_sub', 'ABOUT US')}
-            {this.field('主标题', 'bjxy_about_title', '关于北极雪屿')}
-            {this.textareaField('描述', 'bjxy_about_desc', '北极雪屿室内滑雪成立于 2024 年...')}
-            {this.field('数据 1 - 数字', 'bjxy_about_stat_1_num', '10+')}
-            {this.field('数据 1 - 标签', 'bjxy_about_stat_1_label', '年教学经验')}
-            {this.field('数据 2 - 数字', 'bjxy_about_stat_2_num', '50+')}
-            {this.field('数据 2 - 标签', 'bjxy_about_stat_2_label', '专业教练')}
-            {this.field('数据 3 - 数字', 'bjxy_about_stat_3_num', '1000+')}
-            {this.field('数据 3 - 标签', 'bjxy_about_stat_3_label', '毕业学员')}
-          </div>
-        </div>
+    const fileField = (label, key, hint) => {
+      const url = this.data[key] || '';
+      return m('div', { class: 'BjxyField-row' }, [
+        m('div', { class: 'BjxyField-label' }, label),
+        m('div', null, [
+          m('div', { class: 'BjxyField-file', onclick: (e) => this.uploadFile(e, key) }, '📷 点击上传 (' + hint + ')'),
+          url ? m('div', { class: 'BjxyField-file-preview' }, [
+            m('div', null, '✓ 已上传: ' + url),
+            (key.indexOf('banner') >= 0 || key.indexOf('logo') >= 0 || key.indexOf('image') >= 0)
+              ? m('div', null, m('img', { src: url, alt: '' }))
+              : null,
+          ]) : null,
+        ]),
+      ]);
+    };
 
-        <div class="BjxySection">
-          <div class="BjxySection-head">✨ 办学特色 (6 个卡片)</div>
-          <div class="BjxySection-body">
-            <div class="BjxyField-label">特色卡片</div>
-            <div class="BjxyField-array">
-              {this.features.map((f, i) => (
-                <div class="BjxyField-array-row">
-                  <div class="ic-mini">{f.icon || '★'}</div>
-                  <input value={f.title} oninput={(e) => { f.title = e.target.value; }} />
-                  <input value={f.icon} oninput={(e) => { f.icon = e.target.value; }} />
-                  <input value={f.desc} oninput={(e) => { f.desc = e.target.value; }} />
-                  <button class="del" onclick={() => { this.features.splice(i, 1); m.redraw(); }}>×</button>
-                </div>
-              ))}
-              <div class="BjxyField-array-add" onclick={() => { this.features.push({ icon: '★', title: '新特色', desc: '' }); m.redraw(); }}>+ 添加特色</div>
-            </div>
-          </div>
-        </div>
+    return m('div', { class: 'BjxySettings' }, [
+      m('h1', null, '北极雪屿官网配置'),
+      m('p', { class: 'desc' }, '配置 /bjxy 页面所有内容 (8 section + 后台上传走 ziven-core COS)'),
 
-        <div class="BjxySection">
-          <div class="BjxySection-head">📚 教学体系 (单板 8 + 双板 9)</div>
-          <div class="BjxySection-body">
-            <div class="BjxyField-label">单板 ({this.single.length} 级)</div>
-            <div class="BjxyField-array">
-              {this.single.map((l, i) => (
-                <div class="BjxyField-array-row">
-                  <div class="ic-mini">{i + 1}</div>
-                  <input value={l.level} oninput={(e) => { l.level = e.target.value; }} />
-                  <input value={l.name} oninput={(e) => { l.name = e.target.value; }} />
-                  <input value={l.desc} oninput={(e) => { l.desc = e.target.value; }} />
-                  <button class="del" onclick={() => { this.single.splice(i, 1); m.redraw(); }}>×</button>
-                </div>
-              ))}
-            </div>
-            <div class="BjxyField-label">双板 ({this.double.length} 级)</div>
-            <div class="BjxyField-array">
-              {this.double.map((l, i) => (
-                <div class="BjxyField-array-row">
-                  <div class="ic-mini">{i + 1}</div>
-                  <input value={l.level} oninput={(e) => { l.level = e.target.value; }} />
-                  <input value={l.name} oninput={(e) => { l.name = e.target.value; }} />
-                  <input value={l.desc} oninput={(e) => { l.desc = e.target.value; }} />
-                  <button class="del" onclick={() => { this.double.splice(i, 1); m.redraw(); }}>×</button>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
+      // Section 1: 品牌
+      m('div', { class: 'BjxySection' }, [
+        m('div', { class: 'BjxySection-head' }, '🏔 品牌信息 (全局)'),
+        m('div', { class: 'BjxySection-body' }, [
+          field('品牌名', 'bjxy_brand_name', '北极雪屿'),
+          field('品牌副标', 'bjxy_brand_slogan', '室内滑雪 · 全国连锁'),
+          fileField('Logo 图片', 'bjxy_brand_logo_url', 'logo.svg / png (走 ziven-core COS)'),
+          field('ELITE 文字', 'bjxy_elite_text', 'ELITE'),
+        ]),
+      ]),
 
-        <div class="BjxySection">
-          <div class="BjxySection-head">👥 教练展示</div>
-          <div class="BjxySection-body">
-            <div class="BjxyField-label">选择用户组 (多选)</div>
-            <div class="BjxyField-group-select">
-              {this.allGroups.length === 0 && <div class="BjxyField-hint">加载中...</div>}
-              {this.allGroups.map(g => (
-                <div class={'opt' + (this.coachGroupIds.indexOf(g.id) >= 0 ? ' on' : '')}
-                     onclick={() => this.toggleGroup(g.id)}>
-                  <span class="ck">{this.coachGroupIds.indexOf(g.id) >= 0 ? '✓' : ''}</span>
-                  {g.nameSingular} ({g.userCount || 0} 人)
-                </div>
-              ))}
-              <div class="BjxyField-group-pick" onclick={() => this.openGroupModal()}>🎯 弹 modal 选用户组 (v0.1.1)</div>
-              <div class="BjxyField-hint">💡 选中用户组内的所有用户将作为教练展示. 拖拽排序 + 弹 modal 在 v0.1.1.</div>
-            </div>
-          </div>
-        </div>
+      // Section 2: Hero
+      m('div', { class: 'BjxySection' }, [
+        m('div', { class: 'BjxySection-head' }, '🏔 Hero 区域'),
+        m('div', { class: 'BjxySection-body' }, [
+          field('主标题', 'bjxy_hero_title', '探索极致的滑雪体验。'),
+          field('副标题', 'bjxy_hero_subtitle', '专注滑雪领域的全国连锁机构...'),
+          fileField('浅色模式 banner', 'bjxy_hero_banner_light', '1920×600 推荐'),
+          fileField('深色模式 banner', 'bjxy_hero_banner_dark', '1920×600 推荐'),
+          field('CTA 文字', 'bjxy_hero_cta_text', '立即咨询'),
+          field('CTA 链接', 'bjxy_hero_cta_link', '#contact'),
+        ]),
+      ]),
 
-        <div class="BjxySection">
-          <div class="BjxySection-head">💬 学员评价 (HTML 自由区)</div>
-          <div class="BjxySection-body">
-            <div class="BjxyField-label" style="padding-top: 0;">HTML 自由区</div>
-            <textarea
-              class="BjxyField-textarea"
-              style="min-height: 120px; grid-column: 2;"
-              value={this.data.bjxy_reviews_html || ''}
-              placeholder="&lt;div class=&quot;review&quot;&gt;评价卡片...&lt;/div&gt;"
-              oninput={(e) => { this.data.bjxy_reviews_html = e.target.value; }}
-            />
-            <div class="BjxyField-hint" style="grid-column: 2;">💡 自由布局: 卡片 / 轮播 / 视频 / 嵌入第三方评论, 任意 HTML</div>
-          </div>
-        </div>
+      // Section 3: 关于
+      m('div', { class: 'BjxySection' }, [
+        m('div', { class: 'BjxySection-head' }, '📖 关于我们'),
+        m('div', { class: 'BjxySection-body' }, [
+          field('小标题', 'bjxy_about_sub', 'ABOUT US'),
+          field('主标题', 'bjxy_about_title', '关于北极雪屿'),
+          textareaField('描述', 'bjxy_about_desc', '北极雪屿室内滑雪成立于 2024 年...'),
+          field('数据 1 - 数字', 'bjxy_about_stat_1_num', '10+'),
+          field('数据 1 - 标签', 'bjxy_about_stat_1_label', '年教学经验'),
+          field('数据 2 - 数字', 'bjxy_about_stat_2_num', '50+'),
+          field('数据 2 - 标签', 'bjxy_about_stat_2_label', '专业教练'),
+          field('数据 3 - 数字', 'bjxy_about_stat_3_num', '1000+'),
+          field('数据 3 - 标签', 'bjxy_about_stat_3_label', '毕业学员'),
+        ]),
+      ]),
 
-        <div class="BjxySection">
-          <div class="BjxySection-head">📸 学员展示</div>
-          <div class="BjxySection-body">
-            <div class="BjxyField-label" style="padding-top: 0;">HTML 自由区 (瀑布流 / 时间线 / 视频集)</div>
-            <textarea
-              class="BjxyField-textarea"
-              style="min-height: 80px; grid-column: 2;"
-              value={this.data.bjxy_students_html || ''}
-              placeholder="&lt;div class=&quot;student-grid&quot;&gt;...&lt;/div&gt;"
-              oninput={(e) => { this.data.bjxy_students_html = e.target.value; }}
-            />
-            <div class="BjxyField-hint" style="grid-column: 2;">💡 也可以用下面的简化 JSON: [&#123;image:url, name:王同学&#125;]</div>
-            <div class="BjxyField-label">学员 JSON (简单版)</div>
-            <textarea
-              class="BjxyField-textarea"
-              style="min-height: 60px; grid-column: 2;"
-              value={this.data.bjxy_students_json || ''}
-              placeholder='[{"name":"王同学 · 初级毕业"}, ...]'
-              oninput={(e) => { this.data.bjxy_students_json = e.target.value; }}
-            />
-          </div>
-        </div>
+      // Section 4: 特色
+      m('div', { class: 'BjxySection' }, [
+        m('div', { class: 'BjxySection-head' }, '✨ 办学特色 (6 个卡片)'),
+        m('div', { class: 'BjxySection-body' }, [
+          m('div', { class: 'BjxyField-label' }, '特色卡片'),
+          m('div', { class: 'BjxyField-array' }, [
+            this.features.map((f, i) => m('div', { class: 'BjxyField-array-row', key: 'f' + i }, [
+              m('div', { class: 'ic-mini' }, f.icon || '★'),
+              m('input', { value: f.title, oninput: (e) => { f.title = e.target.value; } }),
+              m('input', { value: f.icon, oninput: (e) => { f.icon = e.target.value; } }),
+              m('input', { value: f.desc, oninput: (e) => { f.desc = e.target.value; } }),
+              m('button', { class: 'del', onclick: () => { this.features.splice(i, 1); m.redraw(); } }, '×'),
+            ])),
+            m('div', {
+              class: 'BjxyField-array-add',
+              onclick: () => { this.features.push({ icon: '★', title: '新特色', desc: '' }); m.redraw(); },
+            }, '+ 添加特色'),
+          ]),
+        ]),
+      ]),
 
-        <div class="BjxySection">
-          <div class="BjxySection-head">📞 联系我们</div>
-          <div class="BjxySection-body">
-            {this.field('地址', 'bjxy_contact_address', '北京市朝阳区滑雪场路 88 号')}
-            {this.field('电话', 'bjxy_contact_phone', '400-888-8888')}
-            {this.field('微信', 'bjxy_contact_wechat', 'bjxy_ski')}
-            {this.field('邮箱', 'bjxy_contact_email', 'hi@bjxy.com')}
-          </div>
-        </div>
+      // Section 5: 教学体系
+      m('div', { class: 'BjxySection' }, [
+        m('div', { class: 'BjxySection-head' }, '📚 教学体系 (单板 8 + 双板 9)'),
+        m('div', { class: 'BjxySection-body' }, [
+          m('div', { class: 'BjxyField-label' }, '单板 (' + this.single.length + ' 级)'),
+          m('div', { class: 'BjxyField-array' }, [
+            this.single.map((l, i) => m('div', { class: 'BjxyField-array-row', key: 's' + i }, [
+              m('div', { class: 'ic-mini' }, i + 1),
+              m('input', { value: l.level, oninput: (e) => { l.level = e.target.value; } }),
+              m('input', { value: l.name, oninput: (e) => { l.name = e.target.value; } }),
+              m('input', { value: l.desc, oninput: (e) => { l.desc = e.target.value; } }),
+              m('button', { class: 'del', onclick: () => { this.single.splice(i, 1); m.redraw(); } }, '×'),
+            ])),
+          ]),
+          m('div', { class: 'BjxyField-label' }, '双板 (' + this.double.length + ' 级)'),
+          m('div', { class: 'BjxyField-array' }, [
+            this.double.map((l, i) => m('div', { class: 'BjxyField-array-row', key: 'd' + i }, [
+              m('div', { class: 'ic-mini' }, i + 1),
+              m('input', { value: l.level, oninput: (e) => { l.level = e.target.value; } }),
+              m('input', { value: l.name, oninput: (e) => { l.name = e.target.value; } }),
+              m('input', { value: l.desc, oninput: (e) => { l.desc = e.target.value; } }),
+              m('button', { class: 'del', onclick: () => { this.double.splice(i, 1); m.redraw(); } }, '×'),
+            ])),
+          ]),
+        ]),
+      ]),
 
-        <div class="BjxySavebar">
-          <button class="btn-secondary" onclick={() => m.redraw()}>取消</button>
-          <button class="btn-primary" onclick={() => this.save()} disabled={this.saving}>
-            {this.saving ? '保存中...' : '保存全部'}
-          </button>
-        </div>
-      </div>
-    );
-  }
+      // Section 6: 教练
+      m('div', { class: 'BjxySection' }, [
+        m('div', { class: 'BjxySection-head' }, '👥 教练展示'),
+        m('div', { class: 'BjxySection-body' }, [
+          m('div', { class: 'BjxyField-label' }, '选择用户组 (多选)'),
+          m('div', { class: 'BjxyField-group-select' }, [
+            this.allGroups.length === 0 ? m('div', { class: 'BjxyField-hint' }, '加载中...') : null,
+            this.allGroups.map(g => {
+              const on = this.coachGroupIds.indexOf(g.id) >= 0;
+              return m('div', {
+                class: 'opt' + (on ? ' on' : ''),
+                onclick: () => this.toggleGroup(g.id),
+              }, [
+                m('span', { class: 'ck' }, on ? '✓' : ''),
+                g.nameSingular + ' (' + (g.userCount || 0) + ' 人)',
+              ]);
+            }),
+            m('div', { class: 'BjxyField-group-pick', onclick: () => this.openGroupModal() }, '🎯 弹 modal 选用户组 (v0.1.1)'),
+            m('div', { class: 'BjxyField-hint' }, '💡 选中用户组内的所有用户将作为教练展示. 拖拽排序 + 弹 modal 在 v0.1.1.'),
+          ]),
+        ]),
+      ]),
 
-  field(label, key, defaultValue) {
-    return [
-      <div class="BjxyField-label">{label}</div>,
-      <input
-        class="BjxyField-input"
-        value={this.data[key] || ''}
-        placeholder={defaultValue}
-        oninput={(e) => { this.data[key] = e.target.value; }}
-      />,
-    ];
-  }
+      // Section 7: 学员评价
+      m('div', { class: 'BjxySection' }, [
+        m('div', { class: 'BjxySection-head' }, '💬 学员评价 (HTML 自由区)'),
+        m('div', { class: 'BjxySection-body' }, [
+          m('div', { class: 'BjxyField-label', style: 'padding-top: 0;' }, 'HTML 自由区'),
+          m('textarea', {
+            class: 'BjxyField-textarea',
+            style: 'min-height: 120px; grid-column: 2;',
+            value: this.data.bjxy_reviews_html || '',
+            placeholder: '<div class="review">评价卡片...</div>',
+            oninput: (e) => { this.data.bjxy_reviews_html = e.target.value; },
+          }),
+          m('div', { class: 'BjxyField-hint', style: 'grid-column: 2;' }, '💡 自由布局: 卡片 / 轮播 / 视频 / 嵌入第三方评论, 任意 HTML'),
+        ]),
+      ]),
 
-  textareaField(label, key, defaultValue) {
-    return [
-      <div class="BjxyField-label">{label}</div>,
-      <textarea
-        class="BjxyField-textarea"
-        value={this.data[key] || ''}
-        placeholder={defaultValue}
-        oninput={(e) => { this.data[key] = e.target.value; }}
-      />,
-    ];
-  }
+      // Section 8: 学员展示
+      m('div', { class: 'BjxySection' }, [
+        m('div', { class: 'BjxySection-head' }, '📸 学员展示'),
+        m('div', { class: 'BjxySection-body' }, [
+          m('div', { class: 'BjxyField-label', style: 'padding-top: 0;' }, 'HTML 自由区 (瀑布流 / 时间线 / 视频集)'),
+          m('textarea', {
+            class: 'BjxyField-textarea',
+            style: 'min-height: 80px; grid-column: 2;',
+            value: this.data.bjxy_students_html || '',
+            placeholder: '<div class="student-grid">...</div>',
+            oninput: (e) => { this.data.bjxy_students_html = e.target.value; },
+          }),
+          m('div', { class: 'BjxyField-hint', style: 'grid-column: 2;' }, '💡 也可以用下面的简化 JSON: [{"image":"url","name":"王同学"}]'),
+          m('div', { class: 'BjxyField-label' }, '学员 JSON (简单版)'),
+          m('textarea', {
+            class: 'BjxyField-textarea',
+            style: 'min-height: 60px; grid-column: 2;',
+            value: this.data.bjxy_students_json || '',
+            placeholder: '[{"name":"王同学 · 初级毕业"}, ...]',
+            oninput: (e) => { this.data.bjxy_students_json = e.target.value; },
+          }),
+        ]),
+      ]),
 
-  fileField(label, key, hint) {
-    const url = this.data[key] || '';
-    return [
-      <div class="BjxyField-label">{label}</div>,
-      <div>
-        <div class="BjxyField-file" onclick={(e) => this.uploadFile(e, key)}>
-          📷 点击上传 ({hint})
-        </div>
-        {url && (
-          <div class="BjxyField-file-preview">
-            ✓ 已上传: {url}
-            {(key.indexOf('banner') >= 0 || key.indexOf('logo') >= 0 || key.indexOf('image') >= 0) && (
-              <div><img src={url} alt="" /></div>
-            )}
-          </div>
-        )}
-      </div>,
-    ];
+      // Section 9: 联系
+      m('div', { class: 'BjxySection' }, [
+        m('div', { class: 'BjxySection-head' }, '📞 联系我们'),
+        m('div', { class: 'BjxySection-body' }, [
+          field('地址', 'bjxy_contact_address', '北京市朝阳区滑雪场路 88 号'),
+          field('电话', 'bjxy_contact_phone', '400-888-8888'),
+          field('微信', 'bjxy_contact_wechat', 'bjxy_ski'),
+          field('邮箱', 'bjxy_contact_email', 'hi@bjxy.com'),
+        ]),
+      ]),
+
+      m('div', { class: 'BjxySavebar' }, [
+        m('button', { class: 'btn-secondary', onclick: () => m.redraw() }, '取消'),
+        m('button', {
+          class: 'btn-primary',
+          onclick: () => this.save(),
+          disabled: this.saving,
+        }, this.saving ? '保存中...' : '保存全部'),
+      ]),
+    ]);
   }
 
   async oncreate(vnode) {
