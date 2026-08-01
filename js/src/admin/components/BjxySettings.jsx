@@ -73,6 +73,27 @@ export default class BjxySettings extends ExtensionPage {
       }),
     ]);
 
+    // v0.1.0j: 颜色选择器 (HTML5 native <input type="color">)
+    // 4 个颜色: 浅色 start/end + 深色 start/end, 拼成 linear-gradient(135deg, ...)
+    const colorField = (label, key, defaultColor) => m('div', { class: 'BjxyField-row' }, [
+      m('div', { class: 'BjxyField-label' }, label),
+      m('div', { class: 'BjxyField-color-wrap' }, [
+        m('input', {
+          class: 'BjxyField-color',
+          type: 'color',
+          value: (s(key) || this.data[key]) || defaultColor,
+          oninput: (e) => { this.data[key] = e.target.value; m.redraw(); },
+        }),
+        m('input', {
+          class: 'BjxyField-color-text',
+          type: 'text',
+          value: (s(key) || this.data[key]) || defaultColor,
+          placeholder: defaultColor,
+          oninput: (e) => { this.data[key] = e.target.value; m.redraw(); },
+        }),
+      ]),
+    ]);
+
     const textareaField = (label, key, defaultValue) => m('div', { class: 'BjxyField-row' }, [
       m('div', { class: 'BjxyField-label' }, label),
       m('textarea', {
@@ -113,6 +134,19 @@ export default class BjxySettings extends ExtensionPage {
           field('品牌副标', 'bjxy_brand_slogan', '室内滑雪 · 全国连锁'),
           fileField('Logo 图片', 'bjxy_brand_logo_url', 'logo.svg / png (走 ziven-core COS)'),
           field('ELITE 文字', 'bjxy_elite_text', 'ELITE'),
+        ]),
+      ]),
+
+      // v0.1.0j 新增: 渐变背景 4 色 (浅色 start/end + 深色 start/end)
+      // 默认: 浅色 #E0EBF8 → #F7FAFC, 深色 #0F1419 → #1A202C
+      m('div', { class: 'BjxySection' }, [
+        m('div', { class: 'BjxySection-head' }, '🎨 背景渐变 (浅深双版)'),
+        m('div', { class: 'BjxySection-body' }, [
+          m('div', { class: 'BjxyField-hint' }, '💡 4 个颜色拼成 linear-gradient(135deg, start, end), 浅色 / 深色模式分别设置, 通过右上角 toggle 按钮切换查看效果.'),
+          colorField('浅色模式 - 起始色', 'bjxy_bg_gradient_light_start', '#E0EBF8'),
+          colorField('浅色模式 - 结束色', 'bjxy_bg_gradient_light_end', '#F7FAFC'),
+          colorField('深色模式 - 起始色', 'bjxy_bg_gradient_dark_start', '#0F1419'),
+          colorField('深色模式 - 结束色', 'bjxy_bg_gradient_dark_end', '#1A202C'),
         ]),
       ]),
 

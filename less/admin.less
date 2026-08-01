@@ -179,3 +179,30 @@
         cursor: pointer;
     }
 }
+
+// v0.1.0j 颜色选择器 (HTML5 native <input type="color">)
+.BjxyField-color-wrap {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.BjxyField-color {
+    width: 48px;
+    height: 32px;
+    padding: 2px;
+    border: 1px solid var(--control-color-soft);
+    border-radius: 4px;
+    cursor: pointer;
+    background: none;
+}
+.BjxyField-color-text {
+    flex: 1;
+    height: 32px;
+    padding: 6px 10px;
+    border: 1px solid var(--control-color-soft);
+    border-radius: 4px;
+    font-family: ui-monospace, SFMono-Regular, monospace;
+    font-size: 12px;
+    background: var(--control-bg);
+    color: var(--control-color);
+}

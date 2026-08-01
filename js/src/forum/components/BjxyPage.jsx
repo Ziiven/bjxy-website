@@ -26,7 +26,22 @@ export default class BjxyPage extends Component {
     const reviewsHtml = s('bjxy_reviews_html', '');
     const studentsHtml = s('bjxy_students_html', '');
 
-    return m('div', { class: 'bjxy-page' }, [
+    return [
+      // v0.1.0j: 注入渐变背景 CSS (4 个颜色 settings 拼成 linear-gradient)
+      // 浅色 / 深色模式分别走 [data-theme^="dark"] selector
+      m('style', {
+        oncreate: ({ dom }) => {
+          const ls = s('bjxy_bg_gradient_light_start', '#E0EBF8') || '#E0EBF8';
+          const le = s('bjxy_bg_gradient_light_end', '#F7FAFC') || '#F7FAFC';
+          const ds = s('bjxy_bg_gradient_dark_start', '#0F1419') || '#0F1419';
+          const de = s('bjxy_bg_gradient_dark_end', '#1A202C') || '#1A202C';
+          dom.textContent = `
+.bjxy-page { background: linear-gradient(135deg, ${ls}, ${le}); }
+[data-theme^="dark"] .bjxy-page { background: linear-gradient(135deg, ${ds}, ${de}); }
+`;
+        },
+      }),
+      m('div', { class: 'bjxy-page' }, [
       // ===== 公告条 =====
       m('div', { class: 'bjxy-announce' }, [
         m('span', { class: 'bjxy-announce-badge' }, '🏔 ' + s('bjxy_elite_text', DEFAULT_ELITE)),
@@ -179,7 +194,8 @@ export default class BjxyPage extends Component {
       m('footer', { class: 'bjxy-footer' }, [
         m('span', null, '© ' + new Date().getFullYear() + ' ' + s('bjxy_brand_name', DEFAULT_BRAND) + ' · ICP 备 2026xxxxxx 号'),
       ]),
-    ]);
+      ]),
+    ];
   }
 
   oncreate(vnode) {
