@@ -5,6 +5,7 @@
 //              override content() 方法 (走 vendor sections().toArray() 框架)
 import app from 'flarum/admin/app';
 import ExtensionPage from 'flarum/admin/components/ExtensionPage';
+import ColorPreviewInput from 'flarum/common/components/ColorPreviewInput';
 // mithril 走 vendor 注入的 global m (zct 同款, 不 import)
 
 const DEFAULT_FEATURES = [
@@ -73,25 +74,17 @@ export default class BjxySettings extends ExtensionPage {
       }),
     ]);
 
-    // v0.1.0j: 颜色选择器 (HTML5 native <input type="color">)
-    // 4 个颜色: 浅色 start/end + 深色 start/end, 拼成 linear-gradient(135deg, ...)
+    // v0.1.0m 颜色选择器: 用 vendor ColorPreviewInput (跨浏览器一致)
+    // v0.1.0j 用的 HTML5 native <input type="color"> 在某些浏览器 (iOS Safari, 部分 Android) 不显示 swatch
+    // 辉哥 00:45 反馈浅色 end + 深色 end 的色块空白, 改成 vendor ColorPreviewInput (text + hidden color + icon, 跨浏览器 work)
     const colorField = (label, key, defaultColor) => m('div', { class: 'BjxyField-row' }, [
       m('div', { class: 'BjxyField-label' }, label),
-      m('div', { class: 'BjxyField-color-wrap' }, [
-        m('input', {
-          class: 'BjxyField-color',
-          type: 'color',
-          value: (s(key) || this.data[key]) || defaultColor,
-          oninput: (e) => { this.data[key] = e.target.value; m.redraw(); },
-        }),
-        m('input', {
-          class: 'BjxyField-color-text',
-          type: 'text',
-          value: (s(key) || this.data[key]) || defaultColor,
-          placeholder: defaultColor,
-          oninput: (e) => { this.data[key] = e.target.value; m.redraw(); },
-        }),
-      ]),
+      m(ColorPreviewInput, {
+        className: 'BjxyField-color-text',
+        value: (s(key) || this.data[key]) || defaultColor,
+        placeholder: defaultColor,
+        onchange: (e) => { this.data[key] = e.target.value; m.redraw(); },
+      }),
     ]);
 
     const textareaField = (label, key, defaultValue) => m('div', { class: 'BjxyField-row' }, [
@@ -137,12 +130,11 @@ export default class BjxySettings extends ExtensionPage {
         ]),
       ]),
 
-      // v0.1.0j 新增: 渐变背景 4 色 (浅色 start/end + 深色 start/end)
-      // 默认: 浅色 #E0EBF8 → #F7FAFC, 深色 #0F1419 → #1A202C
+      // v0.1.0m: 渐变背景 4 色 — 删了 BjxyField-hint 块 (v0.1.0j 加的提示语占一整行
+      // 把 grid 2 列布局变 1+1+1+1, 辉哥反馈页面不规整)
       m('div', { class: 'BjxySection' }, [
         m('div', { class: 'BjxySection-head' }, '🎨 背景渐变 (浅深双版)'),
         m('div', { class: 'BjxySection-body' }, [
-          m('div', { class: 'BjxyField-hint' }, '💡 4 个颜色拼成 linear-gradient(135deg, start, end), 浅色 / 深色模式分别设置, 通过右上角 toggle 按钮切换查看效果.'),
           colorField('浅色模式 - 起始色', 'bjxy_bg_gradient_light_start', '#E0EBF8'),
           colorField('浅色模式 - 结束色', 'bjxy_bg_gradient_light_end', '#F7FAFC'),
           colorField('深色模式 - 起始色', 'bjxy_bg_gradient_dark_start', '#0F1419'),

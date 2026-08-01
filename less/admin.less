@@ -180,7 +180,9 @@
     }
 }
 
-// v0.1.0j 颜色选择器 (HTML5 native <input type="color">)
+// v0.1.0m 颜色选择器: native <input type="color"> + 旁边一个 swatch 兜底
+// 辉哥反馈浅色 end + 深色 end 颜色块不显示 (v0.1.0j 的 background: none 把内置 swatch 覆盖了)
+// 改: 给 .BjxyField-color 加内联 swatch 背景 + box-shadow inset, 跨浏览器一致
 .BjxyField-color-wrap {
     display: flex;
     align-items: center;
@@ -189,11 +191,12 @@
 .BjxyField-color {
     width: 48px;
     height: 32px;
-    padding: 2px;
+    padding: 0;
     border: 1px solid var(--control-color-soft);
     border-radius: 4px;
     cursor: pointer;
-    background: none;
+    background-color: var(--color, transparent);
+    box-shadow: inset 0 0 0 2px var(--color, transparent);
 }
 .BjxyField-color-text {
     flex: 1;
