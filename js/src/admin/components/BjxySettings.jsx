@@ -341,11 +341,14 @@ export default class BjxySettings extends ExtensionPage {
       form.append('file', file);
       form.append('key', key);
       try {
+        // v0.1.0g 修: 删 `headers: { 'Content-Type': null }` (Flarum 2.0 mithril request
+        // 把 null 转字符串 "null" 而不是移除 header, server 拿到 Content-Type: null
+        // 不会自动转 multipart/form-data, 然后拿不到 form fields → "missing key" 400.
+        // 正确做法: 完全不传 headers, 让 app.request 默认行为 (浏览器自动 set multipart + boundary)
         const r = await app.request({
           method: 'POST',
           url: app.forum.attribute('apiUrl') + '/bjxy/upload',
           body: form,
-          headers: { 'Content-Type': null },
         });
         if (r.ok) {
           this.data[key] = r.url;
