@@ -1,8 +1,10 @@
 // BjxySettings.jsx — 后台 settings UI
 // 8 section: 品牌 / Hero / 关于 / 特色 / 教学体系 / 教练 / 评价 / 学员展示 / 联系
-// 纯 m() 形式 (跟 BjxyPage.jsx 一致, 不用 JSX 嵌套 array of vnodes - 避免 mithril "length" 错)
+// Flarum 2.0 admin ExtensionPage pattern (跟 ziven-dress-up SeedreamAdminPage 同款)
+// v0.1.0c 修: BjxySettings extends ExtensionPage (vendor Flarum 2.0 class),
+//              override content() 方法 (走 vendor sections().toArray() 框架)
 import app from 'flarum/admin/app';
-import Component from 'flarum/common/Component';
+import ExtensionPage from 'flarum/admin/components/ExtensionPage';
 // mithril 走 vendor 注入的 global m (zct 同款, 不 import)
 
 const DEFAULT_FEATURES = [
@@ -36,8 +38,9 @@ const DEFAULT_DOUBLE = [
   { level: 'ADVANCED', name: '全地域大神', desc: '单脚滑行, 豚跳, 180 度旋转...' },
 ];
 
-export default class BjxySettings extends Component {
-  init() {
+export default class BjxySettings extends ExtensionPage {
+  oninit(vnode) {
+    super.oninit(vnode);
     this.loading = true;
     this.saving = false;
     this.data = {};
@@ -46,9 +49,12 @@ export default class BjxySettings extends Component {
     this.double = JSON.parse(JSON.stringify(DEFAULT_DOUBLE));
     this.coachGroupIds = [];
     this.allGroups = [];
+    this.loadSettings();
   }
 
-  view() {
+  // Flarum 2.0 ExtensionPage content() 是 sections().toArray() 的 'content' key
+  // override content() 就能在 vendor ExtensionPage 框架里渲染 bjxy settings
+  content() {
     if (this.loading) {
       return m('div', { class: 'BjxySettings' }, m('p', null, '加载中...'));
     }
@@ -90,8 +96,10 @@ export default class BjxySettings extends Component {
     };
 
     return m('div', { class: 'BjxySettings' }, [
-      m('h1', null, '北极雪屿官网配置'),
-      m('p', { class: 'desc' }, '配置 /bjxy 页面所有内容 (8 section + 后台上传走 ziven-core COS)'),
+      m('div', { class: 'BjxySettings-intro' }, [
+        m('h2', null, '北极雪屿官网配置'),
+        m('p', { class: 'desc' }, '配置 /bjxy 页面所有内容 (8 section + 后台上传走 ziven-core COS)'),
+      ]),
 
       // Section 1: 品牌
       m('div', { class: 'BjxySection' }, [
@@ -266,9 +274,9 @@ export default class BjxySettings extends Component {
     ]);
   }
 
-  async oncreate(vnode) {
+  async loadSettings() {
     try {
-      const data = await m.request({
+      const data = await app.request({
         method: 'GET',
         url: app.forum.attribute('apiUrl') + '/bjxy/settings',
       });
@@ -285,7 +293,7 @@ export default class BjxySettings extends Component {
       if (this.data.bjxy_coach_group_ids) {
         try { this.coachGroupIds = JSON.parse(this.data.bjxy_coach_group_ids); } catch (e) {}
       }
-      const grpData = await m.request({
+      const grpData = await app.request({
         method: 'GET',
         url: app.forum.attribute('apiUrl') + '/groups',
         params: { page: { limit: 50 } },
@@ -325,7 +333,7 @@ export default class BjxySettings extends Component {
       form.append('file', file);
       form.append('key', key);
       try {
-        const r = await m.request({
+        const r = await app.request({
           method: 'POST',
           url: app.forum.attribute('apiUrl') + '/bjxy/upload',
           body: form,
@@ -354,7 +362,7 @@ export default class BjxySettings extends Component {
     payload.bjxy_curriculum_double_json = JSON.stringify(this.double);
     payload.bjxy_coach_group_ids = JSON.stringify(this.coachGroupIds);
     try {
-      await m.request({
+      await app.request({
         method: 'POST',
         url: app.forum.attribute('apiUrl') + '/bjxy/settings',
         body: payload,
