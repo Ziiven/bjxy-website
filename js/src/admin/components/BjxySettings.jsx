@@ -59,11 +59,15 @@ export default class BjxySettings extends ExtensionPage {
       return m('div', { class: 'BjxySettings' }, m('p', null, '加载中...'));
     }
 
+    // v0.1.0d 修: 不能在 module top-level 缓存 app.forum.attribute.bind() (那时 admin app
+    // 还没 register, app undefined throw). 改在 content() 调用时 lazy 拿 app.
+    const s = app && app.forum ? app.forum.attribute.bind(app.forum) : () => null;
+
     const field = (label, key, defaultValue) => m('div', { class: 'BjxyField-row' }, [
       m('div', { class: 'BjxyField-label' }, label),
       m('input', {
         class: 'BjxyField-input',
-        value: this.data[key] || '',
+        value: (s(key) || this.data[key]) || '',
         placeholder: defaultValue,
         oninput: (e) => { this.data[key] = e.target.value; },
       }),
