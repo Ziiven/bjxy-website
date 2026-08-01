@@ -64,11 +64,17 @@ export default class BjxySettings extends ExtensionPage {
     // 还没 register, app undefined throw). 改在 content() 调用时 lazy 拿 app.
     const s = app && app.forum ? app.forum.attribute.bind(app.forum) : () => null;
 
+    // v0.1.0n 修: value 优先级 反过来 this.data[key] 优先
+    // 之前 (s(key) || this.data[key]) → server load 时的旧值优先, 用户改了 input
+    // mithril redraw 重 render 时 s(key) 仍是 server 旧值 → 覆盖用户输入 → 看似被重置
+    // 现在 this.data[key] 优先 (用户输入), 然后 s(key) (load 时的 server 值), 然后 default
+    // load 完一次 this.data 已经存 server 值, 所以 user 改了 this.data[key] 后 redraw
+    // 拿到的还是 user 改的值, 不会回退到 server 旧值
     const field = (label, key, defaultValue) => m('div', { class: 'BjxyField-row' }, [
       m('div', { class: 'BjxyField-label' }, label),
       m('input', {
         class: 'BjxyField-input',
-        value: (s(key) || this.data[key]) || '',
+        value: (this.data[key] != null ? this.data[key] : (s(key) || '')) || defaultValue,
         placeholder: defaultValue,
         oninput: (e) => { this.data[key] = e.target.value; },
       }),
@@ -81,7 +87,7 @@ export default class BjxySettings extends ExtensionPage {
       m('div', { class: 'BjxyField-label' }, label),
       m(ColorPreviewInput, {
         className: 'BjxyField-color-text',
-        value: (s(key) || this.data[key]) || defaultColor,
+        value: (this.data[key] != null ? this.data[key] : (s(key) || '')) || defaultColor,
         placeholder: defaultColor,
         onchange: (e) => { this.data[key] = e.target.value; m.redraw(); },
       }),
@@ -91,7 +97,7 @@ export default class BjxySettings extends ExtensionPage {
       m('div', { class: 'BjxyField-label' }, label),
       m('textarea', {
         class: 'BjxyField-textarea',
-        value: this.data[key] || '',
+        value: (this.data[key] != null ? this.data[key] : (s(key) || '')) || defaultValue,
         placeholder: defaultValue,
         oninput: (e) => { this.data[key] = e.target.value; },
       }),
