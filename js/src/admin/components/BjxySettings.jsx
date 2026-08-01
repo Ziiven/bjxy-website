@@ -321,8 +321,12 @@ export default class BjxySettings extends ExtensionPage {
     m.redraw();
   }
 
+  // v0.1.0f 修: openGroupModal 不能用 app.modal.show({title, content}) 传 plain object
+  // Flarum 2.0 ModalManager 期望 Component class, plain object 抛 "ModalManager can only show Modals"
+  // 这个 throw 会让整个 admin app 状态崩, 后续操作全部白屏, mobile 看到 forum
+  // "加载论坛时出错" 误以为是 page load 失败. 改用 alert 占位 (v0.1.1 实装 modal 选用户组)
   openGroupModal() {
-    app.modal.show({ title: '选择用户组 (v0.1.1)', content: '弹 modal 选用户组 + 拖拽排序在 v0.1.1 实现' });
+    app.alerts.show({ type: 'info' }, '弹 modal 选用户组 + 拖拽排序在 v0.1.1 实现');
   }
 
   async uploadFile(e, key) {
