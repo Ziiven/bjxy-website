@@ -293,47 +293,86 @@
     color: var(--control-color);
 }
 
-// v0.1.0t 修: 移动端响应式 (max-width: 768px)
+// v0.1.0t 修: 教学体系 section 移动端响应式 (max-width: 768px)
 //   辉哥 14:10 反馈 "教学体系这块里面的配置, 在移动端显示不全"
 //   之前 grid `30px 1fr 1fr 1fr 32px` 在窄屏把 4 个 input 列压成 145px,
 //   select 跟 input 内容被截断, name/desc 完全看不到
-//   修法: 窄屏下 array-row 改 2 行 (序号+level+del 一行, name+desc 另一行),
-//         section-body 改单列布局, board-head 改 column
+//   修法: 窄屏下 array-row 改 2 行 (序号+level+del 一行, name+desc 另一行)
+//   ⚠️ 辉哥 14:30 反馈 "其他 section 排版不用变", 所以 @media 块只针对教学体系 (.BjxyField-board 内部),
+//     不影响其他 section (品牌/Hero/关于/特色/教练/评价/学员展示/联系)
 //   ⚠️ wikimedia/less.php 5.x 不支持嵌套 @media (vendor 用 less.php 不是 less-js),
 //      必须用展开写法 (顶层 @media + 完全展开的 .BjxySettings .X 选择器)
 //   ⚠️ 必须放文件最末尾, CSS cascade 后写 win, 否则会被普通选择器覆盖
+//   ⚠️ 避免 less 把 1 / -1 当作除法, 分开写 grid-column-start / grid-column-end
 @media (max-width: 768px) {
-    .BjxySettings { padding: 12px; }
-    .BjxySettings .BjxySection-body { grid-template-columns: 1fr; gap: 6px; }
-    .BjxySettings .BjxyField-label { padding-top: 8px; font-weight: 600; }
-    .BjxySettings .BjxyField-input,
-    .BjxySettings .BjxyField-textarea,
-    .BjxySettings .BjxyField-select { grid-column: 1; }
-    .BjxySettings .BjxyField-array { grid-column: 1; }
-    .BjxySettings .BjxyField-array-row {
+    // 只针对教学体系 .BjxyField-board 内部, 不影响其他 section
+    .BjxyField-board { padding: 8px; }
+    .BjxyField-board-head { flex-wrap: wrap; gap: 6px; }
+    .BjxyField-board-name { flex: 1 1 100%; min-width: 0; }
+    .BjxyField-board-count { flex: 0 0 auto; }
+    .BjxyField-board-head .del { flex: 0 0 auto; }
+    .BjxyField-board .BjxyField-array-row {
         grid-template-columns: 26px 1fr 28px;
         gap: 4px;
-        margin-bottom: 8px;
-        padding: 6px;
+        margin-bottom: 6px;
+        padding: 5px;
         border: 1px solid var(--control-color-soft);
         border-radius: 4px;
     }
-    .BjxySettings .BjxyField-array-row .ic-mini { grid-column: 1; }
-    .BjxySettings .BjxyField-array-row select { grid-column: 2; min-width: 0; }
-    // v0.1.0t: 避免 less 把 1 / -1 当作除法, 分开写 start/end
-    .BjxySettings .BjxyField-array-row input:nth-of-type(1) { grid-column-start: 1; grid-column-end: -1; }
-    .BjxySettings .BjxyField-array-row input:nth-of-type(2) { grid-column-start: 1; grid-column-end: -1; }
-    .BjxySettings .BjxyField-array-row .del { grid-column: 3; }
-    .BjxySettings .BjxyField-array-add { grid-column: 1; }
-    .BjxySettings .BjxyField-file,
-    .BjxySettings .BjxyField-group-select,
-    .BjxySettings .BjxyField-board,
-    .BjxySettings .BjxyField-board-add { grid-column: 1; }
-    .BjxySettings .BjxyField-board-head { flex-wrap: wrap; gap: 6px; }
-    .BjxySettings .BjxyField-board-name { flex: 1 1 100%; min-width: 0; }
-    .BjxySettings .BjxyField-board-count { flex: 0 0 auto; }
-    .BjxySettings .BjxyField-board-head .del { flex: 0 0 auto; }
-    .BjxySettings .BjxySavebar { flex-wrap: wrap; gap: 6px; }
-    .BjxySettings .BjxySavebar .btn-primary,
-    .BjxySettings .BjxySavebar .btn-secondary { flex: 1 1 auto; padding: 8px 12px; }
+    .BjxyField-board .BjxyField-array-row .ic-mini { grid-column: 1; }
+    .BjxyField-board .BjxyField-array-row select { grid-column: 2; min-width: 0; }
+    .BjxyField-board .BjxyField-array-row input:nth-of-type(1) { grid-column-start: 1; grid-column-end: -1; }
+    .BjxyField-board .BjxyField-array-row input:nth-of-type(2) { grid-column-start: 1; grid-column-end: -1; }
+    .BjxyField-board .BjxyField-array-row .del { grid-column: 3; }
+}
+
+// v0.1.0u 修: 教学体系 section 紧凑布局 (辉哥 14:30 反馈 "数据多了以后, 版面拉的太长了")
+//   之前 18 级 + 2 boards = 18 rows × 30px = 540px + board head 28px + padding 20px ≈ 700px
+//   优化: board 内部 padding 10→6, row margin-bottom 6→2, input padding 5→3, font-size 11→10
+//   ⚠️ 只针对 .BjxyField-board 内部, 不影响其他 section
+.BjxyField-board {
+    padding: 6px;
+    margin-bottom: 8px;
+    .BjxyField-board-head {
+        margin-bottom: 4px;
+        padding-bottom: 4px;
+    }
+    .BjxyField-board-name {
+        padding: 3px 6px;
+        font-size: 11px;
+    }
+    .BjxyField-board-count {
+        font-size: 10px;
+        padding: 1px 5px;
+    }
+    .BjxyField-board-head .del {
+        font-size: 10px;
+        padding: 3px 6px;
+    }
+    .BjxyField-array-row {
+        gap: 4px;
+        margin-bottom: 2px;
+        input {
+            padding: 3px 6px;
+            font-size: 10px;
+        }
+        .ic-mini {
+            width: 20px;
+            height: 20px;
+            font-size: 9px;
+        }
+        .del {
+            font-size: 10px;
+            padding: 2px 4px;
+        }
+        select {
+            padding: 2px 6px;
+            font-size: 10px;
+        }
+    }
+    .BjxyField-array-add {
+        padding: 4px;
+        font-size: 10px;
+        margin-top: 4px;
+    }
 }

@@ -327,3 +327,41 @@
 ### Commit
 - v0.1.0t: 待 commit
 - dist md5: admin.css `4cbcafc53adefe7598c7ff7ad601e450` (新)
+
+## v0.1.0u (2026-08-02) — 教学体系紧凑布局 + @media 只影响 board 内部
+
+### 修
+- 辉哥 14:30 反馈两点:
+  1. "其他 section 排版不用变" — v0.1.0t 的 @media 块改了全局 .BjxySection-body / .BjxyField-label / .BjxyField-input 等,
+     影响了其他 section (品牌/Hero/关于/特色/教练/评价/学员展示/联系)
+  2. "教学体系数据多了以后, 版面拉的太长了" — 之前 18 级 2 boards 排版高 ~700px, 4 boards 就 ~1400px
+- 修法:
+  - @media (max-width: 768px) 块改用 `.BjxyField-board .X` 选择器 (加 board 前缀),
+    只影响教学体系 section 内部, 不影响其他 section
+  - 新增 `.BjxyField-board` 紧凑样式 (默认 desktop 也紧凑):
+    - board padding 10→6, margin-bottom 12→8
+    - row margin-bottom 6→2, gap 6→4
+    - input padding 5→3, font-size 11→10
+    - select padding 6→2, font-size 11→10
+    - ic-mini 26×26→20×20, font-size 11→9
+    - head margin-bottom 8→4, padding-bottom 8→4
+    - array-add padding 6→4, font-size 11→10, margin-top 4
+
+### SOP 沉淀 (升级 SOP 79)
+- **SOP 79 升级: 改 less 时要精确选择器, 避免影响其他 section**:
+  - 之前用 `.BjxySettings .X` (全局) 导致 @media 影响所有 section
+  - 改用 `.BjxyField-board .X` (局部) 只影响教学体系 board 内部
+  - 影响: v0.1.0u 把 .BjxyField-board 单独成命名空间, 教学体系排版独立优化
+
+### Playwright 验证
+- 其他 section grid (品牌/特色) 保持 `140px 1fr` 不变 ✅
+- 教学体系紧凑布局生效:
+  - 4 boards (单板 9 + 双板 9 + 雪橇 1 + 测试 1) 总高 971px (之前 v0.1.0t 类似场景 1300+px)
+  - first row 高度 21px (input font 10px)
+- 移动端 (390px):
+  - 品牌 grid `140px 164px` (跟 desktop 一样的 140px label, vendor 自身 mobile 行为, 没改)
+  - 教学 row grid `26px 73px 28px` (3 列响应式, board 内部)
+
+### Commit
+- v0.1.0u: 待 commit
+- dist md5: admin.css `90f8ac1f7a76ecd29b5911238e95980a`
