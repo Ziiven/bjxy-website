@@ -424,3 +424,40 @@
 ### Commit
 - v0.1.0x: 待 commit
 - dist md5: admin.js `7de8afe7f225eb1d11e297e8284f48d7`
+
+---
+
+## v0.1.0y (2026-08-02) — 背景渐变视差 fixed viewport (滚动时微小移动)
+
+### 修
+- 辉哥 15:21 反馈 "背景的渐变色, 能不能不要从顶部一直到页面尾部. 而是维持在页面的可视范围中, 随着用户往下滑动页面, 背景只有微小的移动"
+- 之前 v0.1.0j 改的 `.bjxy-page { background: linear-gradient(...) }` 是 block 级背景, body 多高背景就铺多高
+  - 滚到页面底部时, 渐变跟着 body 一直拉到最底, 跟"维持在可视范围"的诉求不符
+
+### 改 2 个文件
+- **js/src/forum/components/BjxyPage.jsx**:
+  - 4 个颜色 settings (`bjxy_bg_gradient_*_start/end`) 提到 view() 顶部 const 抽出来
+  - `<style>` 注入块: 目标从 `.bjxy-page` 改成 `.bjxy-page-bg` (新 div)
+  - `.bjxy-page` oncreate/onremove: 拿到内部第一个 `.bjxy-page-bg` div, 加 scroll listener
+    - listener: `backgroundPositionY = calc(50% - scrollY * 0.1px)` → 0.1x 视差
+    - onremove 清理 listener 防止 leak
+  - `.bjxy-page` 内部最前面加 `<div class="bjxy-page-bg" />` (position: fixed 容器)
+- **less/forum.less**:
+  - `.bjxy-page` 加 `position: relative; isolation: isolate;` (创建 stacking context, 让 .bjxy-page-bg z-index: -1 不被外层影响)
+  - 新增 `.bjxy-page-bg` 块:
+    - `position: fixed; inset: 0; z-index: -1; pointer-events: none;`
+    - `background-size: 100% 100vh;` (背景永远铺满 viewport, 不再随 body 拉长)
+    - `background-position: center 50%;` (初始位置, JS 滚动时改 Y)
+    - `will-change: background-position; transition: background-position 0.08s linear;` (让视差移动平滑不卡)
+
+### SOP 沉淀 (新, SOP 80)
+- **SOP 80. Flarum 论坛页面全屏背景渐变 + 视差, 不要用 block 背景**:
+  - 错用 `.bjxy-page { background: linear-gradient(...) }` → block 背景随 body 拉长, 跟"fixed viewport"需求不符
+  - 修法: 在根 div 内部最前面加 `<div class="bjxy-page-bg">`, CSS `position: fixed; inset: 0; z-index: -1; pointer-events: none;`
+  - 视差: JS 监听 `window.scroll`, 改 `bgEl.style.backgroundPositionY = 'calc(50% - scrollY * 0.1px)'` (0.1x 微移)
+  - 父级加 `position: relative; isolation: isolate;` 创建 stacking context, z-index: -1 才不会被外层挡住
+  - onremove 必须清理 scroll listener, 防止组件 unmount 后内存泄漏
+  - 影响: bjxy 论坛子页面背景, 后续其他 page extension 也能复用
+
+### Commit
+- v0.1.0y: 待 commit

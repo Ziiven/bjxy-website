@@ -58,9 +58,31 @@
     background: var(--bjxy-bg);
     line-height: 1.6;
     min-height: 100vh;
+    // v0.1.0y: 让 .bjxy-page-bg z-index: -1 不会被父元素 stacking context 关住
+    //   position: relative + isolation: isolate 创建新的 stacking context,
+    //   但 z-index: -1 + relative 父级已经够了, 这里加 isolation 保险
+    position: relative;
+    isolation: isolate;
 }
 
 .bjxy-page * { box-sizing: border-box; }
+
+// v0.1.0y: 视差背景 div, position: fixed 永远铺满 viewport
+//   背景渐变由 BjxyPage.jsx <style> 注入 (4 个颜色 settings 拼成 linear-gradient)
+//   JS 监听 scroll 改 backgroundPositionY (0.1x 视差) → 滚动时背景微小移动
+//   pointer-events: none 防止背景挡住下面内容点击
+//   will-change + transition 让视差移动平滑
+.bjxy-page-bg {
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background-repeat: no-repeat;
+    background-size: 100% 100vh;
+    background-position: center 50%;
+    will-change: background-position;
+    transition: background-position 0.08s linear;
+}
 
 // ===== 公告条 =====
 .bjxy-announce {

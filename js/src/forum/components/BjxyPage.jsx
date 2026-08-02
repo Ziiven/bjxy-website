@@ -38,22 +38,51 @@ export default class BjxyPage extends Component {
     const reviewsHtml = s('bjxy_reviews_html', '');
     const studentsHtml = s('bjxy_students_html', '');
 
+    // v0.1.0y: 背景渐变从 .bjxy-page block 背景, 抽到内部第一个 .bjxy-page-bg
+    //   position: fixed; inset: 0 → 背景永远铺满 viewport (1vh), 不再随 body 拉长
+    //   JS 监听 scroll 改 backgroundPositionY 0.1x → 滚动时背景微小视差移动
+    //   (辉哥 15:21 反馈 "背景渐变不要从顶部到页面尾部, 维持在可视范围, 滚动时只有微小移动")
+    const ls = s('bjxy_bg_gradient_light_start', '#E0EBF8') || '#E0EBF8';
+    const le = s('bjxy_bg_gradient_light_end', '#F7FAFC') || '#F7FAFC';
+    const ds = s('bjxy_bg_gradient_dark_start', '#0F1419') || '#0F1419';
+    const de = s('bjxy_bg_gradient_dark_end', '#1A202C') || '#1A202C';
+
     return [
-      // v0.1.0j: 注入渐变背景 CSS (4 个颜色 settings 拼成 linear-gradient)
+      // v0.1.0j+y: 注入渐变背景 CSS (4 个颜色 settings 拼成 linear-gradient)
       // 浅色 / 深色模式分别走 [data-theme^="dark"] selector
+      // v0.1.0y 改: 目标从 .bjxy-page 改成 .bjxy-page-bg (position: fixed)
       m('style', {
         oncreate: ({ dom }) => {
-          const ls = s('bjxy_bg_gradient_light_start', '#E0EBF8') || '#E0EBF8';
-          const le = s('bjxy_bg_gradient_light_end', '#F7FAFC') || '#F7FAFC';
-          const ds = s('bjxy_bg_gradient_dark_start', '#0F1419') || '#0F1419';
-          const de = s('bjxy_bg_gradient_dark_end', '#1A202C') || '#1A202C';
           dom.textContent = `
-.bjxy-page { background: linear-gradient(135deg, ${ls}, ${le}); }
-[data-theme^="dark"] .bjxy-page { background: linear-gradient(135deg, ${ds}, ${de}); }
+.bjxy-page-bg { background: linear-gradient(135deg, ${ls}, ${le}); }
+[data-theme^="dark"] .bjxy-page-bg { background: linear-gradient(135deg, ${ds}, ${de}); }
 `;
         },
       }),
-      m('div', { class: 'bjxy-page' }, [
+      m('div', {
+        class: 'bjxy-page',
+        // v0.1.0y: 视差背景 div, position: fixed 在 viewport
+        // 滚动 scrollY * 0.1 px → 背景 backgroundPositionY 反向微移
+        oncreate: ({ dom }) => {
+          const bgEl = dom.firstElementChild;
+          if (!bgEl || !bgEl.classList.contains('bjxy-page-bg')) return;
+          this._bgParallax = () => {
+            const offset = window.scrollY * 0.1;
+            bgEl.style.backgroundPositionY = `calc(50% - ${offset}px)`;
+          };
+          window.addEventListener('scroll', this._bgParallax, { passive: true });
+          this._bgParallax();
+        },
+        onremove: () => {
+          if (this._bgParallax) {
+            window.removeEventListener('scroll', this._bgParallax);
+            this._bgParallax = null;
+          }
+        },
+      }, [
+        // v0.1.0y: 视差背景 div (固定在 viewport, JS 改 backgroundPositionY)
+        m('div', { class: 'bjxy-page-bg' }),
+
       // ===== 公告条 =====
       // v0.1.0q 修: 删 ELITE badge (辉哥反馈品牌信息 section 中 elite 文字要去掉)
       //   公告条布局调整: badge 删了, slogan 文字移到最左, 链接 + arrow 仍最右
