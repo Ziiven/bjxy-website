@@ -143,6 +143,9 @@ export default class BjxySettings extends ExtensionPage {
 
       // v0.1.0m: 渐变背景 4 色 — 删了 BjxyField-hint 块 (v0.1.0j 加的提示语占一整行
       // 把 grid 2 列布局变 1+1+1+1, 辉哥反馈页面不规整)
+      // v0.1.0z: 加 2 个背景图 fileField, 走 ziven-core COS 上传
+      //   有图 → background: url(...), 渐变不生效
+      //   没图 → 4 色渐变生效 (v0.1.0j+y 视差 fixed viewport)
       m('div', { class: 'BjxySection' }, [
         m('div', { class: 'BjxySection-head' }, '🎨 背景渐变 (浅深双版)'),
         m('div', { class: 'BjxySection-body' }, [
@@ -150,6 +153,9 @@ export default class BjxySettings extends ExtensionPage {
           colorField('浅色模式 - 结束色', 'bjxy_bg_gradient_light_end', '#F7FAFC'),
           colorField('深色模式 - 起始色', 'bjxy_bg_gradient_dark_start', '#0F1419'),
           colorField('深色模式 - 结束色', 'bjxy_bg_gradient_dark_end', '#1A202C'),
+          // v0.1.0z: 背景图 (走 ziven-core COS, 设置了图就不显示渐变)
+          fileField('浅色模式 - 背景图', 'bjxy_bg_image_light_url', '1920×1080 推荐, 留空用渐变'),
+          fileField('深色模式 - 背景图', 'bjxy_bg_image_dark_url', '1920×1080 推荐, 留空用渐变'),
         ]),
       ]),
 

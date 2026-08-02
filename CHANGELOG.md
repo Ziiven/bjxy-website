@@ -461,3 +461,35 @@
 
 ### Commit
 - v0.1.0y: 待 commit
+
+---
+
+## v0.1.0z (2026-08-02) — 背景支持图片上传 (走 ziven-core COS, 有图不显示渐变)
+
+### 改
+- 辉哥 15:50 反馈 "背景加入支持背景图片, 也是上传到cos, 如果设置了背景图片的话就不显示渐变色了"
+
+### 改 3 个文件
+- **extend.php**: 加 2 个 `serializeToForum` 把 setting 推给前台 forum.attributes
+  - `bjxy_bg_image_light_url` — 浅色模式背景图 URL
+  - `bjxy_bg_image_dark_url` — 深色模式背景图 URL
+- **js/src/admin/components/BjxySettings.jsx**: 渐变 section (🎨 背景渐变) 末尾加 2 个 fileField
+  - fileField('浅色模式 - 背景图', 'bjxy_bg_image_light_url', '1920×1080 推荐, 留空用渐变')
+  - fileField('深色模式 - 背景图', 'bjxy_bg_image_dark_url', '1920×1080 推荐, 留空用渐变')
+  - 复用现有 `uploadFile(e, key)` 走 `/bjxy/upload` endpoint → ziven-core COS
+- **js/src/forum/components/BjxyPage.jsx**:
+  - 多读 2 个 setting (`bjxy_bg_image_light_url` / `bjxy_bg_image_dark_url`)
+  - `<style>` 注入块逻辑改成 "有图用图, 没图用渐变":
+    - 浅色: 图 → `url("...") center / cover no-repeat`; 渐变 → `linear-gradient(135deg, ls, le)`
+    - 深色: 图 → `url("...") center / cover no-repeat`; 渐变 → `linear-gradient(135deg, ds, de)`
+  - 视差 fixed viewport 行为保持 (0.1x scrollY), JS 监听依然对图生效
+
+### Playwright 验证 (待做)
+- 0 page error / 0 console error
+- 后台上传 2 张图 (一张浅色, 一张深色)
+- 浅色: background = `url("...") center / cover no-repeat` (不是 linear-gradient)
+- 深色: 同样
+- 滚动 scrollY 视差对图生效 (calc(50% - 50px))
+
+### Commit
+- v0.1.0z: 待 commit

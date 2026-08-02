@@ -96,7 +96,10 @@ return [
         ->serializeToForum('bjxy_bg_gradient_light_start', 'bjxy_bg_gradient_light_start')
         ->serializeToForum('bjxy_bg_gradient_light_end', 'bjxy_bg_gradient_light_end')
         ->serializeToForum('bjxy_bg_gradient_dark_start', 'bjxy_bg_gradient_dark_start')
-        ->serializeToForum('bjxy_bg_gradient_dark_end', 'bjxy_bg_gradient_dark_end'),
+        ->serializeToForum('bjxy_bg_gradient_dark_end', 'bjxy_bg_gradient_dark_end')
+        // v0.1.0z: 背景图 URL (走 ziven-core COS 上传, 设置了图就不显示渐变)
+        ->serializeToForum('bjxy_bg_image_light_url', 'bjxy_bg_image_light_url')
+        ->serializeToForum('bjxy_bg_image_dark_url', 'bjxy_bg_image_dark_url'),
 
     (new Extend\Frontend('admin'))
         ->js(__DIR__ . '/js/dist/admin.js')

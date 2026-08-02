@@ -42,20 +42,34 @@ export default class BjxyPage extends Component {
     //   position: fixed; inset: 0 → 背景永远铺满 viewport (1vh), 不再随 body 拉长
     //   JS 监听 scroll 改 backgroundPositionY 0.1x → 滚动时背景微小视差移动
     //   (辉哥 15:21 反馈 "背景渐变不要从顶部到页面尾部, 维持在可视范围, 滚动时只有微小移动")
+    // v0.1.0z: 加 2 个背景图 settings (走 ziven-core COS 上传)
+    //   有图 → background: url(...), 渐变不生效 (图片优先级高)
+    //   没图 → 4 色渐变生效 (v0.1.0j+y)
     const ls = s('bjxy_bg_gradient_light_start', '#E0EBF8') || '#E0EBF8';
     const le = s('bjxy_bg_gradient_light_end', '#F7FAFC') || '#F7FAFC';
     const ds = s('bjxy_bg_gradient_dark_start', '#0F1419') || '#0F1419';
     const de = s('bjxy_bg_gradient_dark_end', '#1A202C') || '#1A202C';
+    const imgLight = s('bjxy_bg_image_light_url', '');
+    const imgDark = s('bjxy_bg_image_dark_url', '');
 
     return [
-      // v0.1.0j+y: 注入渐变背景 CSS (4 个颜色 settings 拼成 linear-gradient)
-      // 浅色 / 深色模式分别走 [data-theme^="dark"] selector
-      // v0.1.0y 改: 目标从 .bjxy-page 改成 .bjxy-page-bg (position: fixed)
+      // v0.1.0j+y+z: 注入背景 CSS
+      //   浅色 / 深色模式分别走 [data-theme^="dark"] selector
+      //   v0.1.0y 改: 目标从 .bjxy-page 改成 .bjxy-page-bg (position: fixed)
+      //   v0.1.0z 改: 有图用图 (cover + center), 没图用 4 色渐变
       m('style', {
         oncreate: ({ dom }) => {
+          // 浅色: 图 > 渐变
+          const lightBg = imgLight
+            ? `url("${imgLight}") center / cover no-repeat`
+            : `linear-gradient(135deg, ${ls}, ${le})`;
+          // 深色: 图 > 渐变
+          const darkBg = imgDark
+            ? `url("${imgDark}") center / cover no-repeat`
+            : `linear-gradient(135deg, ${ds}, ${de})`;
           dom.textContent = `
-.bjxy-page-bg { background: linear-gradient(135deg, ${ls}, ${le}); }
-[data-theme^="dark"] .bjxy-page-bg { background: linear-gradient(135deg, ${ds}, ${de}); }
+.bjxy-page-bg { background: ${lightBg}; }
+[data-theme^="dark"] .bjxy-page-bg { background: ${darkBg}; }
 `;
         },
       }),
