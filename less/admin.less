@@ -382,3 +382,37 @@
         margin-top: 4px;
     }
 }
+
+// v0.1.0w 修: 办学特色 section 紧凑布局
+//   辉哥反馈 "把'特色卡片'文字去掉, 然后让右边的内容显示完全"
+//   之前 .BjxyField-array 默认 grid-column: 2 只占右半 1fr, 6 个 row 内容挤
+//   修法: 删 "特色卡片" label, 加 .BjxyField-features class 让 less 独立命名空间
+//   .BjxyField-features 跨整行, row 紧凑 (跟教学体系 board 一致)
+//   ⚠️ 不影响 .BjxyField-board 内的 array (那个是 display block, grid-column 不生效)
+.BjxyField-features {
+    // v0.1.0w: 覆盖 .BjxyField-array 的 grid-column: 2
+    //   简写 grid-column: 1 / -1 会被 less 解析成 -1 (除法坑, SOP 79)
+    //   单独写 start/end + !important 强制覆盖 (因为 .BjxyField-array 的 grid-column 简写会重置 end)
+    grid-column-start: 1 !important;
+    grid-column-end: -1 !important;
+    .BjxyField-array-row {
+        gap: 6px;
+        margin-bottom: 4px;
+        input {
+            padding: 4px 8px;
+            font-size: 11px;
+        }
+        .ic-mini {
+            width: 22px;
+            height: 22px;
+            font-size: 11px;
+        }
+        .del {
+            font-size: 11px;
+        }
+    }
+    .BjxyField-array-add {
+        padding: 6px;
+        font-size: 11px;
+    }
+}

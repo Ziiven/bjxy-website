@@ -183,11 +183,11 @@ export default class BjxySettings extends ExtensionPage {
       ]),
 
       // Section 4: 特色
+      // v0.1.0w 改: 删 "特色卡片" label, 改 class BjxyField-features 让 less 单独命名空间
       m('div', { class: 'BjxySection' }, [
         m('div', { class: 'BjxySection-head' }, '✨ 办学特色 (6 个卡片)'),
         m('div', { class: 'BjxySection-body' }, [
-          m('div', { class: 'BjxyField-label' }, '特色卡片'),
-          m('div', { class: 'BjxyField-array' }, [
+          m('div', { class: 'BjxyField-array BjxyField-features' }, [
             this.features.map((f, i) => m('div', { class: 'BjxyField-array-row', key: 'f' + i }, [
               m('div', { class: 'ic-mini' }, f.icon || '★'),
               m('input', { value: f.title, oninput: (e) => { f.title = e.target.value; } }),

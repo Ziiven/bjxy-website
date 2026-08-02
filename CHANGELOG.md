@@ -380,3 +380,28 @@
 ### Commit
 - v0.1.0v: 待 commit
 - dist md5: admin.css `bac74d492b7fa5c908dc8551f4288900`
+
+## v0.1.0w (2026-08-02) — 办学特色 section 跨整行 + 删 "特色卡片" label
+
+### 修
+- 辉哥 15:02 反馈 "办学特色section里面, 把'特色卡片'文字去掉, 然后让右边的内容显示完全"
+- **JSX 改**:
+  - 删 `m('div', { class: 'BjxyField-label' }, '特色卡片')` label
+  - `.BjxyField-array` 加 `BjxyField-features` class (双 class, 让 less 单独命名空间)
+- **less 改**:
+  - 新增 `.BjxyField-features` 块: `grid-column-start: 1 !important; grid-column-end: -1 !important`
+  - 紧凑布局 (跟教学体系 board 一致, font 11px, padding 4px 8px, ic-mini 22x22)
+  - ⚠️ 简写 `grid-column: 1 / -1` 会被 less 解析成除法 -1 (SOP 79 已知坑)
+    用 `grid-column-start: 1 !important; grid-column-end: -1 !important` 分开写
+    + !important 强制覆盖 .BjxyField-array 简写 `grid-column: 2`
+
+### Playwright 验证
+- 办学特色 section: x=286, w=828 (跨整行)
+- gridColumn: "1 / -1" ✅
+- 6 个 row 内容完整显示 (icon + title + emoji + desc + ×)
+- "特色卡片" label 已删 ✅
+
+### Commit
+- v0.1.0w: 待 commit
+- dist md5: admin.css `c37b692820e892e91d15583380892e48`
+- dist md5: admin.js `b59a9c7f2d6fcfcd20dca11b815ea394`
