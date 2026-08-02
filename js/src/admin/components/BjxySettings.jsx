@@ -132,7 +132,6 @@ export default class BjxySettings extends ExtensionPage {
           field('品牌名', 'bjxy_brand_name', '北极雪屿'),
           field('品牌副标', 'bjxy_brand_slogan', '室内滑雪 · 全国连锁'),
           fileField('Logo 图片', 'bjxy_brand_logo_url', 'logo.svg / png (走 ziven-core COS)'),
-          field('ELITE 文字', 'bjxy_elite_text', 'ELITE'),
         ]),
       ]),
 

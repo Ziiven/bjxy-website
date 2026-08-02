@@ -40,7 +40,6 @@ return [
         ->serializeToForum('bjxy_brand_name', 'bjxy_brand_name')
         ->serializeToForum('bjxy_brand_slogan', 'bjxy_brand_slogan')
         ->serializeToForum('bjxy_brand_logo_url', 'bjxy_brand_logo_url')
-        ->serializeToForum('bjxy_elite_text', 'bjxy_elite_text')
         ->serializeToForum('bjxy_hero_title', 'bjxy_hero_title')
         ->serializeToForum('bjxy_hero_subtitle', 'bjxy_hero_subtitle')
         ->serializeToForum('bjxy_hero_banner_light', 'bjxy_hero_banner_light')

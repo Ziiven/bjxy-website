@@ -196,3 +196,27 @@
 - v0.1.0p: 本地 `8a35ee6`
 - v0.1.0p-extra (--bjxy-primary): 本地 `e41866b`
 - 服务器 admin.css md5: `c7fde908444027ee0dd02d8bca6de35e` (236348 bytes)
+
+## v0.1.0q (2026-08-02) — 删 ELITE 文字 (品牌信息 section 清理)
+
+### 修
+- 辉哥反馈品牌信息 section 中 "ELITE 文字" 字段要去掉, 前端展示相关也去掉
+- 删 5 处:
+  - `extend.php` - serializeToForum bjxy_elite_text
+  - `BjxySettings.jsx` - 后台品牌信息 section 的 ELITE 文字输入框
+  - `BjxyPage.jsx` - 前台公告条的 ELITE badge (🏔 ELITE) + DEFAULT_ELITE 常量
+  - `forum.less` - .bjxy-announce-badge 样式
+- 公告条布局调整: 删 badge 后 3 子元素 (slogan span / link a / arrow span), arrow margin-left:auto 仍推最右
+- 0 page error
+
+### Playwright 验证
+- 前台公告条文本: "室内滑雪 · 全国连锁 · 17 级教学体系 · 6 大特色 + 📞 立即咨询 + →"
+- 前台公告条子元素: 3 个 (slogan / link / arrow), 无 .bjxy-announce-badge 元素
+- 后台品牌信息字段: [品牌名, 品牌副标, Logo 图片] (无 ELITE)
+
+### Commit
+- v0.1.0q 主体: 待 commit
+- dist md5: admin.css `c7fde908444027ee0dd02d8bca6de35e` (未变, v0.1.0p 修过)
+- dist md5: forum.css `ab3e518e2f716a964f22396763cb7e7f` (新, badge 样式删了)
+- dist md5: forum.js `cb7ad88be83640e82cba8d6207a560e5` (新)
+- dist md5: admin.js `62ec50a592f82959ed8e0c9dfd0c9b40` (新)

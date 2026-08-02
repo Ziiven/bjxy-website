@@ -9,7 +9,6 @@ import Component from 'flarum/common/Component';
 
 const DEFAULT_BRAND = '北极雪屿';
 const DEFAULT_SLOGAN = '室内滑雪 · 全国连锁';
-const DEFAULT_ELITE = 'ELITE';
 
 export default class BjxyPage extends Component {
   oninit(vnode) {
@@ -46,8 +45,9 @@ export default class BjxyPage extends Component {
       }),
       m('div', { class: 'bjxy-page' }, [
       // ===== 公告条 =====
+      // v0.1.0q 修: 删 ELITE badge (辉哥反馈品牌信息 section 中 elite 文字要去掉)
+      //   公告条布局调整: badge 删了, slogan 文字移到最左, 链接 + arrow 仍最右
       m('div', { class: 'bjxy-announce' }, [
-        m('span', { class: 'bjxy-announce-badge' }, '🏔 ' + s('bjxy_elite_text', DEFAULT_ELITE)),
         m('span', null, s('bjxy_brand_slogan', DEFAULT_SLOGAN) + ' · 17 级教学体系 · 6 大特色'),
         m('a', { href: '#contact', class: 'bjxy-announce-link' }, '📞 立即咨询'),
         m('span', { class: 'bjxy-announce-arrow' }, '→'),
