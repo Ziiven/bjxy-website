@@ -220,3 +220,42 @@
 - dist md5: forum.css `ab3e518e2f716a964f22396763cb7e7f` (新, badge 样式删了)
 - dist md5: forum.js `cb7ad88be83640e82cba8d6207a560e5` (新)
 - dist md5: admin.js `62ec50a592f82959ed8e0c9dfd0c9b40` (新)
+
+## v0.1.0r (2026-08-02) — 教学体系 + 等级项 可后台添加/编辑/删除
+
+### 修 / 增
+- 辉哥 10:00 反馈 "教学体系, 以及里面的等级项, 也该成为可以自行添加编辑删除的"
+- **admin BjxySettings.jsx**:
+  - 单板/双板数组 加 `+ 添加单板级` / `+ 添加双板级` 按钮 (之前只有 features 数组有, 教学体系缺)
+  - level 字段 改 select (PRIMARY/INTERMEDIATE/ADVANCED 三选一, 避免拼错)
+- **extend.php content() callback**:
+  - 之前永远用 hard-coded `CurriculumData::getSingleBoard()` 等, 即使 admin 改了 setting
+    前台还是显示 hard-coded 默认 (CurriculumData 是 const 不会变)
+  - 修法: 通过 `app(SettingsRepositoryInterface::class)` 拿 settings repo, JSON decode
+    `bjxy_curriculum_single_json` / `bjxy_curriculum_double_json` / `bjxy_features_json`
+    不存在或解析失败时 fallback 到 CurriculumData 默认
+- **BjxyPage.jsx**:
+  - h2 改动态: `(curriculum.single.length + curriculum.double.length) + ' 级教学体系'`
+  - 之前 hard-coded "17 级", 用户加/删级后数字不对
+
+### Playwright 验证 (0 page error)
+- 单板 (9 级) tab / 双板 (9 级) tab, 都有添加按钮
+- level 字段 17 个 select, options 都有 PRIMARY/INTERMEDIATE/ADVANCED
+- 点击 + 添加单板级 → 保存 → 刷新后 admin 仍然显示新等级, 前台 /bjxy 显示 "新单板等级" 卡片
+- h2 动态: 当前 9+9=18 级 → "18 级教学体系"
+- 删最后一行: 6 → 5 ✅
+
+### SOP 沉淀 (新, SOP 78)
+- **SOP 78. Flarum 2.0 admin 配置 array, 前台展示必须从 settings 读, 不用 hard-coded**:
+  - 之前 extend.php content() callback 写死 `CurriculumData::getSingleBoard()` 等
+  - 即使 admin POST 保存了 bjxy_curriculum_single_json setting, 前台还是 hard-coded 默认
+  - 修法: content() 通过 `app(SettingsRepositoryInterface::class)` 拿 settings, JSON decode
+  - 影响: bjxy 教学体系 + 特色全部配置化, 增删改生效
+  - 配套: BjxyPage h2 数字要动态 (curriculum.single.length + curriculum.double.length)
+
+### Commit
+- v0.1.0r: 待 commit
+- dist md5: admin.js `5dbbe5f9635db8051505309983675a71`
+- dist md5: admin.css `c7fde908444027ee0dd02d8bca6de35e` (v0.1.0p 修过, 未变)
+- dist md5: forum.js `03fcc0e69748c15898621f7ec5a8697a`
+- dist md5: forum.css `ab3e518e2f716a964f22396763cb7e7f` (v0.1.0q 修过, 未变)

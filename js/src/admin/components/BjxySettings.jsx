@@ -198,28 +198,53 @@ export default class BjxySettings extends ExtensionPage {
       ]),
 
       // Section 5: 教学体系
+      // v0.1.0r 修: 教学体系 + 等级项 可后台添加/编辑/删除
+      //   - single/double 数组加 + 添加等级按钮 (辉哥 10:00 反馈缺添加)
+      //   - level 字段改 select (PRIMARY/INTERMEDIATE/ADVANCED 三选一, 避免拼错)
       m('div', { class: 'BjxySection' }, [
-        m('div', { class: 'BjxySection-head' }, '📚 教学体系 (单板 8 + 双板 9)'),
+        m('div', { class: 'BjxySection-head' }, '📚 教学体系 (单板 ' + this.single.length + ' + 双板 ' + this.double.length + ')'),
         m('div', { class: 'BjxySection-body' }, [
           m('div', { class: 'BjxyField-label' }, '单板 (' + this.single.length + ' 级)'),
           m('div', { class: 'BjxyField-array' }, [
             this.single.map((l, i) => m('div', { class: 'BjxyField-array-row', key: 's' + i }, [
               m('div', { class: 'ic-mini' }, i + 1),
-              m('input', { value: l.level, oninput: (e) => { l.level = e.target.value; } }),
+              m('select', {
+                value: l.level,
+                onchange: (e) => { l.level = e.target.value; },
+              }, [
+                m('option', { value: 'PRIMARY' }, 'PRIMARY'),
+                m('option', { value: 'INTERMEDIATE' }, 'INTERMEDIATE'),
+                m('option', { value: 'ADVANCED' }, 'ADVANCED'),
+              ]),
               m('input', { value: l.name, oninput: (e) => { l.name = e.target.value; } }),
               m('input', { value: l.desc, oninput: (e) => { l.desc = e.target.value; } }),
               m('button', { class: 'del', onclick: () => { this.single.splice(i, 1); m.redraw(); } }, '×'),
             ])),
+            m('div', {
+              class: 'BjxyField-array-add',
+              onclick: () => { this.single.push({ level: 'PRIMARY', name: '新单板等级', desc: '' }); m.redraw(); },
+            }, '+ 添加单板级'),
           ]),
           m('div', { class: 'BjxyField-label' }, '双板 (' + this.double.length + ' 级)'),
           m('div', { class: 'BjxyField-array' }, [
             this.double.map((l, i) => m('div', { class: 'BjxyField-array-row', key: 'd' + i }, [
               m('div', { class: 'ic-mini' }, i + 1),
-              m('input', { value: l.level, oninput: (e) => { l.level = e.target.value; } }),
+              m('select', {
+                value: l.level,
+                onchange: (e) => { l.level = e.target.value; },
+              }, [
+                m('option', { value: 'PRIMARY' }, 'PRIMARY'),
+                m('option', { value: 'INTERMEDIATE' }, 'INTERMEDIATE'),
+                m('option', { value: 'ADVANCED' }, 'ADVANCED'),
+              ]),
               m('input', { value: l.name, oninput: (e) => { l.name = e.target.value; } }),
               m('input', { value: l.desc, oninput: (e) => { l.desc = e.target.value; } }),
               m('button', { class: 'del', onclick: () => { this.double.splice(i, 1); m.redraw(); } }, '×'),
             ])),
+            m('div', {
+              class: 'BjxyField-array-add',
+              onclick: () => { this.double.push({ level: 'PRIMARY', name: '新双板等级', desc: '' }); m.redraw(); },
+            }, '+ 添加双板级'),
           ]),
         ]),
       ]),

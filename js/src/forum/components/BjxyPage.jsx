@@ -123,9 +123,12 @@ export default class BjxyPage extends Component {
       ]),
 
       // ===== 教学体系 =====
+      // v0.1.0r 修: 教学体系 + 等级项 可后台配置 (SOP 78), h2 改成动态总级数
+      //   之前 hard-coded "17 级教学体系", 实际 8+9=17 是默认, 用户加 / 删级后不对
+      //   现在用 (curriculum.single.length + curriculum.double.length) 动态算
       m('section', { class: 'bjxy-section', id: 'curriculum' }, [
         m('div', { class: 'bjxy-sub' }, 'CURRICULUM'),
-        m('h2', null, '17 级教学体系'),
+        m('h2', null, (curriculum.single.length + curriculum.double.length) + ' 级教学体系'),
         m('div', { class: 'bjxy-curri-tabs' }, [
           m('div', {
             class: 'bjxy-curri-tab' + (this.activeBoard === 'single' ? ' active' : ''),

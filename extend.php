@@ -10,6 +10,7 @@ namespace Ziiven\BjxyWebsite;
 
 use Flarum\Extend;
 use Flarum\Frontend\Document;
+use Flarum\Settings\SettingsRepositoryInterface;
 use Psr\Http\Message\ServerRequestInterface;
 
 return [
@@ -21,13 +22,28 @@ return [
         ->route('/bjxy', 'bjxy.website', function (Document $document, ServerRequestInterface $request) {
             return $document;
         })
-        // 17 级教学体系 + 6 特色 默认数据注入到前端 (Flarum 2.0 content() 接收 Document, mutate payload)
+        // v0.1.0r 修: 教学体系 + 特色 从 settings 读用户配置, fallback 用 CurriculumData 默认
+        //   之前永远用 hard-coded CurriculumData::getSingleBoard() 等, 即使 admin
+        //   POST 保存了 bjxy_curriculum_single_json setting, 前台还是显示 hard-coded 默认
+        //   修法: content() callback 通过 app() helper 拿 SettingsRepositoryInterface
+        //   (content() 运行时已经 boot 完, container setInstance OK), JSON decode user 设置
+        //   不存在或解析失败时 fallback 到 CurriculumData 默认
         ->content(function (Document $document) {
+            /** @var SettingsRepositoryInterface $settings */
+            $settings = app(SettingsRepositoryInterface::class);
+
+            $decode = function ($key, $default) use ($settings) {
+                $raw = $settings->get($key);
+                if (!$raw) return $default;
+                $decoded = json_decode($raw, true);
+                return is_array($decoded) && count($decoded) > 0 ? $decoded : $default;
+            };
+
             $document->payload['bjxyCurriculum'] = [
-                'single' => \Ziiven\BjxyWebsite\CurriculumData::getSingleBoard(),
-                'double' => \Ziiven\BjxyWebsite\CurriculumData::getDoubleBoard(),
+                'single' => $decode('bjxy_curriculum_single_json', \Ziiven\BjxyWebsite\CurriculumData::getSingleBoard()),
+                'double' => $decode('bjxy_curriculum_double_json', \Ziiven\BjxyWebsite\CurriculumData::getDoubleBoard()),
             ];
-            $document->payload['bjxyFeatures'] = \Ziiven\BjxyWebsite\CurriculumData::getFeatures();
+            $document->payload['bjxyFeatures'] = $decode('bjxy_features_json', \Ziiven\BjxyWebsite\CurriculumData::getFeatures());
         }),
 
     // v0.1.0l 修: 把 bjxy_* settings 序列化到 forum API document attributes
