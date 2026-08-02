@@ -228,21 +228,20 @@ export default class BjxySettings extends ExtensionPage {
             m('div', { class: 'BjxyField-array' }, [
               board.levels.map((l, i) => m('div', { class: 'BjxyField-array-row', key: 'b' + bi + 'l' + i }, [
                 m('div', { class: 'ic-mini' }, i + 1),
-                m('select', {
+                // v0.1.0x 改: level 改 input 让用户自行输入 (之前是 select, 限制 3 种值)
+                m('input', {
+                  class: 'BjxyField-level-input',
                   value: l.level,
-                  onchange: (e) => { l.level = e.target.value; },
-                }, [
-                  m('option', { value: 'PRIMARY' }, 'PRIMARY'),
-                  m('option', { value: 'INTERMEDIATE' }, 'INTERMEDIATE'),
-                  m('option', { value: 'ADVANCED' }, 'ADVANCED'),
-                ]),
+                  placeholder: '等级 (PRIMARY/初级/...)',
+                  oninput: (e) => { l.level = e.target.value; },
+                }),
                 m('input', { value: l.name, oninput: (e) => { l.name = e.target.value; } }),
                 m('input', { value: l.desc, oninput: (e) => { l.desc = e.target.value; } }),
                 m('button', { class: 'del', onclick: () => { board.levels.splice(i, 1); m.redraw(); } }, '×'),
               ])),
               m('div', {
                 class: 'BjxyField-array-add',
-                onclick: () => { board.levels.push({ level: 'PRIMARY', name: '新等级', desc: '' }); m.redraw(); },
+                onclick: () => { board.levels.push({ level: '初级', name: '新等级', desc: '' }); m.redraw(); },
               }, '+ 添加等级'),
             ]),
           ])),

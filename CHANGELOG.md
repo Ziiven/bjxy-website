@@ -405,3 +405,22 @@
 - v0.1.0w: 待 commit
 - dist md5: admin.css `c37b692820e892e91d15583380892e48`
 - dist md5: admin.js `b59a9c7f2d6fcfcd20dca11b815ea394`
+
+## v0.1.0x (2026-08-02) — 教学体系 level 改 input 让用户自行输入
+
+### 修
+- 辉哥反馈 "教学体系section中的 primary,intermediate这些不要做成下拉选择框, 做成输入框让用户可以自行输入"
+- v0.1.0r 改的 select 限制 3 种值 (PRIMARY/INTERMEDIATE/ADVANCED), 辉哥想自定义
+- **改 1 处**:
+  - `BjxySettings.jsx` 教学体系 row 的 level 字段 从 `<select>` 改 `<input>` (class: `BjxyField-level-input`)
+  - 新加等级的默认值从 'PRIMARY' 改 '初级' (中文更直观)
+- 旧数据 (用户已经存的 PRIMARY/INTERMEDIATE/ADVANCED 字符串) 继续生效, 加载时显示为 input 文字
+
+### Playwright 验证
+- 教学体系 row 字段: 序号(20px) + level INPUT(243px) + name INPUT + desc INPUT + × (32px)
+- level 字段是 input 不是 select ✅
+- 改 'PRIMARY' → '初级' 后保存, 状态保留 ✅
+
+### Commit
+- v0.1.0x: 待 commit
+- dist md5: admin.js `7de8afe7f225eb1d11e297e8284f48d7`
