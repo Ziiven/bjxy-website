@@ -91,6 +91,8 @@ return [
         ->serializeToForum('bjxy_contact_phone', 'bjxy_contact_phone')
         ->serializeToForum('bjxy_contact_wechat', 'bjxy_contact_wechat')
         ->serializeToForum('bjxy_contact_email', 'bjxy_contact_email')
+        // v0.1.0ab: footer icp 备案号 (后台可设, 前台 footer 渲染)
+        ->serializeToForum('bjxy_icp_number', 'bjxy_icp_number')
         ->serializeToForum('bjxy_reviews_html', 'bjxy_reviews_html')
         ->serializeToForum('bjxy_students_html', 'bjxy_students_html')
         ->serializeToForum('bjxy_bg_gradient_light_start', 'bjxy_bg_gradient_light_start')

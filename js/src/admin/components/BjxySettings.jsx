@@ -332,6 +332,15 @@ export default class BjxySettings extends ExtensionPage {
         ]),
       ]),
 
+      // v0.1.0ab: Section 10 页脚 / 备案号
+      //   之前 footer 备案号 hard-coded '2026xxxxxx', 辉哥要求后台可设置
+      m('div', { class: 'BjxySection' }, [
+        m('div', { class: 'BjxySection-head' }, '🦶 页脚 / 备案号'),
+        m('div', { class: 'BjxySection-body' }, [
+          field('ICP 备案号', 'bjxy_icp_number', '2026xxxxxx'),
+        ]),
+      ]),
+
       m('div', { class: 'BjxySavebar' }, [
         m('button', { class: 'btn-secondary', onclick: () => m.redraw() }, '取消'),
         m('button', {

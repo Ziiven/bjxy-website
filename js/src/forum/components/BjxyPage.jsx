@@ -253,8 +253,10 @@ export default class BjxyPage extends Component {
       ]),
 
       // ===== footer =====
+      // v0.1.0ab 改: 备案号从 bjxy_icp_number setting 读 (后台可设)
+      //   留空时 fallback 到默认 '2026xxxxxx' (跟之前 hard-coded 一致, 兼容旧部署)
       m('footer', { class: 'bjxy-footer' }, [
-        m('span', null, '© ' + new Date().getFullYear() + ' ' + s('bjxy_brand_name', DEFAULT_BRAND) + ' · ICP 备 2026xxxxxx 号'),
+        m('span', null, '© ' + new Date().getFullYear() + ' ' + s('bjxy_brand_name', DEFAULT_BRAND) + ' · ICP 备 ' + (s('bjxy_icp_number', '2026xxxxxx') || '2026xxxxxx') + ' 号'),
       ]),
       ]),
     ];

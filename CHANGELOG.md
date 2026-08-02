@@ -534,3 +534,29 @@
 
 ### Commit
 - v0.1.0aa: 待 commit
+
+---
+
+## v0.1.0ab (2026-08-02) — ICP 备案号后台可设 + footer 背景深色模式独立
+
+### 改
+- 辉哥 16:18 反馈 "前端尾部icp备案号那块, 要求备案号可在后台设置. 而且目前备案号那块的背景颜色在深色模式下是白色的"
+
+### 改 4 个文件
+- **extend.php**: 加 `bjxy_icp_number` serializeToForum 让前台能读到
+- **js/src/forum/components/BjxyPage.jsx**: footer 改读 `bjxy_icp_number` setting
+  - 留空 fallback 到 '2026xxxxxx' (跟之前 hard-coded 一致, 兼容旧部署)
+- **js/src/admin/components/BjxySettings.jsx**: 加 Section 10 "🦶 页脚 / 备案号"
+  - field('ICP 备案号', 'bjxy_icp_number', '2026xxxxxx')
+- **less/forum.less**: footer 背景 + 文字 走独立 `--bjxy-footer-bg` (#1A202C) / `--bjxy-footer-color` (#FFFFFF)
+  - 浅深双版都设同样的 var, 永不变白色
+  - 之前用 `var(--bjxy-text)` 当背景, 浅色下 #1A202C OK, 深色下变 #E2E8F0 (白色), 跟深色页面不搭
+
+### Playwright 验证 (待做)
+- 0 page error / 0 console error
+- 浅色 + 深色 footer 背景都是 #1A202C (深色), 文字 #FFFFFF (白色)
+- 后台改 bjxy_icp_number → 前台 footer 同步更新
+- 留空时 footer 仍显示 '2026xxxxxx' (fallback)
+
+### Commit
+- v0.1.0ab: 待 commit

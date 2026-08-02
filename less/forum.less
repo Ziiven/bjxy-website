@@ -33,6 +33,10 @@
     --bjxy-bg-soft: #F7FAFC;
     --bjxy-text-inverse: #FFFFFF;
     --bjxy-shadow: 0 8px 30px rgba(11, 36, 71, 0.08);
+    // v0.1.0ab: footer 背景 + 文字 永远深底白字, 浅深双版一致
+    //   之前用 var(--bjxy-text) 当背景, 浅色下 #1A202C OK, 深色下变 #E2E8F0 (白色), 跟深色页面不搭
+    --bjxy-footer-bg: #1A202C;
+    --bjxy-footer-color: #FFFFFF;
 }
 
 // ===== Dark theme (Flarum [data-theme^=dark]) =====
@@ -49,6 +53,9 @@
     --bjxy-bg-soft: #1A202C;
     --bjxy-text-inverse: #1A202C;
     --bjxy-shadow: 0 8px 30px rgba(0, 0, 0, 0.5);
+    // v0.1.0ab: footer 浅深一致, 永不变白色
+    --bjxy-footer-bg: #1A202C;
+    --bjxy-footer-color: #FFFFFF;
 }
 
 // ===== 基础 =====
@@ -545,8 +552,9 @@
 // ===== Footer =====
 .bjxy-footer {
     padding: 32px;
-    background: var(--bjxy-text);
-    color: var(--bjxy-bg);
+    // v0.1.0ab 改: 背景 + 文字 走独立 --bjxy-footer-bg/color (浅深双版一致, 永不变白色)
+    background: var(--bjxy-footer-bg);
+    color: var(--bjxy-footer-color);
     text-align: center;
     font-size: 12px;
     margin-top: 48px;
