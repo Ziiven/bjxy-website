@@ -298,3 +298,32 @@
 - dist md5: admin.js `d9b3f186d7d5c3a1aab6a3c0e6d04671`
 - dist md5: admin.css `8868395d2e30003eb8aa919440b3ccfe`
 - dist md5: forum.js `8d204dcea1f211d5cfdb291b25e2e574`
+
+## v0.1.0t (2026-08-02) — 教学体系移动端响应式 (max-width: 768px)
+
+### 修
+- 辉哥 14:10 反馈 "教学体系这块里面的配置, 在移动端显示不全"
+- 之前 `.BjxyField-array-row` 5 列 grid `30px 1fr 1fr 1fr 32px` 在窄屏把 4 个 input 列压成 141px,
+  select 跟 input 内容被截断, name/desc 完全看不到 (溢出屏幕外)
+- 修法: 加 `@media (max-width: 768px)` 块改响应式
+  - `.BjxyField-array-row` 改 3 列 `26px 1fr 28px` (序号+select+×)
+  - 2 个 input 用 `grid-column-start: 1; grid-column-end: -1` 跨整行堆叠
+  - 每个 row 单独 card 风格 (border 包裹)
+  - `.BjxySection-body` 改单列布局, `.BjxyField-board-head` 改 wrap
+
+### SOP 沉淀 (新, SOP 79)
+- **SOP 79. Flarum admin less 响应式 2 个坑**:
+  1. **wikimedia/less.php 5.x 不支持嵌套 @media** (vendor Flarum 2.0 用 less.php 不是 less-js),
+     必须用展开写法: 顶层 `@media (max-width: 768px) { .BjxySettings .X { ... } }`
+  2. **less 把 `grid-column: 1 / -1` 解析成除法 (1 / -1 = -1)**,
+     必须分开写 `grid-column-start: 1; grid-column-end: -1`
+  3. **必须放文件最末尾**, CSS cascade 后写 win, 否则会被普通选择器覆盖
+
+### Playwright 验证 (3 个 viewport)
+- **1280px (desktop)**: rowGrid `30px 189.328px 189.328px 189.328px 32px` (5 列基础) ✅
+- **768px (tablet)**: rowGrid `26px 618px 28px` (3 列响应式), name/desc 各自跨整行 ✅
+- **390px (mobile)**: rowGrid `26px 240px 28px` (3 列), 全部内容可见, 0 溢出 ✅
+
+### Commit
+- v0.1.0t: 待 commit
+- dist md5: admin.css `4cbcafc53adefe7598c7ff7ad601e450` (新)
