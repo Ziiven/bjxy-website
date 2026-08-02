@@ -15,7 +15,9 @@ export default class BjxyPage extends Component {
     super.oninit(vnode);
     this.coaches = [];
     this.loadingCoaches = true;
-    this.activeBoard = 'single';
+    // v0.1.0s 改: activeBoard 从 string 'single' 改成 index (0/1/2...)
+    //   因为现在 boards 数组任意多类型, 不再固定 2 个
+    this.activeBoard = 0;
   }
 
   view() {
@@ -23,7 +25,15 @@ export default class BjxyPage extends Component {
     //   forum.attributes, 前台 app.forum.attribute('bjxy_*') 直接拿到 (跟走 vendor 一样)
     //   之前 v0.1.0k 走 content() payload hack 失败 (container null), 现在用 vendor 正规 API
     const s = (key, fallback) => app.forum.attribute(key) || fallback;
-    const curriculum = (app.data && app.data.bjxyCurriculum) || { single: [], double: [] };
+    // v0.1.0s 改: curriculum 从 {single, double} 重构成 boards array
+    //   兼容旧 data: 如果没 boards 字段但有 single/double, 自动转成 2 个 board
+    const curriculumRaw = (app.data && app.data.bjxyCurriculum) || {};
+    const curriculum = {
+      boards: Array.isArray(curriculumRaw.boards) ? curriculumRaw.boards : [
+        { name: '单板', levels: curriculumRaw.single || [] },
+        { name: '双板', levels: curriculumRaw.double || [] },
+      ],
+    };
     const features = (app.data && app.data.bjxyFeatures) || [];
     const reviewsHtml = s('bjxy_reviews_html', '');
     const studentsHtml = s('bjxy_students_html', '');
@@ -48,7 +58,7 @@ export default class BjxyPage extends Component {
       // v0.1.0q 修: 删 ELITE badge (辉哥反馈品牌信息 section 中 elite 文字要去掉)
       //   公告条布局调整: badge 删了, slogan 文字移到最左, 链接 + arrow 仍最右
       m('div', { class: 'bjxy-announce' }, [
-        m('span', null, s('bjxy_brand_slogan', DEFAULT_SLOGAN) + ' · 17 级教学体系 · 6 大特色'),
+        m('span', null, s('bjxy_brand_slogan', DEFAULT_SLOGAN) + ' · ' + curriculum.boards.reduce((sum, b) => sum + b.levels.length, 0) + ' 级教学体系 · ' + features.length + ' 大特色'),
         m('a', { href: '#contact', class: 'bjxy-announce-link' }, '📞 立即咨询'),
         m('span', { class: 'bjxy-announce-arrow' }, '→'),
       ]),
@@ -123,24 +133,21 @@ export default class BjxyPage extends Component {
       ]),
 
       // ===== 教学体系 =====
-      // v0.1.0r 修: 教学体系 + 等级项 可后台配置 (SOP 78), h2 改成动态总级数
-      //   之前 hard-coded "17 级教学体系", 实际 8+9=17 是默认, 用户加 / 删级后不对
-      //   现在用 (curriculum.single.length + curriculum.double.length) 动态算
+      // v0.1.0s 改: 教学体系类型任意多 (boards 数组), tabs 从 boards 动态渲染
+      //   之前 hard-coded 单板/双板, 现在可以是雪橇/冰球/自由式等任意类型
+      //   兼容旧 {single, double} data (没 boards 字段时自动转 2 个 board)
       m('section', { class: 'bjxy-section', id: 'curriculum' }, [
         m('div', { class: 'bjxy-sub' }, 'CURRICULUM'),
-        m('h2', null, (curriculum.single.length + curriculum.double.length) + ' 级教学体系'),
+        m('h2', null, curriculum.boards.reduce((sum, b) => sum + b.levels.length, 0) + ' 级教学体系'),
         m('div', { class: 'bjxy-curri-tabs' }, [
-          m('div', {
-            class: 'bjxy-curri-tab' + (this.activeBoard === 'single' ? ' active' : ''),
-            onclick: () => { this.activeBoard = 'single'; },
-          }, '单板 (' + (curriculum.single ? curriculum.single.length : 0) + ' 级)'),
-          m('div', {
-            class: 'bjxy-curri-tab' + (this.activeBoard === 'double' ? ' active' : ''),
-            onclick: () => { this.activeBoard = 'double'; },
-          }, '双板 (' + (curriculum.double ? curriculum.double.length : 0) + ' 级)'),
+          curriculum.boards.map((b, i) => m('div', {
+            class: 'bjxy-curri-tab' + (this.activeBoard === i ? ' active' : ''),
+            onclick: () => { this.activeBoard = i; },
+            key: 'tab' + i,
+          }, b.name + ' (' + b.levels.length + ' 级)')),
         ]),
         m('div', { class: 'bjxy-curri-list' },
-          (this.activeBoard === 'single' ? curriculum.single : curriculum.double || []).map((l, i) => m('div', { class: 'bjxy-level-card', key: 'c' + i }, [
+          (curriculum.boards[this.activeBoard] ? curriculum.boards[this.activeBoard].levels : []).map((l, i) => m('div', { class: 'bjxy-level-card', key: 'c' + i }, [
             m('div', { class: 'bjxy-level-num' }, i + 1),
             m('div', { class: 'bjxy-level-lvl' }, l.level || ''),
             m('div', { class: 'bjxy-level-name' }, l.name || ''),

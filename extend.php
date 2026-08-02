@@ -28,6 +28,9 @@ return [
         //   修法: content() callback 通过 app() helper 拿 SettingsRepositoryInterface
         //   (content() 运行时已经 boot 完, container setInstance OK), JSON decode user 设置
         //   不存在或解析失败时 fallback 到 CurriculumData 默认
+        // v0.1.0s 改: 教学体系从 {single, double} 重构成 boards array
+        //   优先读 bjxy_curriculum_boards_json (新格式), fallback 兼容旧 single/double
+        //   都没有时用 CurriculumData 默认 (单板 + 双板)
         ->content(function (Document $document) {
             /** @var SettingsRepositoryInterface $settings */
             $settings = app(SettingsRepositoryInterface::class);
@@ -39,10 +42,23 @@ return [
                 return is_array($decoded) && count($decoded) > 0 ? $decoded : $default;
             };
 
-            $document->payload['bjxyCurriculum'] = [
-                'single' => $decode('bjxy_curriculum_single_json', \Ziiven\BjxyWebsite\CurriculumData::getSingleBoard()),
-                'double' => $decode('bjxy_curriculum_double_json', \Ziiven\BjxyWebsite\CurriculumData::getDoubleBoard()),
-            ];
+            $boardsRaw = $settings->get('bjxy_curriculum_boards_json');
+            $boards = null;
+            if ($boardsRaw) {
+                $decoded = json_decode($boardsRaw, true);
+                if (is_array($decoded) && count($decoded) > 0) $boards = $decoded;
+            }
+            if (!$boards) {
+                // 兼容旧数据: single/double → boards
+                $single = $decode('bjxy_curriculum_single_json', \Ziiven\BjxyWebsite\CurriculumData::getSingleBoard());
+                $double = $decode('bjxy_curriculum_double_json', \Ziiven\BjxyWebsite\CurriculumData::getDoubleBoard());
+                $boards = [
+                    ['name' => '单板', 'levels' => $single],
+                    ['name' => '双板', 'levels' => $double],
+                ];
+            }
+
+            $document->payload['bjxyCurriculum'] = ['boards' => $boards];
             $document->payload['bjxyFeatures'] = $decode('bjxy_features_json', \Ziiven\BjxyWebsite\CurriculumData::getFeatures());
         }),
 

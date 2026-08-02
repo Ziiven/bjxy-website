@@ -17,26 +17,32 @@ const DEFAULT_FEATURES = [
   { icon: '🏔️', title: '学玩用赛', desc: '全生态滑雪服务' },
 ];
 
-const DEFAULT_SINGLE = [
-  { level: 'PRIMARY', name: '直滑降后刃推坡', desc: '能够熟练的做直滑降练习...' },
-  { level: 'PRIMARY', name: '前刃推坡', desc: '能够利用前刃做到匀速上滑...' },
-  { level: 'PRIMARY', name: '前后刃落叶飘', desc: '在前后刃落叶飘的过程当中...' },
-  { level: 'INTERMEDIATE', name: '辅助换刃', desc: '在借助扶杆 + 拉绳 + 拉手...' },
-  { level: 'INTERMEDIATE', name: '基础转弯', desc: '不借助外力, S 形搓雪...' },
-  { level: 'INTERMEDIATE', name: '标准转弯', desc: '动作有明显引申, 滑行流畅...' },
-  { level: 'ADVANCED', name: '刻滑', desc: '不搓雪的刻滑转弯...' },
-  { level: 'ADVANCED', name: '自由式', desc: '流畅正反脚滑行, Ollie...' },
-];
-const DEFAULT_DOUBLE = [
-  { level: 'PRIMARY', name: '犁式刹车', desc: '熟悉滑雪基本站姿...' },
-  { level: 'PRIMARY', name: '基础犁式转弯', desc: '在犁式刹车基础上...' },
-  { level: 'PRIMARY', name: '高级犁式转弯', desc: '熟练基础犁式转弯的基础上...' },
-  { level: 'INTERMEDIATE', name: '半犁式转弯', desc: '稳定流畅的犁式转弯后...' },
-  { level: 'INTERMEDIATE', name: '高级半犁式', desc: '熟练犁式转弯...' },
-  { level: 'INTERMEDIATE', name: '基础平行式', desc: '能够在转弯的任何阶段保持双板平行...' },
-  { level: 'ADVANCED', name: '中级平行式', desc: '平行转弯流畅, 有较好的滑行节奏...' },
-  { level: 'ADVANCED', name: '高级平行式', desc: '精准的控制雪板刃的使用...' },
-  { level: 'ADVANCED', name: '全地域大神', desc: '单脚滑行, 豚跳, 180 度旋转...' },
+// v0.1.0s 改: 教学体系从 2 个固定 array (single/double) 重构成 boards 数组
+//   每个 board: {name, levels: [{level, name, desc}, ...]}
+//   默认 2 个 board (单板 + 双板), 跟 v0.1.0r 兼容
+//   用户可后台增删 board 本身 (雪橇/冰球/自由式等)
+const DEFAULT_BOARDS = [
+  { name: '单板', levels: [
+    { level: 'PRIMARY', name: '直滑降后刃推坡', desc: '能够熟练的做直滑降练习...' },
+    { level: 'PRIMARY', name: '前刃推坡', desc: '能够利用前刃做到匀速上滑...' },
+    { level: 'PRIMARY', name: '前后刃落叶飘', desc: '在前后刃落叶飘的过程当中...' },
+    { level: 'INTERMEDIATE', name: '辅助换刃', desc: '在借助扶杆 + 拉绳 + 拉手...' },
+    { level: 'INTERMEDIATE', name: '基础转弯', desc: '不借助外力, S 形搓雪...' },
+    { level: 'INTERMEDIATE', name: '标准转弯', desc: '动作有明显引申, 滑行流畅...' },
+    { level: 'ADVANCED', name: '刻滑', desc: '不搓雪的刻滑转弯...' },
+    { level: 'ADVANCED', name: '自由式', desc: '流畅正反脚滑行, Ollie...' },
+  ]},
+  { name: '双板', levels: [
+    { level: 'PRIMARY', name: '犁式刹车', desc: '熟悉滑雪基本站姿...' },
+    { level: 'PRIMARY', name: '基础犁式转弯', desc: '在犁式刹车基础上...' },
+    { level: 'PRIMARY', name: '高级犁式转弯', desc: '熟练基础犁式转弯的基础上...' },
+    { level: 'INTERMEDIATE', name: '半犁式转弯', desc: '稳定流畅的犁式转弯后...' },
+    { level: 'INTERMEDIATE', name: '高级半犁式', desc: '熟练犁式转弯...' },
+    { level: 'INTERMEDIATE', name: '基础平行式', desc: '能够在转弯的任何阶段保持双板平行...' },
+    { level: 'ADVANCED', name: '中级平行式', desc: '平行转弯流畅, 有较好的滑行节奏...' },
+    { level: 'ADVANCED', name: '高级平行式', desc: '精准的控制雪板刃的使用...' },
+    { level: 'ADVANCED', name: '全地域大神', desc: '单脚滑行, 豚跳, 180 度旋转...' },
+  ]},
 ];
 
 export default class BjxySettings extends ExtensionPage {
@@ -46,8 +52,8 @@ export default class BjxySettings extends ExtensionPage {
     this.saving = false;
     this.data = {};
     this.features = JSON.parse(JSON.stringify(DEFAULT_FEATURES));
-    this.single = JSON.parse(JSON.stringify(DEFAULT_SINGLE));
-    this.double = JSON.parse(JSON.stringify(DEFAULT_DOUBLE));
+    // v0.1.0s 改: this.boards array 替代 this.single / this.double
+    this.boards = JSON.parse(JSON.stringify(DEFAULT_BOARDS));
     this.coachGroupIds = [];
     this.allGroups = [];
     this.loadSettings();
@@ -198,54 +204,52 @@ export default class BjxySettings extends ExtensionPage {
       ]),
 
       // Section 5: 教学体系
-      // v0.1.0r 修: 教学体系 + 等级项 可后台添加/编辑/删除
-      //   - single/double 数组加 + 添加等级按钮 (辉哥 10:00 反馈缺添加)
-      //   - level 字段改 select (PRIMARY/INTERMEDIATE/ADVANCED 三选一, 避免拼错)
+      // v0.1.0s 改: 教学体系类型任意多 (boards array), 之前 fixed 单板/双板
+      //   - 每个 board 是 {name, levels: [...]}, 用户可增删 board 本身 (雪橇/冰球/自由式等)
+      //   - 每个 board 内 levels 可增删改 (v0.1.0r 实现)
+      //   - level 字段 select 三选一 (PRIMARY/INTERMEDIATE/ADVANCED)
       m('div', { class: 'BjxySection' }, [
-        m('div', { class: 'BjxySection-head' }, '📚 教学体系 (单板 ' + this.single.length + ' + 双板 ' + this.double.length + ')'),
+        m('div', { class: 'BjxySection-head' }, '📚 教学体系 (' + this.boards.length + ' 种类型 / 共 ' + this.boards.reduce((s, b) => s + b.levels.length, 0) + ' 级)'),
         m('div', { class: 'BjxySection-body' }, [
-          m('div', { class: 'BjxyField-label' }, '单板 (' + this.single.length + ' 级)'),
-          m('div', { class: 'BjxyField-array' }, [
-            this.single.map((l, i) => m('div', { class: 'BjxyField-array-row', key: 's' + i }, [
-              m('div', { class: 'ic-mini' }, i + 1),
-              m('select', {
-                value: l.level,
-                onchange: (e) => { l.level = e.target.value; },
-              }, [
-                m('option', { value: 'PRIMARY' }, 'PRIMARY'),
-                m('option', { value: 'INTERMEDIATE' }, 'INTERMEDIATE'),
-                m('option', { value: 'ADVANCED' }, 'ADVANCED'),
-              ]),
-              m('input', { value: l.name, oninput: (e) => { l.name = e.target.value; } }),
-              m('input', { value: l.desc, oninput: (e) => { l.desc = e.target.value; } }),
-              m('button', { class: 'del', onclick: () => { this.single.splice(i, 1); m.redraw(); } }, '×'),
-            ])),
-            m('div', {
-              class: 'BjxyField-array-add',
-              onclick: () => { this.single.push({ level: 'PRIMARY', name: '新单板等级', desc: '' }); m.redraw(); },
-            }, '+ 添加单板级'),
-          ]),
-          m('div', { class: 'BjxyField-label' }, '双板 (' + this.double.length + ' 级)'),
-          m('div', { class: 'BjxyField-array' }, [
-            this.double.map((l, i) => m('div', { class: 'BjxyField-array-row', key: 'd' + i }, [
-              m('div', { class: 'ic-mini' }, i + 1),
-              m('select', {
-                value: l.level,
-                onchange: (e) => { l.level = e.target.value; },
-              }, [
-                m('option', { value: 'PRIMARY' }, 'PRIMARY'),
-                m('option', { value: 'INTERMEDIATE' }, 'INTERMEDIATE'),
-                m('option', { value: 'ADVANCED' }, 'ADVANCED'),
-              ]),
-              m('input', { value: l.name, oninput: (e) => { l.name = e.target.value; } }),
-              m('input', { value: l.desc, oninput: (e) => { l.desc = e.target.value; } }),
-              m('button', { class: 'del', onclick: () => { this.double.splice(i, 1); m.redraw(); } }, '×'),
-            ])),
-            m('div', {
-              class: 'BjxyField-array-add',
-              onclick: () => { this.double.push({ level: 'PRIMARY', name: '新双板等级', desc: '' }); m.redraw(); },
-            }, '+ 添加双板级'),
-          ]),
+          this.boards.map((board, bi) => m('div', { class: 'BjxyField-board', key: 'board' + bi }, [
+            m('div', { class: 'BjxyField-board-head' }, [
+              m('input', {
+                class: 'BjxyField-board-name',
+                value: board.name,
+                placeholder: '类型名 (单板/双板/雪橇/冰球...)',
+                oninput: (e) => { board.name = e.target.value; },
+              }),
+              m('span', { class: 'BjxyField-board-count' }, board.levels.length + ' 级'),
+              m('button', {
+                class: 'del',
+                onclick: () => { if (confirm('删除类型 ' + board.name + ' 及其所有等级?')) { this.boards.splice(bi, 1); m.redraw(); } },
+              }, '× 删除类型'),
+            ]),
+            m('div', { class: 'BjxyField-array' }, [
+              board.levels.map((l, i) => m('div', { class: 'BjxyField-array-row', key: 'b' + bi + 'l' + i }, [
+                m('div', { class: 'ic-mini' }, i + 1),
+                m('select', {
+                  value: l.level,
+                  onchange: (e) => { l.level = e.target.value; },
+                }, [
+                  m('option', { value: 'PRIMARY' }, 'PRIMARY'),
+                  m('option', { value: 'INTERMEDIATE' }, 'INTERMEDIATE'),
+                  m('option', { value: 'ADVANCED' }, 'ADVANCED'),
+                ]),
+                m('input', { value: l.name, oninput: (e) => { l.name = e.target.value; } }),
+                m('input', { value: l.desc, oninput: (e) => { l.desc = e.target.value; } }),
+                m('button', { class: 'del', onclick: () => { board.levels.splice(i, 1); m.redraw(); } }, '×'),
+              ])),
+              m('div', {
+                class: 'BjxyField-array-add',
+                onclick: () => { board.levels.push({ level: 'PRIMARY', name: '新等级', desc: '' }); m.redraw(); },
+              }, '+ 添加等级'),
+            ]),
+          ])),
+          m('div', {
+            class: 'BjxyField-board-add',
+            onclick: () => { this.boards.push({ name: '新类型', levels: [{ level: 'PRIMARY', name: '新等级', desc: '' }] }); m.redraw(); },
+          }, '+ 添加类型 (雪橇 / 冰球 / 自由式...)'),
         ]),
       ]),
 
@@ -344,11 +348,18 @@ export default class BjxySettings extends ExtensionPage {
       if (this.data.bjxy_features_json) {
         try { this.features = JSON.parse(this.data.bjxy_features_json); } catch (e) {}
       }
-      if (this.data.bjxy_curriculum_single_json) {
-        try { this.single = JSON.parse(this.data.bjxy_curriculum_single_json); } catch (e) {}
-      }
-      if (this.data.bjxy_curriculum_double_json) {
-        try { this.double = JSON.parse(this.data.bjxy_curriculum_double_json); } catch (e) {}
+      // v0.1.0s 改: 优先读 bjxy_curriculum_boards_json (新格式), 兼容旧 single/double
+      if (this.data.bjxy_curriculum_boards_json) {
+        try {
+          const parsed = JSON.parse(this.data.bjxy_curriculum_boards_json);
+          if (Array.isArray(parsed) && parsed.length > 0) this.boards = parsed;
+        } catch (e) {}
+      } else if (this.data.bjxy_curriculum_single_json || this.data.bjxy_curriculum_double_json) {
+        // 旧数据迁移: 单板/双板 → boards array
+        this.boards = [
+          { name: '单板', levels: (() => { try { return JSON.parse(this.data.bjxy_curriculum_single_json) || []; } catch (e) { return []; } })() },
+          { name: '双板', levels: (() => { try { return JSON.parse(this.data.bjxy_curriculum_double_json) || []; } catch (e) { return []; } })() },
+        ];
       }
       if (this.data.bjxy_coach_group_ids) {
         try { this.coachGroupIds = JSON.parse(this.data.bjxy_coach_group_ids); } catch (e) {}
@@ -425,8 +436,8 @@ export default class BjxySettings extends ExtensionPage {
     m.redraw();
     const payload = Object.assign({}, this.data);
     payload.bjxy_features_json = JSON.stringify(this.features);
-    payload.bjxy_curriculum_single_json = JSON.stringify(this.single);
-    payload.bjxy_curriculum_double_json = JSON.stringify(this.double);
+    // v0.1.0s 改: boards array 写到 bjxy_curriculum_boards_json 新字段
+    payload.bjxy_curriculum_boards_json = JSON.stringify(this.boards);
     payload.bjxy_coach_group_ids = JSON.stringify(this.coachGroupIds);
     try {
       await app.request({

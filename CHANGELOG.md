@@ -259,3 +259,42 @@
 - dist md5: admin.css `c7fde908444027ee0dd02d8bca6de35e` (v0.1.0p 修过, 未变)
 - dist md5: forum.js `03fcc0e69748c15898621f7ec5a8697a`
 - dist md5: forum.css `ab3e518e2f716a964f22396763cb7e7f` (v0.1.0q 修过, 未变)
+
+## v0.1.0s (2026-08-02) — 教学体系支持任意多类型 (单板/双板/雪橇/冰球/自由式...)
+
+### 改
+- 辉哥 13:47 反馈 "教学体系, 除了单板/双板, 要能添加更多类型"
+- **Data model 重构**:
+  - 之前: `{single: [...], double: [...]}` 2 个 fixed array
+  - 现在: `boards: [{name, levels: [...]}, ...]` 任意多类型 array
+  - 默认 2 个 board (单板 + 双板), 用户可增删 board 本身
+- **admin BjxySettings.jsx**:
+  - 教学体系 section 重构成 boards 列表
+  - 每个 board: name input (可改) + count badge + × 删除类型 + levels array
+  - 底部 `+ 添加类型 (雪橇 / 冰球 / 自由式...)` 按钮
+  - 旧 `bjxy_curriculum_single_json` / `bjxy_curriculum_double_json` 兼容 (load 时自动转 boards)
+- **extend.php content() callback**:
+  - 优先读 `bjxy_curriculum_boards_json` 新字段
+  - fallback 兼容旧 single/double, 都没有时用 CurriculumData 默认
+- **BjxyPage.jsx**:
+  - tabs 从 boards 数组动态渲染, `activeBoard` 改 index (0/1/2/...)
+  - h2 动态: `boards.reduce((s,b) => s+b.levels.length, 0) + ' 级教学体系'`
+  - 公告条 "X 级教学体系 · Y 大特色" 全部动态
+- **less/admin.less**:
+  - 新增 `.BjxyField-board` / `.BjxyField-board-head` / `.BjxyField-board-name` /
+    `.BjxyField-board-count` / `.BjxyField-board-add` 样式
+
+### Playwright 完整闭环 (0 page error)
+- admin 默认 2 boards (单板/双板) 显示, head "教学体系 (2 种类型 / 共 18 级)"
+- 点 `+ 添加类型` → 3 boards
+- 改 name '雪橇' → 保存
+- 前台 h2: "19 级教学体系" (9+9+1)
+- tabs: ['单板 (9 级)', '双板 (9 级)', '雪橇 (1 级)']
+- 公告条: "室内滑雪 · 全国连锁 · 19 级教学体系 · 6 大特色"
+- 删雪橇 → 2 boards ✅
+
+### Commit
+- v0.1.0s: 待 commit
+- dist md5: admin.js `d9b3f186d7d5c3a1aab6a3c0e6d04671`
+- dist md5: admin.css `8868395d2e30003eb8aa919440b3ccfe`
+- dist md5: forum.js `8d204dcea1f211d5cfdb291b25e2e574`

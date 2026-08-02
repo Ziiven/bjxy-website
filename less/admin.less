@@ -120,6 +120,70 @@
         cursor: pointer;
         border: 1px dashed var(--bjxy-primary);
     }
+    // v0.1.0s 修: 教学体系 board 卡片样式 (单板/双板/雪橇/冰球 任意多类型)
+    .BjxyField-board {
+        grid-column: 2;
+        margin-bottom: 12px;
+        border: 1px solid var(--control-color-soft);
+        border-radius: 6px;
+        padding: 10px;
+        background: var(--control-bg);
+    }
+    .BjxyField-board-head {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 8px;
+        padding-bottom: 8px;
+        border-bottom: 1px solid var(--control-color-soft);
+    }
+    .BjxyField-board-name {
+        flex: 1;
+        padding: 5px 8px;
+        font-size: 12px;
+        font-weight: 700;
+        border: 1px solid var(--control-color-soft);
+        border-radius: 3px;
+        background: var(--control-bg);
+        color: var(--control-color);
+    }
+    .BjxyField-board-count {
+        font-size: 11px;
+        color: var(--control-color-soft);
+        padding: 2px 6px;
+        background: var(--bjxy-primary);
+        color: #fff;
+        border-radius: 3px;
+        font-weight: 600;
+    }
+    .BjxyField-board-head .del {
+        background: transparent;
+        border: 1px solid var(--control-color-soft);
+        color: var(--control-color-soft);
+        border-radius: 3px;
+        cursor: pointer;
+        font-size: 11px;
+        padding: 4px 8px;
+    }
+    .BjxyField-board-head .del:hover {
+        border-color: #d83e3e;
+        color: #d83e3e;
+    }
+    .BjxyField-board-add {
+        grid-column: 2;
+        padding: 8px;
+        background: var(--control-bg);
+        color: var(--bjxy-primary);
+        border-radius: 4px;
+        font-size: 12px;
+        text-align: center;
+        cursor: pointer;
+        border: 2px dashed var(--bjxy-primary);
+        font-weight: 600;
+    }
+    .BjxyField-board-add:hover {
+        background: rgba(45, 123, 229, 0.05);
+    }
     .BjxyField-group-select {
         padding: 8px;
         background: var(--control-bg);
