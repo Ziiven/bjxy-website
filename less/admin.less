@@ -1,6 +1,14 @@
 // ziven-bjxy-website admin.less
 // 后台 settings 样式 (admin extension page)
 
+// v0.1.0p 修: 店照蓝 #2D7BE5 硬编码 (之前用 var(--bjxy-primary) 但 vendor 没定义这个 var,
+// CSS 解析失败 → background/color 变 transparent, 看起来"白色按钮")
+// 设计稿 v3 主色就是 #2D7BE5, 不跟模式走, hard-code 最稳
+:root {
+    --bjxy-primary: #2D7BE5;
+    --bjxy-primary-rgb: 45, 123, 229;
+}
+
 .BjxySettings {
     padding: 20px;
     max-width: 900px;
@@ -56,7 +64,7 @@
         cursor: pointer;
         background: var(--control-bg);
     }
-    .BjxyField-file:hover { border-color: var(--color-primary); }
+    .BjxyField-file:hover { border-color: var(--bjxy-primary); }
     .BjxyField-file-preview {
         margin-top: 6px;
         font-size: 11px;
@@ -87,7 +95,7 @@
     }
     .BjxyField-array-row .ic-mini {
         width: 26px; height: 26px;
-        background: var(--color-primary);
+        background: var(--bjxy-primary);
         color: #fff;
         border-radius: 4px;
         display: flex; align-items: center; justify-content: center;
@@ -105,12 +113,12 @@
         grid-column: 2;
         padding: 6px;
         background: var(--control-bg);
-        color: var(--color-primary);
+        color: var(--bjxy-primary);
         border-radius: 4px;
         font-size: 11px;
         text-align: center;
         cursor: pointer;
-        border: 1px dashed var(--color-primary);
+        border: 1px dashed var(--bjxy-primary);
     }
     .BjxyField-group-select {
         padding: 8px;
@@ -129,7 +137,7 @@
         font-size: 12px;
         cursor: pointer;
     }
-    .BjxyField-group-select .opt:hover { border-color: var(--color-primary); }
+    .BjxyField-group-select .opt:hover { border-color: var(--bjxy-primary); }
     .BjxyField-group-select .opt .ck {
         width: 14px; height: 14px;
         border: 1.5px solid var(--control-color-soft);
@@ -138,12 +146,12 @@
         display: inline-flex; align-items: center; justify-content: center;
         font-size: 9px; color: #fff;
     }
-    .BjxyField-group-select .opt.on { border-color: var(--color-primary); background: rgba(45, 123, 229, 0.05); }
-    .BjxyField-group-select .opt.on .ck { background: var(--color-primary); border-color: var(--color-primary); }
+    .BjxyField-group-select .opt.on { border-color: var(--bjxy-primary); background: rgba(45, 123, 229, 0.05); }
+    .BjxyField-group-select .opt.on .ck { background: var(--bjxy-primary); border-color: var(--bjxy-primary); }
     .BjxyField-group-pick {
         margin-top: 6px;
         padding: 6px 10px;
-        background: var(--color-primary);
+        background: var(--bjxy-primary);
         color: #fff;
         border-radius: 4px;
         font-size: 11px;
@@ -165,7 +173,7 @@
     }
     .BjxySavebar .btn-primary {
         padding: 6px 16px;
-        background: var(--color-primary);
+        background: var(--bjxy-primary);
         color: #fff;
         border-radius: 4px;
         font-size: 12px;
@@ -176,7 +184,7 @@
     // v0.1.0p 修: 保险起见加更高优先级, 避免 vendor .Button 默认 background 覆盖
     // (Playwright 之前测出 .BjxySavebar .btn-primary dark 是 transparent)
     .BjxySettings .BjxySavebar .btn-primary {
-        background: var(--color-primary) !important;
+        background: var(--bjxy-primary) !important;
         color: #fff !important;
     }
     .BjxySavebar .btn-secondary {
