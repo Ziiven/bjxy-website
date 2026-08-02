@@ -560,3 +560,29 @@
 
 ### Commit
 - v0.1.0ab: 待 commit
+
+---
+
+## v0.1.0ac (2026-08-02) — 去掉 footer 跟 viewport 底部 50px 空隙
+
+### 修
+- 辉哥 16:28 反馈 "尾部icp区域那块, 距离页面底部有空隙, 需要去掉"
+- 滚到页面最底, viewport 看到 footer (深色 #1A202C) 后面 ~50px 店照蓝空隙
+- 根因: `.bjxy-page-bg` position: fixed 永远覆盖 viewport, 渐变起始色 #3a87fe (店照蓝) 在 footer 后面显示
+- footer 自身 background (深色) 没延伸到 viewport 底部, 视觉上 footer 跟"页面底部"之间有空隙
+
+### 改 1 个文件
+- **less/forum.less**:
+  - `.bjxy-page` 加 `--bjxy-footer-gradient-end: #3a87fe` (浅色默认, 跟 .bjxy-page-bg 渐变起始色一致)
+  - `[data-theme^="dark"] .bjxy-page` 加 `--bjxy-footer-gradient-end: #0F1419` (深色默认)
+  - `.bjxy-footer` 改 `background: linear-gradient(180deg, var(--bjxy-footer-bg), var(--bjxy-footer-gradient-end))`
+  - footer 自身 background 顶部深色 → 底部起始色, 跟 viewport 底部 .bjxy-page-bg 起始色无缝衔接
+  - 修后 footer 跟 viewport 底部没有突兀的"空隙" (渐变平滑过渡到背景)
+
+### Playwright 验证 (待做)
+- 滚到底部, footer 跟 viewport 底部之间无空隙
+- 浅色: footer 顶部 #1A202C → 底部 #3a87fe (跟 .bjxy-page-bg 起始色一致)
+- 深色: footer 顶部 #1A202C → 底部 #0F1419 (跟 .bjxy-page-bg 起始色一致)
+
+### Commit
+- v0.1.0ac: 待 commit

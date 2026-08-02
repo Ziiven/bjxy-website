@@ -37,6 +37,10 @@
     //   之前用 var(--bjxy-text) 当背景, 浅色下 #1A202C OK, 深色下变 #E2E8F0 (白色), 跟深色页面不搭
     --bjxy-footer-bg: #1A202C;
     --bjxy-footer-color: #FFFFFF;
+    // v0.1.0ac: footer 渐变底部 = .bjxy-page-bg 渐变起始色 (默认 #3a87fe)
+    //   footer 自身 background 渐变到起始色, 跟 viewport 底部 .bjxy-page-bg 起始色无缝衔接
+    //   修 footer 跟 viewport 底部之间 50px 空隙 (.bjxy-page-bg fixed 永远覆盖 viewport)
+    --bjxy-footer-gradient-end: #3a87fe;
 }
 
 // ===== Dark theme (Flarum [data-theme^=dark]) =====
@@ -56,6 +60,8 @@
     // v0.1.0ab: footer 浅深一致, 永不变白色
     --bjxy-footer-bg: #1A202C;
     --bjxy-footer-color: #FFFFFF;
+    // v0.1.0ac: footer 渐变底部 = .bjxy-page-bg 渐变起始色 (深色默认 #0F1419)
+    --bjxy-footer-gradient-end: #0F1419;
 }
 
 // ===== 基础 =====
@@ -552,8 +558,10 @@
 // ===== Footer =====
 .bjxy-footer {
     padding: 32px;
-    // v0.1.0ab 改: 背景 + 文字 走独立 --bjxy-footer-bg/color (浅深双版一致, 永不变白色)
-    background: var(--bjxy-footer-bg);
+    // v0.1.0ac 改: background 渐变 --bjxy-footer-bg → --bjxy-footer-gradient-end (跟 .bjxy-page-bg 起始色)
+    //   footer 自身 background 渐变到 viewport 底部 .bjxy-page-bg 起始色, 视觉无缝衔接
+    //   修 footer 跟 viewport 底部 50px 空隙 (.bjxy-page-bg fixed 永远覆盖 viewport, 渐变起始色在那里显示)
+    background: linear-gradient(180deg, var(--bjxy-footer-bg) 0%, var(--bjxy-footer-gradient-end) 100%);
     color: var(--bjxy-footer-color);
     text-align: center;
     font-size: 12px;
