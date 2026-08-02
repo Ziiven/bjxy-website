@@ -365,3 +365,18 @@
 ### Commit
 - v0.1.0u: 待 commit
 - dist md5: admin.css `90f8ac1f7a76ecd29b5911238e95980a`
+
+## v0.1.0v (2026-08-02) — 教学体系 board 跨整行 (修左半边空白)
+
+### 修
+- 辉哥 14:50 反馈 "教学体系section，里面的内容现在只占了半边，左半边是空的"
+- 原因: BjxySection-body 用了 `140px 1fr` grid, 教学体系 section 没有 BjxyField-label
+  (140px column 没用), 默认 `.BjxyField-board { grid-column: 2 }` 只占右半边
+- 修法:
+  - `.BjxyField-board` 改 `grid-column-start: 1; grid-column-end: -1` 跨整行
+  - `.BjxyField-board-add` (添加类型按钮) 同样改跨整行
+- 教学体系 row 内还是 5 列 (序号+level+name+desc+×), 跨整行后空间更宽
+
+### Commit
+- v0.1.0v: 待 commit
+- dist md5: admin.css `bac74d492b7fa5c908dc8551f4288900`

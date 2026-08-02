@@ -122,7 +122,11 @@
     }
     // v0.1.0s 修: 教学体系 board 卡片样式 (单板/双板/雪橇/冰球 任意多类型)
     .BjxyField-board {
-        grid-column: 2;
+        // v0.1.0v 改: 跨整行 (grid-column: 1 / -1), 之前 grid-column: 2 只占右半边
+        //   辉哥 14:50 反馈 "教学体系section，里面的内容现在只占了半边，左半边是空的"
+        //   教学体系 section 没有 BjxyField-label (140px column 没用到), 改跨整行
+        grid-column-start: 1;
+        grid-column-end: -1;
         margin-bottom: 12px;
         border: 1px solid var(--control-color-soft);
         border-radius: 6px;
@@ -170,7 +174,9 @@
         color: #d83e3e;
     }
     .BjxyField-board-add {
-        grid-column: 2;
+        // v0.1.0v 改: 跨整行 (跟 BjxyField-board 一致)
+        grid-column-start: 1;
+        grid-column-end: -1;
         padding: 8px;
         background: var(--control-bg);
         color: var(--bjxy-primary);
