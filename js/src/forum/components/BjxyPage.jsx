@@ -59,6 +59,7 @@ export default class BjxyPage extends Component {
       //   v0.1.0z 改: 有图用图 (cover + center), 没图用 4 色渐变
       //   v0.1.0aa 改: 渐变方向 135deg → 180deg (top→bottom 垂直)
       //     跟 body 垂直滚动方向一致, 视觉更自然
+      //     用 background-image: (而不是 background: 简写) 避免重置 background-size 100% 300vh
       m('style', {
         oncreate: ({ dom }) => {
           // 浅色: 图 > 渐变
@@ -70,8 +71,8 @@ export default class BjxyPage extends Component {
             ? `url("${imgDark}") center / cover no-repeat`
             : `linear-gradient(180deg, ${ds}, ${de})`;
           dom.textContent = `
-.bjxy-page-bg { background: ${lightBg}; }
-[data-theme^="dark"] .bjxy-page-bg { background: ${darkBg}; }
+.bjxy-page-bg { background-image: ${lightBg}; }
+[data-theme^="dark"] .bjxy-page-bg { background-image: ${darkBg}; }
 `;
         },
       }),
