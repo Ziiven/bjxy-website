@@ -72,14 +72,18 @@
 //   JS 监听 scroll 改 backgroundPositionY (0.1x 视差) → 滚动时背景微小移动
 //   pointer-events: none 防止背景挡住下面内容点击
 //   will-change + transition 让视差移动平滑
+// v0.1.0aa 改: background-size 100% 300vh 让渐变图比 viewport 大 3 倍
+//   视差 0.1x scrollY (max ~500px for 5000px scroll), 远小于 300vh=2400px
+//   viewport 永远看到渐变图的"起始色"区域, 不会看到结束色 (突兀分割线)
+//   background-position: center 0 (渐变图顶部对齐 div 顶部), JS 视差往上推
 .bjxy-page-bg {
     position: fixed;
     inset: 0;
     z-index: -1;
     pointer-events: none;
     background-repeat: no-repeat;
-    background-size: 100% 100vh;
-    background-position: center 50%;
+    background-size: 100% 300vh;
+    background-position: center 0;
     will-change: background-position;
     transition: background-position 0.08s linear;
 }

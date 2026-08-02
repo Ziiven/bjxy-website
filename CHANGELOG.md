@@ -493,3 +493,44 @@
 
 ### Commit
 - v0.1.0z: 待 commit
+
+---
+
+## v0.1.0aa (2026-08-02) — 背景渐变不露结束区域 (方向垂直 + 图放大到 300vh)
+
+### 修
+- 辉哥 16:05 反馈 "前端背景现在随着页面下拉后，会清楚看到背景的结束区域，显得很突兀。看看能不能不让背景的结束区域出现在视界中"
+- v0.1.0y 改的视差背景, 渐变图大小 = 1 viewport (100vh), 视差 0.1x scrollY
+  - 滚到中部时, 渐变图移动 backgroundPosition Y = 50% - 50px = 350px
+  - viewport 看到渐变图 44%-100% 区域 (从中间色到结束色)
+  - 渐变图底部以下 = .bjxy-page 背景色 (深色 #0F1419)
+  - 形成"渐变结束 ↔ 纯色"的突兀分割线
+
+### 改 2 个文件
+- **js/src/forum/components/BjxyPage.jsx**:
+  - 渐变方向 135deg → 180deg (top→bottom 垂直)
+    - 跟 body 垂直滚动方向一致, 视觉更自然
+  - 视差 backgroundPositionY 从 `calc(50% - scrollY * 0.1px)` → `calc(0px - scrollY * 0.1px)`
+    - 渐变图顶部对齐 div 顶部, 视差往上推 (变负值)
+- **less/forum.less**:
+  - `.bjxy-page-bg` background-size `100% 100vh` → `100% 300vh` (渐变图 = 3 个 viewport 高)
+  - background-position `center 50%` → `center 0` (渐变图顶部对齐 div 顶部)
+  - 视差 0.1x scrollY (max ~500px for 5000px scroll) 远小于 300vh=2400px
+  - viewport 永远看到渐变图 0-33% 区域 (起始色附近), 不会看到结束色
+
+### SOP 沉淀 (升级, SOP 80 升级)
+- **SOP 80 升级: 视差背景必须把图放大到比 viewport 大很多**:
+  - 错误: background-size 跟 viewport 一样大 (100% 100vh), 视差 0.1x scrollY 让渐变图整体移动
+  - 问题: 滚到中部时, 渐变"结束色"区域会进入 viewport 下半部, 跟 .bjxy-page 背景色形成突兀分割线
+  - 修法: background-size `100% 300vh` (3x viewport) + background-position `center 0` + 视差 0.1x
+  - 公式: 视差最大移动 = scrollY_max * 0.1, 渐变图高度应该 >> 视差最大移动
+  - 100vh 渐变 + 0.1x 视差 → 滚 500px 视差 50px, viewport 看渐变 38%-100% (会看到结束色)
+  - 300vh 渐变 + 0.1x 视差 → 滚 5000px 视差 500px, viewport 看渐变 0-54% (起始色为主)
+  - 影响: bjxy v0.1.0aa, 后续其他 page extension 视差背景也用 300vh
+
+### Playwright 验证 (待做)
+- 浅色 / 深色 渐变, scrollY 0/500/1500 截图, 验证 viewport 永远在渐变起始色区域
+- 背景图模式保持 (图 cover viewport, 没有"结束色"问题)
+
+### Commit
+- v0.1.0aa: 待 commit

@@ -53,20 +53,22 @@ export default class BjxyPage extends Component {
     const imgDark = s('bjxy_bg_image_dark_url', '');
 
     return [
-      // v0.1.0j+y+z: 注入背景 CSS
+      // v0.1.0j+y+z+aa: 注入背景 CSS
       //   浅色 / 深色模式分别走 [data-theme^="dark"] selector
       //   v0.1.0y 改: 目标从 .bjxy-page 改成 .bjxy-page-bg (position: fixed)
       //   v0.1.0z 改: 有图用图 (cover + center), 没图用 4 色渐变
+      //   v0.1.0aa 改: 渐变方向 135deg → 180deg (top→bottom 垂直)
+      //     跟 body 垂直滚动方向一致, 视觉更自然
       m('style', {
         oncreate: ({ dom }) => {
           // 浅色: 图 > 渐变
           const lightBg = imgLight
             ? `url("${imgLight}") center / cover no-repeat`
-            : `linear-gradient(135deg, ${ls}, ${le})`;
+            : `linear-gradient(180deg, ${ls}, ${le})`;
           // 深色: 图 > 渐变
           const darkBg = imgDark
             ? `url("${imgDark}") center / cover no-repeat`
-            : `linear-gradient(135deg, ${ds}, ${de})`;
+            : `linear-gradient(180deg, ${ds}, ${de})`;
           dom.textContent = `
 .bjxy-page-bg { background: ${lightBg}; }
 [data-theme^="dark"] .bjxy-page-bg { background: ${darkBg}; }
@@ -81,8 +83,11 @@ export default class BjxyPage extends Component {
           const bgEl = dom.firstElementChild;
           if (!bgEl || !bgEl.classList.contains('bjxy-page-bg')) return;
           this._bgParallax = () => {
+            // v0.1.0aa 改: 渐变图 background-size 100% 300vh (比 viewport 大 3 倍)
+            //   视差 0.1x scrollY 让背景从 div 顶部往上推 (Y 变成负值)
+            //   viewport 永远看到渐变图 0-33% 区段 (起始色附近), 不会看到结束色
             const offset = window.scrollY * 0.1;
-            bgEl.style.backgroundPositionY = `calc(50% - ${offset}px)`;
+            bgEl.style.backgroundPositionY = `calc(0px - ${offset}px)`;
           };
           window.addEventListener('scroll', this._bgParallax, { passive: true });
           this._bgParallax();
