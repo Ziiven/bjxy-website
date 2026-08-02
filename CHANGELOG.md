@@ -143,3 +143,56 @@
 ### SOP 沉淀
 - SOP 75 升级: 4 处 `-soft` fallback 跟 1 处 vendor .Button 覆盖, 都是
   admin less 写时的常见坑
+
+## v0.1.0p (2026-08-02) — admin deep mode 全面协调 + 店照蓝按钮修复
+
+### 修
+- **admin deep mode 4 处 `var(--control-bg-soft, #f6f7f9)` fallback 错色**
+  - 辉哥 09:17 反馈 "里面很多按钮的颜色还是白色" + "保存按钮是白色"
+    + "保存按钮区域的背景颜色也是白色"
+  - v0.1.0o 只修了 `.BjxySection-head`, 剩 4 处 `-soft` 还在用 vendor fallback
+    `#f6f7f9` (近白色), 深色模式下反差太大
+  - 4 处全部改用 vendor 正版 `var(--control-bg)` (跟 mode 联动)
+    - `.BjxyField-file` (上传 dashed 区域)
+    - `.BjxyField-array-add` (添加特色按钮)
+    - `.BjxyField-group-select` (group 容器)
+    - `.BjxySavebar` (保存按钮区域)
+- **`var(--color-primary)` vendor 未定义 → 改用 `var(--bjxy-primary)` 店照蓝 #2D7BE5**
+  - 11 处 `var(--color-primary)` CSS 解析失败 → `background` 变 transparent
+  - `.BjxySavebar .btn-primary` (保存全部按钮) 显示成透明背景的"白字"按钮
+  - `.BjxyField-array-row .ic-mini` (序号小方块) 跟 `.BjxyField-group-pick` 同问题
+  - 修法: less 顶部 :root 注册 `--bjxy-primary: #2D7BE5`, 全部替换 11 处
+  - 额外保险: `.BjxySettings .BjxySavebar .btn-primary` 加 !important 强制覆盖
+- **Playwright 验证**
+  - 深色模式 (data-theme="dark"): 5 元素全 ✅
+    - `.BjxyField-file` bg=rgb(27,32,40) 跟深色协调
+    - `.BjxyField-array-add` bg=rgb(27,32,40), color=rgb(45,123,229) 店照蓝
+    - `.BjxyField-group-select` bg=rgb(27,32,40)
+    - `.BjxySavebar` bg=rgb(27,32,40)
+    - `.BjxySavebar .btn-primary` bg=rgb(45,123,229) 店照蓝 (终于不是 transparent)
+  - 浅色模式 (data-theme="light"): 5 元素全 ✅
+    - 所有容器 bg=rgb(232,236,242) #E8ECF2 浅灰协调
+    - `.btn-primary` bg=rgb(45,123,229) 店照蓝
+  - 0 page error
+
+### SOP 沉淀 (SOP 76, 升级 SOP 75)
+- **SOP 76. 写 admin extension less 时, 自己用的 CSS var 必须在文件 :root 里定义**
+  - 错用 `var(--color-primary)` (vendor 没定义) → CSS 解析失败, background
+    变 transparent, 看起来"按钮是白色"
+  - 修法: 在 less 文件最顶部加 `:root { --bjxy-primary: #2D7BE5; }`,
+    所有引用改用 `var(--bjxy-primary)`
+  - 影响: bjxy admin v0.1.0p, 11 处替换
+- **SOP 75 升级: 写 admin less 4 个常见 vendor var 坑**
+  1. `var(--control-bg-soft)` → vendor 没定义 -soft, fallback 近白色
+     修法: 用 `var(--control-bg)` (light/dark 自动适配)
+  2. `var(--color-primary)` → vendor 没定义, 解析失败变 transparent
+     修法: 自定义 :root 变量 + hard-code 主色
+  3. `.btn-primary` 不带 vendor `.Button` class → vendor 默认 background 不适用
+     修法: 自定义 less 或加 !important 强制 background
+  4. vendor `.Button` 用 `var(--button-bg)` / `var(--button-color)` 不是 `--color-primary`
+     修法: 跨 theme 按钮颜色用 vendor mixin 或自定义 var
+
+### Commit
+- v0.1.0p: 本地 `8a35ee6`
+- v0.1.0p-extra (--bjxy-primary): 本地 `e41866b`
+- 服务器 admin.css md5: `c7fde908444027ee0dd02d8bca6de35e` (236348 bytes)
