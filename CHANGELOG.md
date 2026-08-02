@@ -122,3 +122,24 @@
 5. ✅ 上传 Hero 浅色/深色 banner → 切换主题看到不同
 6. ✅ 选教练组 → /bjxy 教练 grid 拉用户列表
 7. ✅ 改品牌名 → 全站刷新
+
+## v0.1.0p (2026-08-02)
+
+### 修
+- **admin deep mode 剩余 4 处 `var(--control-bg-soft, #f6f7f9)` fallback 错色**
+  - v0.1.0o 只改了 `.BjxySection-head`, 剩 4 处 `-soft` 还在用 vendor fallback
+    `#f6f7f9` (近白色), 深色模式下反差太大
+  - 辉哥 09:17 反馈 "里面很多按钮的颜色还是白色" + "保存按钮是白色"
+    + "保存按钮区域的背景颜色也是白色"
+  - 4 处全部改用 vendor 正版 `var(--control-bg)` (跟 mode 联动)
+    - `.BjxyField-file` (上传 dashed 区域)
+    - `.BjxyField-array-add` (添加特色按钮)
+    - `.BjxyField-group-select` (group 容器)
+    - `.BjxySavebar` (保存按钮区域)
+  - 额外: `.BjxySavebar .btn-primary` 加 `.BjxySettings .BjxySavebar .btn-primary`
+    更具体 + `!important` (Playwright 之前测出 dark 是 transparent, vendor
+    `.Button` 默认 background 覆盖了)
+
+### SOP 沉淀
+- SOP 75 升级: 4 处 `-soft` fallback 跟 1 处 vendor .Button 覆盖, 都是
+  admin less 写时的常见坑

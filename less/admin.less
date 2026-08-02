@@ -18,6 +18,7 @@
     // v0.1.0o 修: section head 背景用 var(--control-bg) (vendor 正版 admin theme var, light/dark 模式自动适配)
     // 之前用 var(--control-bg-soft, #f6f7f9) — vendor 没定义 -soft, fallback #f6f7f9 (近白色)
     // 在深色模式下反差太大 (浅白 + 深背景)
+    // v0.1.0p 修: 同样原因, 4 处剩余 -soft (BjxyField-file / BjxyField-array-add / BjxyField-group-select / BjxySavebar) 全部改用 var(--control-bg)
     .BjxySection-head {
         padding: 12px 16px;
         background: var(--control-bg);
@@ -53,7 +54,7 @@
         font-size: 12px;
         text-align: center;
         cursor: pointer;
-        background: var(--control-bg-soft, #f6f7f9);
+        background: var(--control-bg);
     }
     .BjxyField-file:hover { border-color: var(--color-primary); }
     .BjxyField-file-preview {
@@ -103,7 +104,7 @@
     .BjxyField-array-add {
         grid-column: 2;
         padding: 6px;
-        background: var(--control-bg-soft, #f6f7f9);
+        background: var(--control-bg);
         color: var(--color-primary);
         border-radius: 4px;
         font-size: 11px;
@@ -113,7 +114,7 @@
     }
     .BjxyField-group-select {
         padding: 8px;
-        background: var(--control-bg-soft, #f6f7f9);
+        background: var(--control-bg);
         border-radius: 4px;
     }
     .BjxyField-group-select .opt {
@@ -154,7 +155,7 @@
 
     .BjxySavebar {
         padding: 12px 16px;
-        background: var(--control-bg-soft, #f6f7f9);
+        background: var(--control-bg);
         border-top: 1px solid var(--control-color-soft);
         display: flex;
         justify-content: flex-end;
@@ -171,6 +172,12 @@
         font-weight: 600;
         cursor: pointer;
         border: none;
+    }
+    // v0.1.0p 修: 保险起见加更高优先级, 避免 vendor .Button 默认 background 覆盖
+    // (Playwright 之前测出 .BjxySavebar .btn-primary dark 是 transparent)
+    .BjxySettings .BjxySavebar .btn-primary {
+        background: var(--color-primary) !important;
+        color: #fff !important;
     }
     .BjxySavebar .btn-secondary {
         padding: 6px 16px;
