@@ -381,32 +381,11 @@
 //   - hover: translateY -4px + 蓝边 + 阴影
 // ⚠️ .bjxy-feature / .bjxy-feature-icon 之前是通用 class, 现在只在特色用, 安全重写
 // ⚠️ .bjxy-section 通用样式不动, 用 .bjxy-features-glass 修饰避免影响其他 section
-.bjxy-features-glass {
-    position: relative;
-    overflow: hidden;
-}
-// section 顶部 + 底部 渐变光斑
-.bjxy-features-glass::before {
-    content: '';
-    position: absolute;
-    top: -150px; right: -150px;
-    width: 500px; height: 500px;
-    background: radial-gradient(circle, rgba(45, 123, 229, 0.18) 0%, transparent 70%);
-    filter: blur(40px);
-    pointer-events: none;
-    z-index: 0;
-}
-.bjxy-features-glass::after {
-    content: '';
-    position: absolute;
-    bottom: -100px; left: -150px;
-    width: 400px; height: 400px;
-    background: radial-gradient(circle, rgba(139, 92, 246, 0.14) 0%, transparent 70%);
-    filter: blur(40px);
-    pointer-events: none;
-    z-index: 0;
-}
-.bjxy-features-glass > * { position: relative; z-index: 1; }
+// v0.1.6j 改: 删 ::before/::after 蓝紫光斑 + position/overflow
+//   辉哥 16:36 反馈 "为什么选择北极雪屿 section 中的背景可以移除了"
+//   保留 alt section 浅背景 (跟其他 section 一致), 去掉玻璃拟态光斑装饰
+//   卡片本身的玻璃拟态 (backdrop-filter blur 20px) 保留
+.bjxy-features-glass { /* 背景光斑已移除 (v0.1.6j) */ }
 
 // 居中头部 (eyebrow + 大标题 + 副标题)
 .bjxy-section-head {
