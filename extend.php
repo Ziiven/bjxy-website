@@ -109,6 +109,9 @@ return [
         // v0.1.6: 学员结构化 (JSON array: [{name, level, photoUrl, achievement}])
         //   升级老 bjxy_students_json (简单 JSON, 只有 name 字段)
         ->serializeToForum('bjxy_students', 'bjxy_students')
+        // v0.1.6g: 活动展示 swiper 自动轮播间隔 (毫秒, 默认 3000)
+        //   后台输入, 前台 swiper.autoplay.delay 用
+        ->serializeToForum('bjxy_events_autoplay_ms', 'bjxy_events_autoplay_ms')
         ->serializeToForum('bjxy_bg_gradient_light_start', 'bjxy_bg_gradient_light_start')
         ->serializeToForum('bjxy_bg_gradient_light_end', 'bjxy_bg_gradient_light_end')
         ->serializeToForum('bjxy_bg_gradient_dark_start', 'bjxy_bg_gradient_dark_start')

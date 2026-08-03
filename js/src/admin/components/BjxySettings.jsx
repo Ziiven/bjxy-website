@@ -66,6 +66,8 @@ export default class BjxySettings extends ExtensionPage {
     this.reviews = [];
     // v0.1.6: 学员展示 array (升级 bjxy_students_json 简单 JSON)
     this.students = [];
+    // v0.1.6g: 活动 swiper 自动轮播间隔 (毫秒, 默认 3000)
+    this.eventsAutoplayMs = 3000;
     this.loadSettings();
   }
 
@@ -383,6 +385,22 @@ export default class BjxySettings extends ExtensionPage {
       m('div', { class: 'BjxySection' }, [
         m('div', { class: 'BjxySection-head' }, '🎯 活动展示 (原"学员展示", swiper 轮播多图)'),
         m('div', { class: 'BjxySection-body' }, [
+          // v0.1.6g: 活动 swiper 自动轮播间隔设置 (毫秒, 默认 3000)
+          //   前台 swiper.autoplay.delay 用, 范围 500-60000
+          m('div', { class: 'BjxyField-row' }, [
+            m('div', { class: 'BjxyField-label' }, '轮播间隔 (毫秒)'),
+            m('input', {
+              class: 'BjxyField-input',
+              type: 'number',
+              min: '500',
+              max: '60000',
+              step: '100',
+              value: this.eventsAutoplayMs,
+              placeholder: '3000',
+              oninput: (e) => { this.eventsAutoplayMs = parseInt(e.target.value, 10) || 3000; },
+            }),
+            m('div', { class: 'BjxyField-hint' }, '默认 3000, 范围 500-60000'),
+          ]),
           m('div', { class: 'BjxyField-array BjxyField-array-wide' }, [
             this.students.map((s, i) => m('div', { class: 'BjxyField-array-card', key: 's' + i }, [
               m('div', { class: 'BjxyField-array-card-head' }, [
@@ -579,6 +597,11 @@ export default class BjxySettings extends ExtensionPage {
             }));
           }
         } catch (e) {}
+      }
+      // v0.1.6g: 加载活动 swiper 自动轮播间隔 (默认 3000ms)
+      if (this.data.bjxy_events_autoplay_ms) {
+        const n = parseInt(this.data.bjxy_events_autoplay_ms, 10);
+        if (!isNaN(n) && n >= 500 && n <= 60000) this.eventsAutoplayMs = n;
       }
       const grpData = await app.request({
         method: 'GET',
@@ -786,6 +809,10 @@ export default class BjxySettings extends ExtensionPage {
       this.students.filter(s => s.name || (s.photos && s.photos.length > 0))
         .map(s => ({ name: s.name, level: s.level, achievement: s.achievement, photos: s.photos || [], url: s.url || '' }))
     );
+    // v0.1.6g: 活动 swiper 自动轮播间隔 (毫秒, 默认 3000, 范围 500-60000)
+    //   save 时也 clamp 一次, 防止 input 边界越界
+    const ms = parseInt(this.eventsAutoplayMs, 10);
+    payload.bjxy_events_autoplay_ms = (!isNaN(ms) && ms >= 500 && ms <= 60000) ? String(ms) : '3000';
     try {
       await app.request({
         method: 'POST',

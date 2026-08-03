@@ -15,7 +15,7 @@ import Component from 'flarum/common/Component';
 //   (modules 数组只有 ['0', '1'] 表示 core + virtual), 按钮 click 没绑 event
 //   辉哥 12:55 反馈 "swiper 左右切换箭头点击没效果", 确认 navigation 初始化失败
 import Swiper from 'swiper';
-import { Navigation, Pagination } from 'swiper/modules';
+import { Navigation, Pagination, Autoplay } from 'swiper/modules';
 import 'swiper/css';
 
 const DEFAULT_BRAND = '北极雪屿';
@@ -79,12 +79,16 @@ export default class BjxyPage extends Component {
   //   vnode.dom 是 swiper container
   //   onremove 时销毁避免内存泄漏
   // v0.1.6c 改: 加 modules: [Navigation, Pagination]
+  // v0.1.6g 改: 加 Autoplay module, delay 从 bjxy_events_autoplay_ms setting 读
+  //   delay 默认 3000ms, disableOnInteraction=false 用户操作后继续自动轮播
   initSwiper(vnode) {
     if (!vnode || !vnode.dom) return;
     if (this.swiper) this.swiper.destroy(true, true);
+    const autoplayMs = parseInt(app.forum.attribute('bjxy_events_autoplay_ms'), 10) || 3000;
     this.swiper = new Swiper(vnode.dom, {
       // v0.1.6c: 必须传 modules, 不传 swiper 11 navigation/pagination 不会 attach
-      modules: [Navigation, Pagination],
+      // v0.1.6g: 加 Autoplay module (SOP 90)
+      modules: [Navigation, Pagination, Autoplay],
       loop: true,
       slidesPerView: 1,
       spaceBetween: 16,
@@ -92,6 +96,11 @@ export default class BjxyPage extends Component {
       navigation: {
         nextEl: vnode.dom.querySelector('.swiper-button-next'),
         prevEl: vnode.dom.querySelector('.swiper-button-prev'),
+      },
+      // v0.1.6g: 自动轮播配置 (后台 bjxy_events_autoplay_ms, 默认 3000ms)
+      autoplay: {
+        delay: autoplayMs,
+        disableOnInteraction: false,
       },
     });
   }
