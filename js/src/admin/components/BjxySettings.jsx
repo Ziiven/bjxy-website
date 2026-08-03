@@ -297,9 +297,9 @@ export default class BjxySettings extends ExtensionPage {
         ]),
       ]),
 
-      // v0.1.6: Section 7 学员评价 (结构化 JSON 替代 HTML 自由区)
+      // v0.1.6 + v0.1.6a: Section 7 学员评价 (结构化 JSON, 大众点评风格多图)
       m('div', { class: 'BjxySection' }, [
-        m('div', { class: 'BjxySection-head' }, '💬 学员评价 (结构化 JSON)'),
+        m('div', { class: 'BjxySection-head' }, '💬 学员评价 (结构化 JSON, 多图)'),
         m('div', { class: 'BjxySection-body' }, [
           m('div', { class: 'BjxyField-array BjxyField-array-wide' }, [
             this.reviews.map((r, i) => m('div', { class: 'BjxyField-array-card', key: 'r' + i }, [
@@ -311,16 +311,6 @@ export default class BjxySettings extends ExtensionPage {
                 }, '× 删除'),
               ]),
               m('div', { class: 'BjxyField-array-card-body' }, [
-                m('div', { class: 'BjxyField-row' }, [
-                  m('div', { class: 'BjxyField-label' }, '头像 (走 ziven-core COS)'),
-                  m('div', null, [
-                    m('div', { class: 'BjxyField-file', onclick: (e) => this.uploadFileForArray(e, this.reviews, i, 'photoUrl') }, '📷 点击上传'),
-                    r.photoUrl ? m('div', { class: 'BjxyField-file-preview' }, [
-                      m('div', null, '✓ ' + r.photoUrl),
-                      m('img', { src: r.photoUrl, alt: '' }),
-                    ]) : null,
-                  ]),
-                ]),
                 m('div', { class: 'BjxyField-row' }, [
                   m('div', { class: 'BjxyField-label' }, '作者昵称'),
                   m('input', {
@@ -360,12 +350,28 @@ export default class BjxySettings extends ExtensionPage {
                     oninput: (e) => { r.date = e.target.value; },
                   }),
                 ]),
+                // v0.1.6a: 评价多图 (大众点评风格 缩略图墙)
+                m('div', { class: 'BjxyField-row' }, [
+                  m('div', { class: 'BjxyField-label' }, '评价图片 (多图)'),
+                  m('div', null, [
+                    r.photos && r.photos.length > 0 ? m('div', { class: 'BjxyField-photos-grid' },
+                      r.photos.map((url, pi) => m('div', { class: 'BjxyField-photo-item', key: 'rp' + i + 'p' + pi }, [
+                        m('img', { src: url, alt: '' }),
+                        m('button', {
+                          class: 'BjxyField-photo-del',
+                          onclick: () => { r.photos.splice(pi, 1); m.redraw(); },
+                        }, '×'),
+                      ]))
+                    ) : null,
+                    m('div', { class: 'BjxyField-file', onclick: (e) => this.uploadPhotoToArray(e, this.reviews, i) }, '📷 添加图片 (' + (r.photos ? r.photos.length : 0) + ' 张)'),
+                  ]),
+                ]),
               ]),
             ])),
             m('div', {
               class: 'BjxyField-array-add',
               onclick: () => {
-                this.reviews.push({ author: '', rating: 5, text: '', date: '', photoUrl: '' });
+                this.reviews.push({ author: '', rating: 5, text: '', date: '', photos: [] });
                 m.redraw();
               },
             }, '+ 添加评价'),
@@ -373,14 +379,14 @@ export default class BjxySettings extends ExtensionPage {
         ]),
       ]),
 
-      // v0.1.6: Section 8 学员展示 (升级 bjxy_students_json → bjxy_students)
+      // v0.1.6 + v0.1.6a: Section 8 活动展示 (原"学员展示"改名, swiper 轮播)
       m('div', { class: 'BjxySection' }, [
-        m('div', { class: 'BjxySection-head' }, '📸 学员展示 (结构化 JSON)'),
+        m('div', { class: 'BjxySection-head' }, '🎯 活动展示 (原"学员展示", swiper 轮播多图)'),
         m('div', { class: 'BjxySection-body' }, [
           m('div', { class: 'BjxyField-array BjxyField-array-wide' }, [
             this.students.map((s, i) => m('div', { class: 'BjxyField-array-card', key: 's' + i }, [
               m('div', { class: 'BjxyField-array-card-head' }, [
-                m('span', { class: 'BjxyField-array-card-num' }, '学员 #' + (i + 1)),
+                m('span', { class: 'BjxyField-array-card-num' }, '活动 #' + (i + 1)),
                 m('button', {
                   class: 'del',
                   onclick: () => { this.students.splice(i, 1); m.redraw(); },
@@ -388,51 +394,58 @@ export default class BjxySettings extends ExtensionPage {
               ]),
               m('div', { class: 'BjxyField-array-card-body' }, [
                 m('div', { class: 'BjxyField-row' }, [
-                  m('div', { class: 'BjxyField-label' }, '照片 (走 ziven-core COS)'),
-                  m('div', null, [
-                    m('div', { class: 'BjxyField-file', onclick: (e) => this.uploadFileForArray(e, this.students, i, 'photoUrl') }, '📷 点击上传'),
-                    s.photoUrl ? m('div', { class: 'BjxyField-file-preview' }, [
-                      m('div', null, '✓ ' + s.photoUrl),
-                      m('img', { src: s.photoUrl, alt: '' }),
-                    ]) : null,
-                  ]),
-                ]),
-                m('div', { class: 'BjxyField-row' }, [
-                  m('div', { class: 'BjxyField-label' }, '姓名'),
+                  m('div', { class: 'BjxyField-label' }, '活动名称'),
                   m('input', {
                     class: 'BjxyField-input',
                     value: s.name,
-                    placeholder: '王同学',
+                    placeholder: '春节滑雪冬令营',
                     oninput: (e) => { s.name = e.target.value; },
                   }),
                 ]),
                 m('div', { class: 'BjxyField-row' }, [
-                  m('div', { class: 'BjxyField-label' }, '等级 (例: 初级毕业)'),
+                  m('div', { class: 'BjxyField-label' }, '副标题 (例: 时间/地点)'),
                   m('input', {
                     class: 'BjxyField-input',
                     value: s.level,
-                    placeholder: '初级毕业',
+                    placeholder: '2026.02 · 崇礼万龙',
                     oninput: (e) => { s.level = e.target.value; },
                   }),
                 ]),
                 m('div', { class: 'BjxyField-row' }, [
-                  m('div', { class: 'BjxyField-label' }, '成就 (可选)'),
-                  m('input', {
-                    class: 'BjxyField-input',
+                  m('div', { class: 'BjxyField-label' }, '活动介绍'),
+                  m('textarea', {
+                    class: 'BjxyField-textarea',
                     value: s.achievement,
-                    placeholder: '3 个月零基础到刻滑',
+                    placeholder: '5 天 4 晚, 单板 + 双板, 适合 8-15 岁',
+                    rows: '2',
                     oninput: (e) => { s.achievement = e.target.value; },
                   }),
+                ]),
+                // v0.1.6a: 活动多图 (前台 swiper 轮播, 点击看 fancybox)
+                m('div', { class: 'BjxyField-row' }, [
+                  m('div', { class: 'BjxyField-label' }, '活动图片 (多图)'),
+                  m('div', null, [
+                    s.photos && s.photos.length > 0 ? m('div', { class: 'BjxyField-photos-grid' },
+                      s.photos.map((url, pi) => m('div', { class: 'BjxyField-photo-item', key: 'sp' + i + 'p' + pi }, [
+                        m('img', { src: url, alt: '' }),
+                        m('button', {
+                          class: 'BjxyField-photo-del',
+                          onclick: () => { s.photos.splice(pi, 1); m.redraw(); },
+                        }, '×'),
+                      ]))
+                    ) : null,
+                    m('div', { class: 'BjxyField-file', onclick: (e) => this.uploadPhotoToArray(e, this.students, i) }, '📷 添加图片 (' + (s.photos ? s.photos.length : 0) + ' 张)'),
+                  ]),
                 ]),
               ]),
             ])),
             m('div', {
               class: 'BjxyField-array-add',
               onclick: () => {
-                this.students.push({ name: '', level: '', photoUrl: '', achievement: '' });
+                this.students.push({ name: '', level: '', achievement: '', photos: [] });
                 m.redraw();
               },
-            }, '+ 添加学员'),
+            }, '+ 添加活动'),
           ]),
         ]),
       ]),
@@ -530,12 +543,14 @@ export default class BjxySettings extends ExtensionPage {
               rating: r.rating || 5,
               text: r.text || '',
               date: r.date || '',
-              photoUrl: r.photoUrl || '',
+              // v0.1.6a: 改 photoUrl (string) → photos (array), 老数据 fallback 兼容
+              photos: Array.isArray(r.photos) ? r.photos : (r.photoUrl ? [r.photoUrl] : []),
             }));
           }
         } catch (e) {}
       }
       // v0.1.6: 加载 students (升级老的 bjxy_students_json 简单 JSON)
+      // v0.1.6a: 学员 → 活动, photoUrl → photos
       if (this.data.bjxy_students) {
         try {
           const arr = JSON.parse(this.data.bjxy_students);
@@ -543,8 +558,8 @@ export default class BjxySettings extends ExtensionPage {
             this.students = arr.map(s => ({
               name: s.name || '',
               level: s.level || '',
-              photoUrl: s.photoUrl || '',
               achievement: s.achievement || '',
+              photos: Array.isArray(s.photos) ? s.photos : (s.photoUrl ? [s.photoUrl] : []),
             }));
           }
         } catch (e) {}
@@ -675,6 +690,41 @@ export default class BjxySettings extends ExtensionPage {
     fileInput.click();
   }
 
+  // v0.1.6a: 给 array 元素的 photos 数组追加图片 (评价/活动 多图上传)
+  //   写入 arr[i].photos.push(url), 跟 v0.1.6 uploadFileForArray 区别: 累加不覆盖
+  async uploadPhotoToArray(e, arr, i) {
+    e.preventDefault();
+    const fileInput = document.createElement('input');
+    fileInput.type = 'file';
+    fileInput.accept = 'image/*';
+    fileInput.onchange = async (ev) => {
+      const file = ev.target.files[0];
+      if (!file) return;
+      const form = new FormData();
+      form.append('file', file);
+      const kind = arr === this.reviews ? 'review' : 'event';
+      form.append('key', 'bjxy_' + kind + '_photo_' + i + '_' + Date.now());
+      try {
+        const r = await app.request({
+          method: 'POST',
+          url: app.forum.attribute('apiUrl') + '/bjxy/upload',
+          body: form,
+        });
+        if (r.ok && r.url) {
+          if (!Array.isArray(arr[i].photos)) arr[i].photos = [];
+          arr[i].photos.push(r.url);
+          app.alerts.show({ type: 'success' }, '图片上传成功 (' + arr[i].photos.length + ' 张)');
+          m.redraw();
+        } else {
+          app.alerts.show({ type: 'error' }, r.error || '上传失败');
+        }
+      } catch (err) {
+        app.alerts.show({ type: 'error' }, '上传异常: ' + err.message);
+      }
+    };
+    fileInput.click();
+  }
+
   async save() {
     this.saving = true;
     m.redraw();
@@ -700,14 +750,18 @@ export default class BjxySettings extends ExtensionPage {
         }))
     );
     // v0.1.6: 评价 (结构化 array 替代 bjxy_reviews_html 自由区)
+    // v0.1.6a: photos 数组 (替代 photoUrl string), 兼容老的 photoUrl 字段
     //   只保存有任意字段填了的 review (避免空对象污染 DB)
     payload.bjxy_reviews = JSON.stringify(
-      this.reviews.filter(r => r.author || r.text || r.photoUrl)
+      this.reviews.filter(r => r.author || r.text || (r.photos && r.photos.length > 0))
+        .map(r => ({ author: r.author, rating: r.rating, text: r.text, date: r.date, photos: r.photos || [] }))
     );
-    // v0.1.6: 学员展示 (升级 bjxy_students_json 简单 JSON → bjxy_students 完整 array)
-    //   只保存有任意字段填了的 student
+    // v0.1.6 + v0.1.6a: 活动展示 (升级 bjxy_students_json 简单 JSON → bjxy_students 完整 array)
+    //   v0.1.6a: photos 数组 (替代 photoUrl string), 兼容老的 photoUrl 字段
+    //   只保存有任意字段填了的活动
     payload.bjxy_students = JSON.stringify(
-      this.students.filter(s => s.name || s.photoUrl)
+      this.students.filter(s => s.name || (s.photos && s.photos.length > 0))
+        .map(s => ({ name: s.name, level: s.level, achievement: s.achievement, photos: s.photos || [] }))
     );
     try {
       await app.request({

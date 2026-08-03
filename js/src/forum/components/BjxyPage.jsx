@@ -4,8 +4,14 @@
 //   .bjxy-curri-tabs / .bjxy-curri-tab / .bjxy-level-card / .bjxy-section .bjxy-sub
 // 8 section settings 走 app.forum.attribute('bjxy_*') (SOP 56)
 // 17 级 + 6 特色 走 app.data.bjxyCurriculum / bjxyFeatures (vendor custom payload)
+// v0.1.6a: 评价多图 (大众点评风格) + 活动展示 swiper 轮播 + 复用 ziven-core fancybox
+//   复用 ziven-core 的 app.fancyboxOpen 跟 window.Fancybox (ziven-core/forum/index.js 静态加载)
+//   swiper 走本地 npm install (跟 sortablejs v0.1.4 一样路线)
 import app from 'flarum/forum/app';
 import Component from 'flarum/common/Component';
+// v0.1.6a: 引入 swiper ES module
+import Swiper from 'swiper';
+import 'swiper/css';
 
 const DEFAULT_BRAND = '北极雪屿';
 const DEFAULT_SLOGAN = '室内滑雪 · 全国连锁';
@@ -24,6 +30,75 @@ export default class BjxyPage extends Component {
   renderStars(rating) {
     const r = Math.max(1, Math.min(5, parseInt(rating) || 5));
     return '★'.repeat(r) + '☆'.repeat(5 - r);
+  }
+
+  // v0.1.6a: fancybox 多图 gallery 工具
+  //   复用 ziven-core 的 window.Fancybox (ziven-core/forum/index.js 静态加载)
+  //   直接调 Fancybox.show 不依赖 app.fancyboxOpen (那个只支持单图)
+  //   等 window.Fancybox 加载完成 (ziven-core 是静默加载, 可能 page render 时还没好)
+  openFancyboxGallery(urls, idx = 0) {
+    if (!urls || urls.length === 0) return;
+    const doOpen = () => {
+      if (window.Fancybox && window.Fancybox.show) {
+        window.Fancybox.show(
+          urls.map(u => ({ src: u, type: 'image' })),
+          {
+            startIndex: idx,
+            dragToClose: false,
+          }
+        );
+      } else {
+        console.warn('Fancybox not loaded yet, retry...');
+      }
+    };
+    if (window.Fancybox && window.Fancybox.show) {
+      doOpen();
+    } else {
+      // 触发 ziven-core 加载, 然后轮询等
+      if (app && app.fancyboxOpen) app.fancyboxOpen(urls[0]);
+      let attempts = 0;
+      const check = setInterval(() => {
+        attempts++;
+        if (window.Fancybox && window.Fancybox.show) {
+          clearInterval(check);
+          doOpen();
+        } else if (attempts > 50) {
+          clearInterval(check);
+          console.error('Fancybox load timeout');
+        }
+      }, 100);
+    }
+  }
+
+  // v0.1.6a: swiper 初始化 (评价/活动 轮播)
+  //   vnode.dom 是 swiper container
+  //   onremove 时销毁避免内存泄漏
+  initSwiper(vnode) {
+    if (!vnode || !vnode.dom) return;
+    if (this.swiper) this.swiper.destroy(true, true);
+    this.swiper = new Swiper(vnode.dom, {
+      loop: true,
+      slidesPerView: 1,
+      spaceBetween: 16,
+      pagination: { el: vnode.dom.querySelector('.swiper-pagination'), clickable: true },
+      navigation: {
+        nextEl: vnode.dom.querySelector('.swiper-button-next'),
+        prevEl: vnode.dom.querySelector('.swiper-button-prev'),
+      },
+    });
+  }
+
+  // 销毁 swiper
+  destroySwiper() {
+    if (this.swiper) {
+      this.swiper.destroy(true, true);
+      this.swiper = null;
+    }
+  }
+
+  // 组件销毁时清理
+  onremove() {
+    this.destroySwiper();
   }
 
   view() {
@@ -50,7 +125,8 @@ export default class BjxyPage extends Component {
       if (!raw) return [];
       try { const arr = JSON.parse(raw); return Array.isArray(arr) ? arr : []; } catch (e) { return []; }
     })();
-    const students = (() => {
+    // v0.1.6a: 学员 → 活动 (仍读 bjxy_students setting, 但展示为"活动")
+    const events = (() => {
       const raw = s('bjxy_students', '[]');
       if (!raw) return [];
       try { const arr = JSON.parse(raw); return Array.isArray(arr) ? arr : []; } catch (e) { return []; }
@@ -147,6 +223,7 @@ export default class BjxyPage extends Component {
           m('a', { href: '#curriculum' }, '教学'),
           m('a', { href: '#coaches' }, '教练'),
           m('a', { href: '#reviews' }, '评价'),
+          m('a', { href: '#events' }, '活动'),
           m('a', { href: '#contact' }, '联系'),
         ]),
         m('div', { class: 'bjxy-nav-right' }, [
@@ -264,44 +341,72 @@ export default class BjxyPage extends Component {
               })),
       ]),
 
-      // ===== 评价 (v0.1.6 结构化字段替代 HTML 自由区) =====
-      // 优先级: 新 bjxy_reviews (array) > 老 bjxy_reviews_html (fallback 兼容旧部署)
+      // ===== 评价 (v0.1.6a: 大众点评风格 评价+图片) =====
+      // 优先级: 新 bjxy_reviews (array, 带 photos 多图) > 老 bjxy_reviews_html (fallback 兼容旧部署)
       m('section', { class: 'bjxy-section', id: 'reviews' }, [
         m('div', { class: 'bjxy-sub' }, 'REVIEWS'),
         m('h2', null, '学员评价'),
         reviews.length > 0
-          ? m('div', { class: 'bjxy-review-grid' }, reviews.map((r, i) => m('div', { class: 'bjxy-review', key: 'r' + i }, [
-              m('div', { class: 'bjxy-review-stars' }, this.renderStars(r.rating || 5)),
-              m('div', { class: 'bjxy-review-quote' }, r.text || ''),
-              m('div', { class: 'bjxy-review-author' }, [
-                m('span', { class: 'bjxy-review-author-av' }, [
-                  r.photoUrl ? m('img', { src: r.photoUrl, alt: r.author || '' }) : (r.author || '?').charAt(0),
+          ? m('div', { class: 'bjxy-review-grid' }, reviews.map((r, i) => {
+              // v0.1.6a: photos 数组 (兼容老的 photoUrl 字符串)
+              const photos = Array.isArray(r.photos) ? r.photos : (r.photoUrl ? [r.photoUrl] : []);
+              return m('div', { class: 'bjxy-review', key: 'r' + i }, [
+                m('div', { class: 'bjxy-review-stars' }, this.renderStars(r.rating || 5)),
+                m('div', { class: 'bjxy-review-quote' }, r.text || ''),
+                m('div', { class: 'bjxy-review-author' }, [
+                  m('span', { class: 'bjxy-review-author-av' }, (r.author || '?').charAt(0)),
+                  m('span', null, r.author || '匿名'),
+                  r.date ? m('span', { class: 'bjxy-review-date' }, ' · ' + r.date) : null,
                 ]),
-                m('span', null, r.author || '匿名'),
-                r.date ? m('span', { class: 'bjxy-review-date' }, ' · ' + r.date) : null,
-              ]),
-            ])))
+                // v0.1.6a: 大众点评风格 缩略图墙 (4 列 grid, click → fancybox gallery)
+                photos.length > 0 ? m('div', { class: 'bjxy-review-photos' },
+                  photos.map((url, pi) => m('a', {
+                    key: 'rp' + i + 'p' + pi,
+                    class: 'bjxy-review-photo',
+                    style: { backgroundImage: 'url(' + url + ')' },
+                    onclick: (e) => { e.preventDefault(); this.openFancyboxGallery(photos, pi); },
+                  }))
+                ) : null,
+              ]);
+            }))
           : reviewsHtml
             ? m('div', { class: 'bjxy-reviews-html', oncreate: ({ dom }) => { dom.innerHTML = reviewsHtml; } })
             : m('p', null, '（暂无评价, 请在后台添加）'),
       ]),
 
-      // ===== 学员展示 (v0.1.6 升级老 bjxy_students_json 简单 JSON) =====
-      m('section', { class: 'bjxy-section bjxy-section-alt', id: 'students' }, [
-        m('div', { class: 'bjxy-sub' }, 'STUDENTS'),
-        m('h2', null, '学员展示'),
-        students.length > 0
-          ? m('div', { class: 'bjxy-student-grid' }, students.map((s, i) => m('div', { class: 'bjxy-student', key: 's' + i }, [
-              s.photoUrl ? m('img', { src: s.photoUrl, alt: s.name || '' }) : null,
-              m('div', { class: 'bjxy-student-label' }, [
-                s.name || '学员',
-                s.level ? ' · ' + s.level : '',
-              ]),
-              s.achievement ? m('div', { class: 'bjxy-student-achievement' }, s.achievement) : null,
-            ])))
+      // ===== 活动展示 (v0.1.6a: 学员 → 活动, swiper 轮播) =====
+      // 跟 v0.1.6 评价/学员一样: 优先新 bjxy_students array, fallback 老 bjxy_students_html
+      m('section', { class: 'bjxy-section bjxy-section-alt', id: 'events' }, [
+        m('div', { class: 'bjxy-sub' }, 'EVENTS'),
+        m('h2', null, '活动展示'),
+        events.length > 0
+          ? m('div', { class: 'bjxy-event-swiper swiper', oncreate: (vnode) => this.initSwiper(vnode) }, [
+              m('div', { class: 'swiper-wrapper' },
+                events.map((ev, i) => {
+                  const photos = Array.isArray(ev.photos) ? ev.photos : (ev.photoUrl ? [ev.photoUrl] : []);
+                  const firstPhoto = photos[0];
+                  return m('div', { class: 'swiper-slide bjxy-event-slide', key: 'ev' + i }, [
+                    firstPhoto ? m('a', {
+                      class: 'bjxy-event-photo',
+                      style: { backgroundImage: 'url(' + firstPhoto + ')' },
+                      onclick: (e) => { e.preventDefault(); this.openFancyboxGallery(photos, 0); },
+                    }) : m('div', { class: 'bjxy-event-photo bjxy-event-photo-empty' }),
+                    m('div', { class: 'bjxy-event-info' }, [
+                      m('div', { class: 'bjxy-event-name' }, ev.name || '活动 #' + (i + 1)),
+                      ev.level ? m('div', { class: 'bjxy-event-level' }, ev.level) : null,
+                      ev.achievement ? m('div', { class: 'bjxy-event-desc' }, ev.achievement) : null,
+                      photos.length > 1 ? m('div', { class: 'bjxy-event-photo-count' }, '📷 ' + photos.length + ' 张, 点击查看全部') : null,
+                    ]),
+                  ]);
+                })
+              ),
+              m('div', { class: 'swiper-button-prev' }),
+              m('div', { class: 'swiper-button-next' }),
+              m('div', { class: 'swiper-pagination' }),
+            ])
           : studentsHtml
             ? m('div', { class: 'bjxy-student-grid', oncreate: ({ dom }) => { dom.innerHTML = studentsHtml; } })
-            : m('p', null, '（暂无学员展示, 请在后台添加）'),
+            : m('p', null, '（暂无活动展示, 请在后台添加）'),
       ]),
 
       // ===== 联系 =====

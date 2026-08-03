@@ -622,6 +622,120 @@
 }
 .bjxy-student:hover .bjxy-student-achievement { opacity: 1; }
 
+// ===== 评价 v0.1.6a: 大众点评风格 缩略图墙 =====
+.bjxy-review-photos {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 6px;
+    margin-top: 10px;
+}
+.bjxy-review-photo {
+    aspect-ratio: 1;
+    background-size: cover;
+    background-position: center;
+    background-color: var(--bjxy-border);
+    border-radius: 4px;
+    cursor: zoom-in;
+    transition: transform 0.15s, box-shadow 0.15s;
+    display: block;
+}
+.bjxy-review-photo:hover {
+    transform: scale(1.03);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+}
+
+// ===== 活动展示 v0.1.6a: swiper 轮播 =====
+.bjxy-event-swiper {
+    position: relative;
+    margin-top: 16px;
+    overflow: hidden;
+    border-radius: 8px;
+}
+.bjxy-event-slide {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    background: var(--bjxy-bg-soft);
+    border: 1px solid var(--bjxy-border);
+    border-radius: 8px;
+    overflow: hidden;
+    align-items: stretch;
+}
+.bjxy-event-photo {
+    background-size: cover;
+    background-position: center;
+    background-color: var(--bjxy-border);
+    min-height: 320px;
+    cursor: zoom-in;
+    display: block;
+    transition: transform 0.2s;
+}
+.bjxy-event-photo:hover { transform: scale(1.02); }
+.bjxy-event-photo-empty {
+    background: linear-gradient(135deg, var(--bjxy-blue-soft), var(--bjxy-bg));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--bjxy-text-mute);
+    font-size: 14px;
+}
+.bjxy-event-info {
+    padding: 32px 24px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 8px;
+}
+.bjxy-event-name {
+    font-size: 22px;
+    font-weight: 800;
+    color: var(--bjxy-text);
+}
+.bjxy-event-level {
+    font-size: 12px;
+    color: var(--bjxy-blue);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+}
+.bjxy-event-desc {
+    font-size: 14px;
+    line-height: 1.7;
+    color: var(--bjxy-text-soft);
+    margin-top: 8px;
+}
+.bjxy-event-photo-count {
+    font-size: 11px;
+    color: var(--bjxy-text-mute);
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px dashed var(--bjxy-border);
+}
+// swiper navigation 按钮
+.bjxy-event-swiper .swiper-button-prev,
+.bjxy-event-swiper .swiper-button-next {
+    color: var(--bjxy-text);
+    background: rgba(255, 255, 255, 0.7);
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    margin-top: -18px;
+}
+.bjxy-event-swiper .swiper-button-prev::after,
+.bjxy-event-swiper .swiper-button-next::after { font-size: 16px; font-weight: 800; }
+[data-theme^="dark"] .bjxy-event-swiper .swiper-button-prev,
+[data-theme^="dark"] .bjxy-event-swiper .swiper-button-next {
+    background: rgba(45, 55, 72, 0.8);
+    color: #fff;
+}
+.bjxy-event-swiper .swiper-pagination { position: relative; margin-top: 12px; text-align: center; }
+.bjxy-event-swiper .swiper-pagination-bullet {
+    background: var(--bjxy-border);
+    opacity: 1;
+    margin: 0 4px;
+}
+.bjxy-event-swiper .swiper-pagination-bullet-active { background: var(--bjxy-blue); }
+
 // ===== 联系我们 =====
 .bjxy-contact-grid {
     display: grid;
@@ -698,6 +812,10 @@
     .bjxy-curri-list { grid-template-columns: 1fr; }
     .bjxy-coach-grid { grid-template-columns: repeat(3, 1fr); }
     .bjxy-review-grid { grid-template-columns: 1fr; }
+    .bjxy-review-photos { grid-template-columns: repeat(3, 1fr); }
+    .bjxy-event-slide { grid-template-columns: 1fr; }
+    .bjxy-event-photo { min-height: 200px; }
+    .bjxy-event-info { padding: 16px; }
     .bjxy-student-grid { grid-template-columns: repeat(3, 1fr); }
     .bjxy-contact-grid { grid-template-columns: 1fr 1fr; }
     .bjxy-stats { grid-template-columns: 1fr 1fr 1fr; }
