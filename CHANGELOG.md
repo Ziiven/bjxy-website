@@ -725,3 +725,59 @@
 
 ### Commit
 - v0.1.3a: 待 commit
+
+---
+
+## v0.1.4 (2026-08-03) — Modal 展示 user + sortablejs 拖拽排序
+
+### 改
+- 辉哥 09:00 反馈 "打开的modal应该是展示所选用户组中的所有用户, 并且可以拖拽排序, 而不是展示用户组, 因为用户组在后台页面已经可以选择了"
+- 之前 v0.1.3 modal 展示 group 让用户多选, 错 — 应该展示所选 group 内的 user
+- Flarum 2.0 vendor 自带 sortablejs v1.14.0 (`/var/www/flarum/vendor/flarum/core/js/package.json` dependencies), 直接 import 即可, 不用装新依赖
+
+### 改 5 个文件 + 1 个新文件
+- **新文件**: `src/Api/Controllers/GroupUsersController.php`
+  - GET /api/bjxy/group-users?ids=1,2,3
+  - 查 group_user 表 join users, 排除未激活邮箱用户, 合并去重按 id 排序
+  - 返回 { users: [{id, username, displayName, avatarUrl}] }
+- **新文件**: 重写 `js/src/admin/components/GroupPickerModal.js`
+  - 改展示 user (调 /api/bjxy/group-users), 多选 + sortablejs 拖拽
+  - 保存到 bjxy_coach_user_ids setting (user id 数组, 拖拽顺序)
+  - modal header: 拖拽调整顺序, 勾选/取消选择用户
+  - footer: 已选 N / M + 取消/确认
+  - onhide + onremove 兜底触发父级 onhide
+  - onremove 销毁 sortablejs 实例防止内存泄漏
+- **重写 `src/Api/Controllers/CoachesController.php`**:
+  - 优先读 bjxy_coach_user_ids (按 user id 列表查, 顺序就是拖拽后保存的顺序)
+  - fallback 老的 bjxy_coach_group_ids (group 拉 user, 兼容旧部署)
+  - 排除未激活邮箱用户
+- **extend.php**:
+  - 加 `->serializeToForum('bjxy_coach_user_ids', 'bjxy_coach_user_ids')`
+  - 加 route: `->get('/bjxy/group-users', 'bjxy.group_users', GroupUsersController::class)`
+- **js/src/admin/components/BjxySettings.jsx**:
+  - oninit 加 `this.coachUserIds = []`
+  - loadData 加 `bjxy_coach_user_ids` JSON parse
+  - save() 加 `payload.bjxy_coach_user_ids = JSON.stringify(this.coachUserIds)`
+  - openGroupModal() 改传 `groupIds, selectedUserIds` (不是 group)
+  - 按钮文案改 "弹 modal 选用户 (v0.1.4)"
+  - 加 "已选 N 个用户" hint (coachUserIds > 0 时显示)
+- **less/admin.less**:
+  - .GroupPickerModal-item grid 改 5 列 (handle + checkbox + avatar + name + username)
+  - 加 .GroupPickerModal-item-handle (拖拽手柄), .GroupPickerModal-item-avatar
+  - 加 sortablejs 3 状态: .sortable-ghost (拖拽中 0.4 opacity), .sortable-chosen (grabbing cursor), .sortable-drag (shadow)
+  - 加 .GroupPickerModal-hint (顶部提示), .GroupPickerModal-loading, .GroupPickerModal-actions, .GroupPickerModal-count
+
+### 数据结构变化
+- 新 setting `bjxy_coach_user_ids` (JSON user id 数组)
+- 旧 `bjxy_coach_group_ids` (group id 数组) 保留, 作为 modal 的"候选范围"
+- 前台 CoachesController 优先 user ids, fallback group ids, 兼容旧部署
+
+### Playwright 验证 (待做)
+- 后台选 1+ group → "弹 modal 选用户" 按钮出现
+- 点按钮 → 调 /bjxy/group-users → 展示 user 列表
+- 多选 / 取消 / 拖拽排序 → onSelect 回调保存 user id 数组
+- 0 user 时确认按钮 disabled
+- 前台 /bjxy 教练 section 展示选中的 user (按拖拽顺序)
+
+### Commit
+- v0.1.4: 待 commit

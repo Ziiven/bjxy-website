@@ -56,6 +56,8 @@ export default class BjxySettings extends ExtensionPage {
     this.features = JSON.parse(JSON.stringify(DEFAULT_FEATURES));
     // v0.1.0s 改: this.boards array 替代 this.single / this.double
     this.boards = JSON.parse(JSON.stringify(DEFAULT_BOARDS));
+    // v0.1.4: 教练 user id 数组 (GroupPickerModal 选 user 后保存, 取代之前只用 group 拉)
+    this.coachUserIds = [];
     this.coachGroupIds = [];
     this.allGroups = [];
     this.loadSettings();
@@ -280,8 +282,9 @@ export default class BjxySettings extends ExtensionPage {
             // v0.1.3 改: 弹 modal 选用户组 按钮条件显示 — 只在选了 ≥1 个 group 时才出现
             //   辉哥反馈 "用户只有选了至少一个用户组后, 才会展示那个弹modal的按钮"
             //   之前无条件显示, 用户没选 group 时点击会弹 "没有可用的用户组" 提示, 体验不好
-            this.coachGroupIds.length > 0 ? m('div', { class: 'BjxyField-group-pick', onclick: () => this.openGroupModal() }, '🎯 弹 modal 选用户组 (v0.1.1)') : null,
-            m('div', { class: 'BjxyField-hint' }, '💡 选中用户组内的所有用户将作为教练展示. 拖拽排序 + 弹 modal 在 v0.1.1.'),
+            this.coachGroupIds.length > 0 ? m('div', { class: 'BjxyField-group-pick', onclick: () => this.openGroupModal() }, '🎯 弹 modal 选用户 (v0.1.4)') : null,
+            // v0.1.4 加: 已选 user 数量提示
+            this.coachUserIds.length > 0 ? m('div', { class: 'BjxyField-hint' }, '✅ 已选 ' + this.coachUserIds.length + ' 个用户作为教练 (前台展示用). 拖拽排序顺序.') : m('div', { class: 'BjxyField-hint' }, '💡 选中用户组 + 弹 modal 选用户 (拖拽排序) 后, 这些用户将作为教练展示.'),
           ]),
         ]),
       ]),
@@ -386,6 +389,10 @@ export default class BjxySettings extends ExtensionPage {
       if (this.data.bjxy_coach_group_ids) {
         try { this.coachGroupIds = JSON.parse(this.data.bjxy_coach_group_ids); } catch (e) {}
       }
+      // v0.1.4: 加载 coach user ids (modal 选 user 后保存到 bjxy_coach_user_ids)
+      if (this.data.bjxy_coach_user_ids) {
+        try { this.coachUserIds = JSON.parse(this.data.bjxy_coach_user_ids); } catch (e) {}
+      }
       const grpData = await app.request({
         method: 'GET',
         url: app.forum.attribute('apiUrl') + '/groups',
@@ -412,17 +419,19 @@ export default class BjxySettings extends ExtensionPage {
 
   // v0.1.3 改: 弹真正的 mithril Modal (GroupPickerModal) 替代 v0.1.0f 留的 alert 占位
   //   Flarum 2.0 ModalManager.show(modalClass, attrs) 传 Component class, 不要传 plain object
-  //   选中后回调 onSelect(ids) 更新 this.coachGroupIds
-  // v0.1.3 + 修: 弹 modal 前保存 scrollY, modal 关闭后恢复 (修 Flarum 2.0 ModalManager
+  //   选中后回调 onSelect(ids) 更新 this.coachUserIds
+  // v0.1.3a 修: 弹 modal 前保存 scrollY, modal 关闭后恢复 (修 Flarum 2.0 ModalManager
   //   副作用: 弹 modal 时会自动重置页面滚动位置, 用户在 admin 页面滚到教练 section
   //   点按钮 → modal 弹 → 页面 scroll 变 0 (跳到顶部). 修法: 弹之前记 scrollY, 关 modal 后恢复
+  // v0.1.4 改: modal 展示的是所选 group 内的 user (不是 group), 后台选 group 还在后台页面做
+  //   modal 调 /api/bjxy/group-users 拿 user 列表, admin 多选 + 拖拽排序 → 保存到 bjxy_coach_user_ids
   openGroupModal() {
     const scrollY = window.scrollY || document.documentElement.scrollTop || 0;
     app.modal.show(GroupPickerModal, {
-      allGroups: this.allGroups,
-      selectedIds: this.coachGroupIds,
+      groupIds: this.coachGroupIds,
+      selectedUserIds: this.coachUserIds,
       onSelect: (ids) => {
-        this.coachGroupIds = ids;
+        this.coachUserIds = ids;
         m.redraw();
       },
       onhide: () => {
@@ -477,6 +486,8 @@ export default class BjxySettings extends ExtensionPage {
     // v0.1.0s 改: boards array 写到 bjxy_curriculum_boards_json 新字段
     payload.bjxy_curriculum_boards_json = JSON.stringify(this.boards);
     payload.bjxy_coach_group_ids = JSON.stringify(this.coachGroupIds);
+    // v0.1.4: 教练 user id 数组 (modal 选 user 后保存, 前台优先用)
+    payload.bjxy_coach_user_ids = JSON.stringify(this.coachUserIds);
     try {
       await app.request({
         method: 'POST',

@@ -96,6 +96,8 @@ return [
         // v0.1.2: 公安备案号 + 网安链接 (国家规定中国大陆站点 footer 必须有)
         ->serializeToForum('bjxy_police_number', 'bjxy_police_number')
         ->serializeToForum('bjxy_police_link', 'bjxy_police_link')
+        // v0.1.4: 教练 user id 数组 (GroupPickerModal 弹 modal 选 user 后保存, 前台优先用这个列表)
+        ->serializeToForum('bjxy_coach_user_ids', 'bjxy_coach_user_ids')
         ->serializeToForum('bjxy_reviews_html', 'bjxy_reviews_html')
         ->serializeToForum('bjxy_students_html', 'bjxy_students_html')
         ->serializeToForum('bjxy_bg_gradient_light_start', 'bjxy_bg_gradient_light_start')
@@ -118,5 +120,7 @@ return [
         ->post('/bjxy/settings', 'bjxy.settings.post', \Ziiven\BjxyWebsite\Api\Controllers\SettingsController::class)
         ->post('/bjxy/upload', 'bjxy.upload', \Ziiven\BjxyWebsite\Api\Controllers\UploadController::class)
         ->get('/bjxy/coaches', 'bjxy.coaches', \Ziiven\BjxyWebsite\Api\Controllers\CoachesController::class)
-        ->get('/bjxy/coach/{id}', 'bjxy.coach.show', \Ziiven\BjxyWebsite\Api\Controllers\CoachShowController::class),
+        ->get('/bjxy/coach/{id}', 'bjxy.coach.show', \Ziiven\BjxyWebsite\Api\Controllers\CoachShowController::class)
+        // v0.1.4: GroupPickerModal 调这个 API 拿所选 group 的 user 列表
+        ->get('/bjxy/group-users', 'bjxy.group_users', \Ziiven\BjxyWebsite\Api\Controllers\GroupUsersController::class),
 ];

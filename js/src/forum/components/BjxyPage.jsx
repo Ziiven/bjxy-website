@@ -281,6 +281,9 @@ export default class BjxyPage extends Component {
   }
 
   loadCoaches() {
+    // v0.1.4 改: 优先用 /api/bjxy/coaches (读 bjxy_coach_user_ids setting, 拿具体 user)
+    //   fallback 老的 /api/bjxy/coaches (读 bjxy_coach_group_ids setting, 拿 group 内 user)
+    //   两个 API 共存兼容旧部署
     m.request({
       method: 'GET',
       url: app.forum.attribute('apiUrl') + '/bjxy/coaches',
