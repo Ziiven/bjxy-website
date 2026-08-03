@@ -1,9 +1,13 @@
-// v0.1.4: 弹 modal 选用户 (从所选 group 来的) + 拖拽排序
-//   之前 v0.1.3 弹 modal 选 group, 现在改: 后台选 group (已存在) → 弹 modal 展示 group 内的 user
-//   admin 可以多选/取消 user + 拖拽排序 + 保存到 bjxy_coach_user_ids
+// v0.1.5: 弹 modal 选用户 + 编辑详情
+//   - 复用 v0.1.4 的 modal pattern (继承 Modal, onhide/onremove 钩子 + scrollY 保留)
+//   - 复用 v0.1.4 的 sortablejs 拖拽 (按 selectedUserIds 顺序排)
+//   - 新加: 每个选中的 user 可填 4 个详情 (bio / achievements / specialties / photoUrl)
+//   - 返回: { userIds, details: { userId: {bio, achievements, specialties, photoUrl} } }
 //
-// 复用 v0.1.3 的 Modal pattern (继承 flarum/common/components/Modal, onhide/onremove 钩子)
-// sortablejs 是 Flarum 2.0 vendor 自带 (v1.14.0), 直接 import
+// 跟 v0.1.4 的区别:
+//   - v0.1.4: 只选 user, 不填详情, onSelect(userIds) 回调
+//   - v0.1.5: 选 user + 填详情, onSelect({userIds, details}) 回调
+//   - photo 走 ziven-core COS (跟其他 bjxy fileField 一致, uploadFile 通过 bjxy/upload 接口)
 
 import app from 'flarum/admin/app';
 import Modal from 'flarum/common/components/Modal';
@@ -16,17 +20,30 @@ export default class GroupPickerModal extends Modal {
 
   oninit(vnode) {
     super.oninit(vnode);
-    // vnode.attrs: { groupIds, selectedUserIds, onSelect, onhide }
+    // vnode.attrs: { groupIds, selectedUserIds, details, onSelect, onhide }
     this.groupIds = vnode.attrs.groupIds || [];
     this.selectedUserIds = (vnode.attrs.selectedUserIds || []).slice();
     this.onSelect = vnode.attrs.onSelect || (() => {});
     this.attrsOnhide = vnode.attrs.onhide || null;
-    // 用户列表 (从 /api/bjxy/group-users 拿)
+    // v0.1.5: details map (userId -> {bio, achievements, specialties, photoUrl})
+    this.details = {};
+    if (vnode.attrs.details && typeof vnode.attrs.details === 'object') {
+      Object.keys(vnode.attrs.details).forEach(uid => {
+        const d = vnode.attrs.details[uid];
+        this.details[uid] = {
+          bio: d.bio || '',
+          achievements: d.achievements || '',
+          specialties: d.specialties || '',
+          photoUrl: d.photoUrl || '',
+        };
+      });
+    }
+    // 当前选中的 user (右侧详情 form 显示哪个 user)
+    this.activeUserId = this.selectedUserIds.length > 0 ? this.selectedUserIds[0] : null;
+
     this.allUsers = [];
     this.loading = true;
-    // sortablejs 实例 (onremove 时销毁)
     this.sortable = null;
-    // 加载用户列表
     this.loadUsers();
   }
 
@@ -50,11 +67,11 @@ export default class GroupPickerModal extends Modal {
   }
 
   className() {
-    return 'Modal--medium GroupPickerModal';
+    return 'Modal--large GroupPickerModal';
   }
 
   title() {
-    return '选择用户 (作为教练展示)';
+    return '选择用户 + 编辑教练详情';
   }
 
   content() {
@@ -84,32 +101,57 @@ export default class GroupPickerModal extends Modal {
     return (
       <div className="Modal-body">
         <div className="GroupPickerModal-hint">
-          拖拽调整顺序, 勾选/取消选择用户, 确认后保存
+          ① 左边拖拽调整顺序 + 勾选用户, ② 右边填教练详情 (bio/成就/专长/照片), ③ 确认后保存
         </div>
-        <div className="GroupPickerModal-list" oncreate={(vnode) => this.initSortable(vnode)}>
-          {this.allUsers.map(u => {
-            const on = this.selectedUserIds.indexOf(u.id) >= 0;
-            return (
-              <div
-                className={'GroupPickerModal-item' + (on ? ' on' : '')}
-                key={'u' + u.id}
-                data-uid={u.id}
-              >
-                <span className="GroupPickerModal-item-handle">⋮⋮</span>
-                <input
-                  type="checkbox"
-                  checked={on}
-                  onchange={() => this.toggle(u.id)}
-                />
-                <span className="GroupPickerModal-item-avatar">
-                  {u.avatarUrl ? <img src={u.avatarUrl} alt="" /> : (u.displayName || u.username).substring(0, 1)}
-                </span>
-                <span className="GroupPickerModal-item-name">{u.displayName || u.username}</span>
-                <span className="GroupPickerModal-item-username">@{u.username}</span>
+        <div className="GroupPickerModal-body">
+          {/* 左列: user 列表 */}
+          <div className="GroupPickerModal-list" oncreate={(vnode) => this.initSortable(vnode)}>
+            {this.allUsers.map(u => {
+              const on = this.selectedUserIds.indexOf(u.id) >= 0;
+              const isActive = this.activeUserId === u.id;
+              return (
+                <div
+                  className={'GroupPickerModal-item' + (on ? ' on' : '') + (isActive ? ' active' : '')}
+                  key={'u' + u.id}
+                  data-uid={u.id}
+                  onclick={() => this.selectUser(u.id)}
+                >
+                  <span className="GroupPickerModal-item-handle">⋮⋮</span>
+                  <input
+                    type="checkbox"
+                    checked={on}
+                    onchange={(e) => {
+                      e.stopPropagation();
+                      this.toggle(u.id);
+                    }}
+                    onclick={(e) => e.stopPropagation()}
+                  />
+                  <span className="GroupPickerModal-item-avatar">
+                    {this.getPhotoForUser(u.id) ? (
+                      <img src={this.getPhotoForUser(u.id)} alt="" />
+                    ) : (
+                      (u.displayName || u.username).substring(0, 1)
+                    )}
+                  </span>
+                  <span className="GroupPickerModal-item-name">{u.displayName || u.username}</span>
+                  <span className="GroupPickerModal-item-username">@{u.username}</span>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* 右列: 详情 form */}
+          <div className="GroupPickerModal-details">
+            {this.activeUserId !== null && this.selectedUserIds.indexOf(this.activeUserId) >= 0 ? (
+              this.renderDetailForm(this.activeUserId)
+            ) : (
+              <div className="GroupPickerModal-details-empty">
+                👈 勾选左边用户后, 在这里填教练详情
               </div>
-            );
-          })}
+            )}
+          </div>
         </div>
+
         <div className="GroupPickerModal-footer">
           <span className="GroupPickerModal-count">已选 {this.selectedUserIds.length} / {this.allUsers.length}</span>
           <div className="GroupPickerModal-actions">
@@ -128,17 +170,120 @@ export default class GroupPickerModal extends Modal {
     );
   }
 
+  renderDetailForm(uid) {
+    const u = this.allUsers.find(x => x.id === uid);
+    if (!u) return null;
+    const d = this.details[uid] || { bio: '', achievements: '', specialties: '', photoUrl: '' };
+
+    return (
+      <div className="GroupPickerModal-detail-form">
+        <div className="GroupPickerModal-detail-head">
+          <span className="GroupPickerModal-detail-avatar">
+            {d.photoUrl ? <img src={d.photoUrl} alt="" /> : (u.displayName || u.username).substring(0, 1)}
+          </span>
+          <div>
+            <div className="GroupPickerModal-detail-name">{u.displayName || u.username}</div>
+            <div className="GroupPickerModal-detail-username">@{u.username}</div>
+          </div>
+        </div>
+
+        <div className="GroupPickerModal-field">
+          <label>个人简介 (bio)</label>
+          <textarea
+            className="GroupPickerModal-textarea"
+            value={d.bio}
+            placeholder="例如: 10 年单板教学经验, 持证教练, 擅长零基础到刻滑"
+            rows="3"
+            oninput={(e) => { d.bio = e.target.value; }}
+          />
+        </div>
+
+        <div className="GroupPickerModal-field">
+          <label>成就 (achievements, 逗号分隔)</label>
+          <input
+            className="GroupPickerModal-input"
+            value={d.achievements}
+            placeholder="例如: 国家滑雪指导员资格证, 2018 全国滑雪锦标赛前 10"
+            oninput={(e) => { d.achievements = e.target.value; }}
+          />
+        </div>
+
+        <div className="GroupPickerModal-field">
+          <label>专长 (specialties, 逗号分隔)</label>
+          <input
+            className="GroupPickerModal-input"
+            value={d.specialties}
+            placeholder="例如: 单板, 自由式, 刻滑"
+            oninput={(e) => { d.specialties = e.target.value; }}
+          />
+        </div>
+
+        <div className="GroupPickerModal-field">
+          <label>照片 (走 ziven-core COS)</label>
+          <div className="GroupPickerModal-photo-row">
+            <input
+              className="GroupPickerModal-input"
+              value={d.photoUrl}
+              placeholder="https://geek.ski/uploads/coach-photo.jpg"
+              oninput={(e) => { d.photoUrl = e.target.value; }}
+            />
+            <Button
+              className="Button Button--secondary"
+              onclick={() => this.uploadPhoto(uid)}
+            >
+              📷 上传
+            </Button>
+          </div>
+          {d.photoUrl ? (
+            <div className="GroupPickerModal-photo-preview">
+              <img src={d.photoUrl} alt="" />
+              <span>✓ 已上传</span>
+            </div>
+          ) : null}
+        </div>
+      </div>
+    );
+  }
+
+  getPhotoForUser(uid) {
+    const d = this.details[uid];
+    if (d && d.photoUrl) return d.photoUrl;
+    const u = this.allUsers.find(x => x.id === uid);
+    if (u && u.avatarUrl) return u.avatarUrl;
+    return null;
+  }
+
+  toggle(id) {
+    const idx = this.selectedUserIds.indexOf(id);
+    if (idx >= 0) {
+      this.selectedUserIds.splice(idx, 1);
+      if (this.activeUserId === id) {
+        // 取消选中, active 切到下一个
+        this.activeUserId = this.selectedUserIds.length > 0 ? this.selectedUserIds[0] : null;
+      }
+    } else {
+      this.selectedUserIds.push(id);
+      this.activeUserId = id;
+    }
+    m.redraw();
+  }
+
+  selectUser(id) {
+    if (this.selectedUserIds.indexOf(id) >= 0) {
+      this.activeUserId = id;
+      m.redraw();
+    }
+  }
+
   initSortable(vnode) {
-    // sortablejs 拖拽初始化, 拖动 .GroupPickerModal-item 元素
     if (this.sortable) this.sortable.destroy();
     this.sortable = Sortable.create(vnode.dom, {
       animation: 150,
       handle: '.GroupPickerModal-item-handle',
       onEnd: (e) => {
-        // 拖拽后更新 allUsers 顺序
         const moved = this.allUsers.splice(e.oldIndex, 1)[0];
         this.allUsers.splice(e.newIndex, 0, moved);
-        // 同时调整 selectedUserIds 顺序 (因为保存时 selectedUserIds 数组顺序就是渲染顺序)
+        // selectedUserIds 顺序跟着 allUsers 排
         this.selectedUserIds = this.allUsers
           .filter(u => this.selectedUserIds.indexOf(u.id) >= 0)
           .map(u => u.id);
@@ -147,25 +292,50 @@ export default class GroupPickerModal extends Modal {
     });
   }
 
-  toggle(id) {
-    const idx = this.selectedUserIds.indexOf(id);
-    if (idx >= 0) this.selectedUserIds.splice(idx, 1);
-    else this.selectedUserIds.push(id);
-    m.redraw();
+  async uploadPhoto(uid) {
+    const fileInput = document.createElement('input');
+    fileInput.type = 'file';
+    fileInput.accept = 'image/*';
+    fileInput.onchange = async (ev) => {
+      const file = ev.target.files[0];
+      if (!file) return;
+      const form = new FormData();
+      form.append('file', file);
+      form.append('key', 'bjxy_coach_photo_' + uid);
+      try {
+        const r = await app.request({
+          method: 'POST',
+          url: app.forum.attribute('apiUrl') + '/bjxy/upload',
+          body: form,
+        });
+        if (r.ok && r.url) {
+          this.details[uid] = this.details[uid] || { bio: '', achievements: '', specialties: '', photoUrl: '' };
+          this.details[uid].photoUrl = r.url;
+          app.alerts.show({ type: 'success' }, '照片上传成功');
+          m.redraw();
+        } else {
+          app.alerts.show({ type: 'error' }, r.error || '上传失败');
+        }
+      } catch (err) {
+        app.alerts.show({ type: 'error' }, '上传异常: ' + err.message);
+      }
+    };
+    fileInput.click();
   }
 
   confirm() {
-    // selectedUserIds 顺序 = allUsers 顺序 (拖拽后的顺序)
-    this.onSelect(this.selectedUserIds.slice());
+    // v0.1.5 返回 { userIds, details } (兼容 v0.1.4 只传 userIds)
+    this.onSelect({
+      userIds: this.selectedUserIds.slice(),
+      details: JSON.parse(JSON.stringify(this.details)),
+    });
     this.hide();
   }
 
-  // v0.1.3a 修: 多个关闭钩子确保父级 onhide 一定被触发
   onhide() {
     if (this.attrsOnhide) this.attrsOnhide();
   }
 
-  // 兜底: mithril vnode 从 DOM 移除时也触发
   onremove() {
     if (this.sortable) {
       this.sortable.destroy();

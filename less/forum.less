@@ -433,6 +433,9 @@
 .bjxy-level-desc { font-size: 11px; color: var(--bjxy-text-soft); line-height: 1.6; }
 
 // ===== 教练 =====
+// v0.1.5 改: 教练卡片支持详情展开 (bio/achievements/specialties/photoUrl)
+//   简单模式 (没详情): 跟 v0.1.4 一样, 头像 + 名字 居中显示
+//   详细模式 (有任意详情字段): 改成 flex 布局, 头像在左, 文字在右
 .bjxy-coach-grid {
     display: grid;
     grid-template-columns: repeat(6, 1fr);
@@ -464,6 +467,69 @@
 .bjxy-coach-avatar img { width: 100%; height: 100%; object-fit: cover; }
 .bjxy-coach-name { font-size: 12px; font-weight: 600; }
 .bjxy-coach-title { font-size: 10px; color: var(--bjxy-text-mute); margin-top: 2px; }
+
+// v0.1.5 新加: 详细模式教练卡片 (有 bio/achievements/specialties)
+//   跨整行 (1/7 占 6 列), flex row 布局: 头像在左, 文字在右
+//   之前的 grid 6 列只适合头像+名字的简单卡片, 详细卡片需要更多空间展示文字
+.bjxy-coach-detailed {
+    grid-column: 1 / -1;
+    text-align: left;
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+    padding: 16px;
+    background: var(--bjxy-bg-card);
+    border: 1px solid var(--bjxy-border);
+    cursor: default;
+}
+.bjxy-coach-detailed:hover { background: var(--bjxy-bg-card-hover); }
+.bjxy-coach-detailed .bjxy-coach-avatar {
+    width: 80px;
+    height: 80px;
+    margin: 0;
+    flex-shrink: 0;
+    font-size: 28px;
+}
+.bjxy-coach-detailed .bjxy-coach-info {
+    flex: 1;
+    min-width: 0;
+}
+.bjxy-coach-detailed .bjxy-coach-name {
+    font-size: 16px;
+    margin-bottom: 2px;
+}
+.bjxy-coach-detailed .bjxy-coach-username {
+    font-size: 12px;
+    color: var(--bjxy-text-mute);
+    margin-bottom: 8px;
+}
+.bjxy-coach-detailed .bjxy-coach-specialties,
+.bjxy-coach-detailed .bjxy-coach-achievements {
+    font-size: 13px;
+    line-height: 1.6;
+    margin-bottom: 4px;
+    display: flex;
+    gap: 6px;
+    align-items: flex-start;
+}
+.bjxy-coach-detailed .bjxy-coach-label {
+    flex-shrink: 0;
+    font-weight: 600;
+    color: var(--bjxy-blue);
+    min-width: 64px;
+}
+.bjxy-coach-detailed .bjxy-coach-text {
+    color: var(--bjxy-text);
+    word-break: break-word;
+}
+.bjxy-coach-detailed .bjxy-coach-bio {
+    font-size: 13px;
+    line-height: 1.7;
+    color: var(--bjxy-text-soft);
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px dashed var(--bjxy-border);
+}
 
 // ===== 学员评价 =====
 .bjxy-review-grid {

@@ -98,6 +98,9 @@ return [
         ->serializeToForum('bjxy_police_link', 'bjxy_police_link')
         // v0.1.4: 教练 user id 数组 (GroupPickerModal 弹 modal 选 user 后保存, 前台优先用这个列表)
         ->serializeToForum('bjxy_coach_user_ids', 'bjxy_coach_user_ids')
+        // v0.1.5: 教练详细内容 (JSON array: [{userId, bio, achievements, specialties, photoUrl}])
+        //   key 用 userId 跟 bjxy_coach_user_ids 配对, 前台 CoachesController join 拼一起
+        ->serializeToForum('bjxy_coach_details', 'bjxy_coach_details')
         ->serializeToForum('bjxy_reviews_html', 'bjxy_reviews_html')
         ->serializeToForum('bjxy_students_html', 'bjxy_students_html')
         ->serializeToForum('bjxy_bg_gradient_light_start', 'bjxy_bg_gradient_light_start')

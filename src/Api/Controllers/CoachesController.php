@@ -16,6 +16,11 @@ use Laminas\Diactoros\Response\JsonResponse;
  *
  * v0.1.4 改: 优先读 bjxy_coach_user_ids (modal 选 user 后保存), 按 user id 列表直接拿 user
  *   fallback 老的 bjxy_coach_group_ids (group 拉 user, 兼容旧部署)
+ *
+ * v0.1.5 改: 合并 bjxy_coach_details (JSON: [{userId, bio, achievements, specialties, photoUrl}])
+ *   前台每条 coach 拼上 bio/achievements/specialties/photoUrl
+ *   photoUrl 优先, 没设 fallback 用 user.avatar_url
+ *   没 details 的 user 用空字段 (兼容旧部署)
  */
 class CoachesController implements RequestHandlerInterface
 {
@@ -30,9 +35,16 @@ class CoachesController implements RequestHandlerInterface
 
         // v0.1.4 修: 用 flarum.config['url'] 拿 base URL, 之前用 resolve('flarum.api_url')
         //   错误 (flarum.api_url 不是 container binding, 会抛 BindingResolutionException)
-        //   旧版 v0.1.0 有 if (empty($ids)) return [] 短路保护, 没触发过 resolve()
-        //   新版 v0.1.4 user_ids 默认是空数组但继续往下走, 触发了 resolve() 才暴露问题
         $apiUrl = app('flarum.config')['url'] ?? '';
+
+        // v0.1.5 读 details (key=userId), 前台拼到 coach
+        $detailsRaw = $this->settings->get('bjxy_coach_details') ?: '[]';
+        $detailsArr = json_decode($detailsRaw, true);
+        if (!is_array($detailsArr)) $detailsArr = [];
+        $detailsById = [];
+        foreach ($detailsArr as $d) {
+            if (isset($d['userId'])) $detailsById[(int) $d['userId']] = $d;
+        }
 
         if (!empty($userIds)) {
             // 直接按 user id 查 (admin 拖拽排序后保存的就是这个顺序)
@@ -50,19 +62,25 @@ class CoachesController implements RequestHandlerInterface
                 if (isset($byId[(int) $id])) $ordered[] = $byId[(int) $id];
             }
 
-            $coaches = array_map(function ($r) use ($apiUrl) {
+            $coaches = array_map(function ($r) use ($apiUrl, $detailsById) {
                 $displayName = $r->nickname ?: $r->username;
-                $avatarUrl = null;
+                $defaultAvatarUrl = null;
                 if ($r->avatar_url) {
-                    $avatarUrl = preg_match('/^https?:/i', $r->avatar_url)
+                    $defaultAvatarUrl = preg_match('/^https?:/i', $r->avatar_url)
                         ? $r->avatar_url
                         : rtrim($apiUrl, '/') . str_replace('\\', '/', $r->avatar_url);
                 }
+                // v0.1.5 拼 details
+                $d = $detailsById[(int) $r->id] ?? [];
                 return [
                     'id' => (int) $r->id,
                     'username' => $r->username,
                     'displayName' => $displayName,
-                    'avatarUrl' => $avatarUrl,
+                    // v0.1.5: 优先用 details.photoUrl, 没设 fallback 到 user.avatar_url
+                    'avatarUrl' => (!empty($d['photoUrl'])) ? $d['photoUrl'] : $defaultAvatarUrl,
+                    'bio' => $d['bio'] ?? '',
+                    'achievements' => $d['achievements'] ?? '',
+                    'specialties' => $d['specialties'] ?? '',
                 ];
             }, $ordered);
 
@@ -85,19 +103,23 @@ class CoachesController implements RequestHandlerInterface
             ->orderBy('users.id')
             ->get();
 
-        $coaches = $rows->map(function ($r) use ($apiUrl) {
+        $coaches = $rows->map(function ($r) use ($apiUrl, $detailsById) {
             $displayName = $r->nickname ?: $r->username;
-            $avatarUrl = null;
+            $defaultAvatarUrl = null;
             if ($r->avatar_url) {
-                $avatarUrl = preg_match('/^https?:/i', $r->avatar_url)
+                $defaultAvatarUrl = preg_match('/^https?:/i', $r->avatar_url)
                     ? $r->avatar_url
                     : rtrim($apiUrl, '/') . str_replace('\\', '/', $r->avatar_url);
             }
+            $d = $detailsById[(int) $r->id] ?? [];
             return [
                 'id' => (int) $r->id,
                 'username' => $r->username,
                 'displayName' => $displayName,
-                'avatarUrl' => $avatarUrl,
+                'avatarUrl' => (!empty($d['photoUrl'])) ? $d['photoUrl'] : $defaultAvatarUrl,
+                'bio' => $d['bio'] ?? '',
+                'achievements' => $d['achievements'] ?? '',
+                'specialties' => $d['specialties'] ?? '',
             ];
         })->values()->all();
 

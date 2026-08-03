@@ -60,6 +60,8 @@ export default class BjxySettings extends ExtensionPage {
     this.coachUserIds = [];
     this.coachGroupIds = [];
     this.allGroups = [];
+    // v0.1.5: 教练详情 (map: userId -> {bio, achievements, specialties, photoUrl})
+    this.coachDetails = {};
     this.loadSettings();
   }
 
@@ -282,9 +284,11 @@ export default class BjxySettings extends ExtensionPage {
             // v0.1.3 改: 弹 modal 选用户组 按钮条件显示 — 只在选了 ≥1 个 group 时才出现
             //   辉哥反馈 "用户只有选了至少一个用户组后, 才会展示那个弹modal的按钮"
             //   之前无条件显示, 用户没选 group 时点击会弹 "没有可用的用户组" 提示, 体验不好
-            this.coachGroupIds.length > 0 ? m('div', { class: 'BjxyField-group-pick', onclick: () => this.openGroupModal() }, '🎯 弹 modal 选用户 (v0.1.4)') : null,
+            // v0.1.5 改: 按钮文案加 "(v0.1.5 详情)", 因为现在 modal 不只选 user, 还填详情
+            this.coachGroupIds.length > 0 ? m('div', { class: 'BjxyField-group-pick', onclick: () => this.openGroupModal() }, '🎯 弹 modal 选用户 + 编辑详情 (v0.1.5)') : null,
             // v0.1.4 加: 已选 user 数量提示
-            this.coachUserIds.length > 0 ? m('div', { class: 'BjxyField-hint' }, '✅ 已选 ' + this.coachUserIds.length + ' 个用户作为教练 (前台展示用). 拖拽排序顺序.') : m('div', { class: 'BjxyField-hint' }, '💡 选中用户组 + 弹 modal 选用户 (拖拽排序) 后, 这些用户将作为教练展示.'),
+            // v0.1.5 改: 提示加详情数量
+            this.coachUserIds.length > 0 ? m('div', { class: 'BjxyField-hint' }, '✅ 已选 ' + this.coachUserIds.length + ' 个用户作为教练 (前台展示用). 拖拽排序顺序. 已填详情: ' + Object.keys(this.coachDetails).filter(uid => this.coachDetails[uid] && (this.coachDetails[uid].bio || this.coachDetails[uid].achievements || this.coachDetails[uid].specialties || this.coachDetails[uid].photoUrl)).length + ' / ' + this.coachUserIds.length) : m('div', { class: 'BjxyField-hint' }, '💡 选中用户组 + 弹 modal 选用户 (拖拽排序) + 编辑详情 后, 这些用户将作为教练展示.'),
           ]),
         ]),
       ]),
@@ -393,6 +397,25 @@ export default class BjxySettings extends ExtensionPage {
       if (this.data.bjxy_coach_user_ids) {
         try { this.coachUserIds = JSON.parse(this.data.bjxy_coach_user_ids); } catch (e) {}
       }
+      // v0.1.5: 加载 coach details (modal 填的 4 字段)
+      if (this.data.bjxy_coach_details) {
+        try {
+          const arr = JSON.parse(this.data.bjxy_coach_details);
+          if (Array.isArray(arr)) {
+            this.coachDetails = {};
+            arr.forEach(d => {
+              if (d && d.userId) {
+                this.coachDetails[d.userId] = {
+                  bio: d.bio || '',
+                  achievements: d.achievements || '',
+                  specialties: d.specialties || '',
+                  photoUrl: d.photoUrl || '',
+                };
+              }
+            });
+          }
+        } catch (e) {}
+      }
       const grpData = await app.request({
         method: 'GET',
         url: app.forum.attribute('apiUrl') + '/groups',
@@ -425,13 +448,21 @@ export default class BjxySettings extends ExtensionPage {
   //   点按钮 → modal 弹 → 页面 scroll 变 0 (跳到顶部). 修法: 弹之前记 scrollY, 关 modal 后恢复
   // v0.1.4 改: modal 展示的是所选 group 内的 user (不是 group), 后台选 group 还在后台页面做
   //   modal 调 /api/bjxy/group-users 拿 user 列表, admin 多选 + 拖拽排序 → 保存到 bjxy_coach_user_ids
+  // v0.1.5 改: 回调 onSelect 接收 {userIds, details}, 一起更新 this.coachUserIds + this.coachDetails
   openGroupModal() {
     const scrollY = window.scrollY || document.documentElement.scrollTop || 0;
     app.modal.show(GroupPickerModal, {
       groupIds: this.coachGroupIds,
       selectedUserIds: this.coachUserIds,
-      onSelect: (ids) => {
-        this.coachUserIds = ids;
+      details: this.coachDetails,
+      onSelect: (result) => {
+        // v0.1.5: 兼容 v0.1.4 的 onSelect(ids) 旧形式
+        if (Array.isArray(result)) {
+          this.coachUserIds = result;
+        } else if (result && Array.isArray(result.userIds)) {
+          this.coachUserIds = result.userIds;
+          this.coachDetails = result.details || {};
+        }
         m.redraw();
       },
       onhide: () => {
@@ -488,6 +519,20 @@ export default class BjxySettings extends ExtensionPage {
     payload.bjxy_coach_group_ids = JSON.stringify(this.coachGroupIds);
     // v0.1.4: 教练 user id 数组 (modal 选 user 后保存, 前台优先用)
     payload.bjxy_coach_user_ids = JSON.stringify(this.coachUserIds);
+    // v0.1.5: 教练详情 (modal 填的 bio/achievements/specialties/photoUrl)
+    //   存成 JSON array: [{userId, bio, achievements, specialties, photoUrl}, ...]
+    //   只保存有任意字段填了的 user (避免空对象污染 DB)
+    payload.bjxy_coach_details = JSON.stringify(
+      this.coachUserIds
+        .filter(uid => this.coachDetails[uid] && (this.coachDetails[uid].bio || this.coachDetails[uid].achievements || this.coachDetails[uid].specialties || this.coachDetails[uid].photoUrl))
+        .map(uid => ({
+          userId: uid,
+          bio: this.coachDetails[uid].bio,
+          achievements: this.coachDetails[uid].achievements,
+          specialties: this.coachDetails[uid].specialties,
+          photoUrl: this.coachDetails[uid].photoUrl,
+        }))
+    );
     try {
       await app.request({
         method: 'POST',

@@ -213,6 +213,8 @@ export default class BjxyPage extends Component {
       ]),
 
       // ===== 教练 =====
+      // v0.1.5 改: 教练卡片加 bio + achievements + specialties + photoUrl (从 /api/bjxy/coaches 返回)
+      //   之前只显示头像 + 名字, 现在展示完整信息
       m('section', { class: 'bjxy-section bjxy-section-alt', id: 'coaches' }, [
         m('div', { class: 'bjxy-sub' }, 'COACHES'),
         m('h2', null, '专业教练'),
@@ -220,13 +222,28 @@ export default class BjxyPage extends Component {
           ? m('p', null, '加载中...')
           : this.coaches.length === 0
             ? m('p', null, '（暂无教练, 请在后台选择用户组）')
-            : m('div', { class: 'bjxy-coach-grid' }, this.coaches.map((c, i) => m('div', { class: 'bjxy-coach', key: 'c' + i }, [
-                m('div', { class: 'bjxy-coach-avatar' }, [
-                  c.avatarUrl ? m('img', { src: c.avatarUrl, alt: c.displayName }) : (c.displayName || '?').charAt(0),
-                ]),
-                m('div', { class: 'bjxy-coach-name' }, c.displayName || ''),
-                c.title ? m('div', { class: 'bjxy-coach-title' }, c.title) : null,
-              ]))),
+            : m('div', { class: 'bjxy-coach-grid' }, this.coaches.map((c, i) => {
+                const hasDetail = c.bio || c.achievements || c.specialties;
+                return m('div', { class: 'bjxy-coach' + (hasDetail ? ' bjxy-coach-detailed' : ''), key: 'c' + i }, [
+                  m('div', { class: 'bjxy-coach-avatar' }, [
+                    c.avatarUrl ? m('img', { src: c.avatarUrl, alt: c.displayName }) : (c.displayName || '?').charAt(0),
+                  ]),
+                  m('div', { class: 'bjxy-coach-info' }, [
+                    m('div', { class: 'bjxy-coach-name' }, c.displayName || ''),
+                    c.username ? m('div', { class: 'bjxy-coach-username' }, '@' + c.username) : null,
+                    // v0.1.5 详情: bio / achievements / specialties
+                    c.specialties ? m('div', { class: 'bjxy-coach-specialties' }, [
+                      m('span', { class: 'bjxy-coach-label' }, '🏂 专长'),
+                      m('span', { class: 'bjxy-coach-text' }, c.specialties),
+                    ]) : null,
+                    c.achievements ? m('div', { class: 'bjxy-coach-achievements' }, [
+                      m('span', { class: 'bjxy-coach-label' }, '🏆 成就'),
+                      m('span', { class: 'bjxy-coach-text' }, c.achievements),
+                    ]) : null,
+                    c.bio ? m('div', { class: 'bjxy-coach-bio' }, c.bio) : null,
+                  ]),
+                ]);
+              })),
       ]),
 
       // ===== 评价 (HTML 自由区) =====
