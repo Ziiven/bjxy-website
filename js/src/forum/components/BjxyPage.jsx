@@ -219,11 +219,12 @@ export default class BjxyPage extends Component {
         ]),
         m('div', { class: 'bjxy-nav-links' }, [
           m('a', { href: '#about' }, '关于'),
+          // v0.1.6b 改: nav 顺序跟着 section 顺序调 — 活动移到关于下
+          m('a', { href: '#events' }, '活动'),
           m('a', { href: '#features' }, '特色'),
           m('a', { href: '#curriculum' }, '教学'),
           m('a', { href: '#coaches' }, '教练'),
           m('a', { href: '#reviews' }, '评价'),
-          m('a', { href: '#events' }, '活动'),
           m('a', { href: '#contact' }, '联系'),
         ]),
         m('div', { class: 'bjxy-nav-right' }, [
@@ -272,110 +273,10 @@ export default class BjxyPage extends Component {
         ]),
       ]),
 
-      // ===== 特色 =====
-      m('section', { class: 'bjxy-section bjxy-section-alt', id: 'features' }, [
-        m('div', { class: 'bjxy-sub' }, 'FEATURES'),
-        m('h2', null, '办学特色'),
-        m('div', { class: 'bjxy-feature-grid' }, features.map((f, i) => m('div', { class: 'bjxy-feature', key: 'f' + i }, [
-          m('div', { class: 'bjxy-feature-icon' }, f.icon || '★'),
-          m('h3', null, f.title || ''),
-          m('p', null, f.desc || ''),
-        ]))),
-      ]),
-
-      // ===== 教学体系 =====
-      // v0.1.0s 改: 教学体系类型任意多 (boards 数组), tabs 从 boards 动态渲染
-      //   之前 hard-coded 单板/双板, 现在可以是雪橇/冰球/自由式等任意类型
-      //   兼容旧 {single, double} data (没 boards 字段时自动转 2 个 board)
-      m('section', { class: 'bjxy-section', id: 'curriculum' }, [
-        m('div', { class: 'bjxy-sub' }, 'CURRICULUM'),
-        m('h2', null, curriculum.boards.reduce((sum, b) => sum + b.levels.length, 0) + ' 级教学体系'),
-        m('div', { class: 'bjxy-curri-tabs' }, [
-          curriculum.boards.map((b, i) => m('div', {
-            class: 'bjxy-curri-tab' + (this.activeBoard === i ? ' active' : ''),
-            onclick: () => { this.activeBoard = i; },
-            key: 'tab' + i,
-          }, b.name + ' (' + b.levels.length + ' 级)')),
-        ]),
-        m('div', { class: 'bjxy-curri-list' },
-          (curriculum.boards[this.activeBoard] ? curriculum.boards[this.activeBoard].levels : []).map((l, i) => m('div', { class: 'bjxy-level-card', key: 'c' + i }, [
-            m('div', { class: 'bjxy-level-num' }, i + 1),
-            m('div', { class: 'bjxy-level-lvl' }, l.level || ''),
-            m('div', { class: 'bjxy-level-name' }, l.name || ''),
-            m('div', { class: 'bjxy-level-desc' }, l.desc || ''),
-          ]))
-        ),
-      ]),
-
-      // ===== 教练 =====
-      // v0.1.5 改: 教练卡片加 bio + achievements + specialties + photoUrl (从 /api/bjxy/coaches 返回)
-      //   之前只显示头像 + 名字, 现在展示完整信息
-      m('section', { class: 'bjxy-section bjxy-section-alt', id: 'coaches' }, [
-        m('div', { class: 'bjxy-sub' }, 'COACHES'),
-        m('h2', null, '专业教练'),
-        this.loadingCoaches
-          ? m('p', null, '加载中...')
-          : this.coaches.length === 0
-            ? m('p', null, '（暂无教练, 请在后台选择用户组）')
-            : m('div', { class: 'bjxy-coach-grid' }, this.coaches.map((c, i) => {
-                const hasDetail = c.bio || c.achievements || c.specialties;
-                return m('div', { class: 'bjxy-coach' + (hasDetail ? ' bjxy-coach-detailed' : ''), key: 'c' + i }, [
-                  m('div', { class: 'bjxy-coach-avatar' }, [
-                    c.avatarUrl ? m('img', { src: c.avatarUrl, alt: c.displayName }) : (c.displayName || '?').charAt(0),
-                  ]),
-                  m('div', { class: 'bjxy-coach-info' }, [
-                    m('div', { class: 'bjxy-coach-name' }, c.displayName || ''),
-                    c.username ? m('div', { class: 'bjxy-coach-username' }, '@' + c.username) : null,
-                    // v0.1.5 详情: bio / achievements / specialties
-                    c.specialties ? m('div', { class: 'bjxy-coach-specialties' }, [
-                      m('span', { class: 'bjxy-coach-label' }, '🏂 专长'),
-                      m('span', { class: 'bjxy-coach-text' }, c.specialties),
-                    ]) : null,
-                    c.achievements ? m('div', { class: 'bjxy-coach-achievements' }, [
-                      m('span', { class: 'bjxy-coach-label' }, '🏆 成就'),
-                      m('span', { class: 'bjxy-coach-text' }, c.achievements),
-                    ]) : null,
-                    c.bio ? m('div', { class: 'bjxy-coach-bio' }, c.bio) : null,
-                  ]),
-                ]);
-              })),
-      ]),
-
-      // ===== 评价 (v0.1.6a: 大众点评风格 评价+图片) =====
-      // 优先级: 新 bjxy_reviews (array, 带 photos 多图) > 老 bjxy_reviews_html (fallback 兼容旧部署)
-      m('section', { class: 'bjxy-section', id: 'reviews' }, [
-        m('div', { class: 'bjxy-sub' }, 'REVIEWS'),
-        m('h2', null, '学员评价'),
-        reviews.length > 0
-          ? m('div', { class: 'bjxy-review-grid' }, reviews.map((r, i) => {
-              // v0.1.6a: photos 数组 (兼容老的 photoUrl 字符串)
-              const photos = Array.isArray(r.photos) ? r.photos : (r.photoUrl ? [r.photoUrl] : []);
-              return m('div', { class: 'bjxy-review', key: 'r' + i }, [
-                m('div', { class: 'bjxy-review-stars' }, this.renderStars(r.rating || 5)),
-                m('div', { class: 'bjxy-review-quote' }, r.text || ''),
-                m('div', { class: 'bjxy-review-author' }, [
-                  m('span', { class: 'bjxy-review-author-av' }, (r.author || '?').charAt(0)),
-                  m('span', null, r.author || '匿名'),
-                  r.date ? m('span', { class: 'bjxy-review-date' }, ' · ' + r.date) : null,
-                ]),
-                // v0.1.6a: 大众点评风格 缩略图墙 (4 列 grid, click → fancybox gallery)
-                photos.length > 0 ? m('div', { class: 'bjxy-review-photos' },
-                  photos.map((url, pi) => m('a', {
-                    key: 'rp' + i + 'p' + pi,
-                    class: 'bjxy-review-photo',
-                    style: { backgroundImage: 'url(' + url + ')' },
-                    onclick: (e) => { e.preventDefault(); this.openFancyboxGallery(photos, pi); },
-                  }))
-                ) : null,
-              ]);
-            }))
-          : reviewsHtml
-            ? m('div', { class: 'bjxy-reviews-html', oncreate: ({ dom }) => { dom.innerHTML = reviewsHtml; } })
-            : m('p', null, '（暂无评价, 请在后台添加）'),
-      ]),
-
-      // ===== 活动展示 (v0.1.6a: 学员 → 活动, swiper 轮播) =====
-      // 跟 v0.1.6 评价/学员一样: 优先新 bjxy_students array, fallback 老 bjxy_students_html
+      // ===== 活动展示 (v0.1.6b: 从尾部移到关于下方) =====
+      //   辉哥 12:22 反馈: 活动展示是亮点 (春节冬令营/周末进阶班 实物图), 应该紧跟关于介绍之后,
+      //   之前放在最后显得不重要. 同步调整 nav 顺序.
+      //   swiper 11 CSS 完整 base 样式 (button/pagination/scrollbar) 在 v0.1.6b 补全
       m('section', { class: 'bjxy-section bjxy-section-alt', id: 'events' }, [
         m('div', { class: 'bjxy-sub' }, 'EVENTS'),
         m('h2', null, '活动展示'),
@@ -408,6 +309,115 @@ export default class BjxyPage extends Component {
             ? m('div', { class: 'bjxy-student-grid', oncreate: ({ dom }) => { dom.innerHTML = studentsHtml; } })
             : m('p', null, '（暂无活动展示, 请在后台添加）'),
       ]),
+
+      // ===== 特色 =====
+      m('section', { class: 'bjxy-section', id: 'features' }, [
+        m('div', { class: 'bjxy-sub' }, 'FEATURES'),
+        m('h2', null, '办学特色'),
+        m('div', { class: 'bjxy-feature-grid' }, features.map((f, i) => m('div', { class: 'bjxy-feature', key: 'f' + i }, [
+          m('div', { class: 'bjxy-feature-icon' }, f.icon || '★'),
+          m('h3', null, f.title || ''),
+          m('p', null, f.desc || ''),
+        ]))),
+      ]),
+
+      // ===== 教学体系 =====
+      // v0.1.0s 改: 教学体系类型任意多 (boards 数组), tabs 从 boards 动态渲染
+      //   之前 hard-coded 单板/双板, 现在可以是雪橇/冰球/自由式等任意类型
+      //   兼容旧 {single, double} data (没 boards 字段时自动转 2 个 board)
+      // v0.1.6b 改: curriculum 从 normal → alt (因为活动移走后 顺序变了, 保持 alt/normal 交替)
+      m('section', { class: 'bjxy-section bjxy-section-alt', id: 'curriculum' }, [
+        m('div', { class: 'bjxy-sub' }, 'CURRICULUM'),
+        m('h2', null, curriculum.boards.reduce((sum, b) => sum + b.levels.length, 0) + ' 级教学体系'),
+        m('div', { class: 'bjxy-curri-tabs' }, [
+          curriculum.boards.map((b, i) => m('div', {
+            class: 'bjxy-curri-tab' + (this.activeBoard === i ? ' active' : ''),
+            onclick: () => { this.activeBoard = i; },
+            key: 'tab' + i,
+          }, b.name + ' (' + b.levels.length + ' 级)')),
+        ]),
+        m('div', { class: 'bjxy-curri-list' },
+          (curriculum.boards[this.activeBoard] ? curriculum.boards[this.activeBoard].levels : []).map((l, i) => m('div', { class: 'bjxy-level-card', key: 'c' + i }, [
+            m('div', { class: 'bjxy-level-num' }, i + 1),
+            m('div', { class: 'bjxy-level-lvl' }, l.level || ''),
+            m('div', { class: 'bjxy-level-name' }, l.name || ''),
+            m('div', { class: 'bjxy-level-desc' }, l.desc || ''),
+          ]))
+        ),
+      ]),
+
+      // ===== 教练 =====
+      // v0.1.5 改: 教练卡片加 bio + achievements + specialties + photoUrl (从 /api/bjxy/coaches 返回)
+      //   之前只显示头像 + 名字, 现在展示完整信息
+      // v0.1.6b 改: coaches 从 alt → normal (curriculum 占了 alt)
+      m('section', { class: 'bjxy-section', id: 'coaches' }, [
+        m('div', { class: 'bjxy-sub' }, 'COACHES'),
+        m('h2', null, '专业教练'),
+        this.loadingCoaches
+          ? m('p', null, '加载中...')
+          : this.coaches.length === 0
+            ? m('p', null, '（暂无教练, 请在后台选择用户组）')
+            : m('div', { class: 'bjxy-coach-grid' }, this.coaches.map((c, i) => {
+                const hasDetail = c.bio || c.achievements || c.specialties;
+                return m('div', { class: 'bjxy-coach' + (hasDetail ? ' bjxy-coach-detailed' : ''), key: 'c' + i }, [
+                  m('div', { class: 'bjxy-coach-avatar' }, [
+                    c.avatarUrl ? m('img', { src: c.avatarUrl, alt: c.displayName }) : (c.displayName || '?').charAt(0),
+                  ]),
+                  m('div', { class: 'bjxy-coach-info' }, [
+                    m('div', { class: 'bjxy-coach-name' }, c.displayName || ''),
+                    c.username ? m('div', { class: 'bjxy-coach-username' }, '@' + c.username) : null,
+                    // v0.1.5 详情: bio / achievements / specialties
+                    c.specialties ? m('div', { class: 'bjxy-coach-specialties' }, [
+                      m('span', { class: 'bjxy-coach-label' }, '🏂 专长'),
+                      m('span', { class: 'bjxy-coach-text' }, c.specialties),
+                    ]) : null,
+                    c.achievements ? m('div', { class: 'bjxy-coach-achievements' }, [
+                      m('span', { class: 'bjxy-coach-label' }, '🏆 成就'),
+                      m('span', { class: 'bjxy-coach-text' }, c.achievements),
+                    ]) : null,
+                    c.bio ? m('div', { class: 'bjxy-coach-bio' }, c.bio) : null,
+                  ]),
+                ]);
+              })),
+      ]),
+
+      // ===== 评价 (v0.1.6a: 大众点评风格 评价+图片) =====
+      // 优先级: 新 bjxy_reviews (array, 带 photos 多图) > 老 bjxy_reviews_html (fallback 兼容旧部署)
+      // v0.1.6b 改: 评价 section 从 normal → alt (因为活动移走后 顺序变了, 保持 alt/normal 交替)
+      m('section', { class: 'bjxy-section bjxy-section-alt', id: 'reviews' }, [
+        m('div', { class: 'bjxy-sub' }, 'REVIEWS'),
+        m('h2', null, '学员评价'),
+        reviews.length > 0
+          ? m('div', { class: 'bjxy-review-grid' }, reviews.map((r, i) => {
+              // v0.1.6a: photos 数组 (兼容老的 photoUrl 字符串)
+              const photos = Array.isArray(r.photos) ? r.photos : (r.photoUrl ? [r.photoUrl] : []);
+              return m('div', { class: 'bjxy-review', key: 'r' + i }, [
+                m('div', { class: 'bjxy-review-stars' }, this.renderStars(r.rating || 5)),
+                m('div', { class: 'bjxy-review-quote' }, r.text || ''),
+                m('div', { class: 'bjxy-review-author' }, [
+                  m('span', { class: 'bjxy-review-author-av' }, (r.author || '?').charAt(0)),
+                  m('span', null, r.author || '匿名'),
+                  r.date ? m('span', { class: 'bjxy-review-date' }, ' · ' + r.date) : null,
+                ]),
+                // v0.1.6a: 大众点评风格 缩略图墙 (4 列 grid, click → fancybox gallery)
+                photos.length > 0 ? m('div', { class: 'bjxy-review-photos' },
+                  photos.map((url, pi) => m('a', {
+                    key: 'rp' + i + 'p' + pi,
+                    class: 'bjxy-review-photo',
+                    style: { backgroundImage: 'url(' + url + ')' },
+                    onclick: (e) => { e.preventDefault(); this.openFancyboxGallery(photos, pi); },
+                  }))
+                ) : null,
+              ]);
+            }))
+          : reviewsHtml
+            ? m('div', { class: 'bjxy-reviews-html', oncreate: ({ dom }) => { dom.innerHTML = reviewsHtml; } })
+            : m('p', null, '（暂无评价, 请在后台添加）'),
+      ]),
+
+      // v0.1.6b 改: 活动展示 section 已移到关于下方 (上面), 这里删了
+      //   老的活动 section 渲染逻辑 (swiper 容器 + 4 slide + prev/next + pagination) 完整保留
+      //   在 about 之后的位置, 方便后续调整时复用
 
       // ===== 联系 =====
       m('section', { class: 'bjxy-section', id: 'contact' }, [
