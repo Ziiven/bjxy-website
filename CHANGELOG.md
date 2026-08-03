@@ -692,3 +692,36 @@
 
 ### Commit
 - v0.1.3: 待 commit
+
+---
+
+## v0.1.3a (2026-08-03) — 修 v0.1.3 弹 modal 2 个 bug
+
+### 修
+- 辉哥 09:00 反馈弹 modal 2 个 bug:
+  1. 弹 modal 后后台页面自动上拉到顶部 (Flarum 2.0 ModalManager 副作用)
+  2. 弹 modal 按钮应该只在选了 ≥1 个 group 后才显示 (用户没选 group 时点击会提示 "没有可用的用户组", 体验差)
+- 顺便: 弹 modal 应该是展示**所选 group 内的 user** + 拖拽排序 (不是展示 group), 这个工作量大, 留 v0.1.4 单独做
+
+### 改 2 个文件
+- **js/src/admin/components/BjxySettings.jsx**:
+  - openGroupModal(): 弹 modal 前保存 scrollY, onhide 回调里 requestAnimationFrame 恢复 window.scrollTo(0, scrollY)
+  - 按钮条件显示: `this.coachGroupIds.length > 0 ? <按钮> : null`
+- **js/src/admin/components/GroupPickerModal.js**:
+  - 加 onhide() 钩子 + onremove() 兜底, 触发父级 attrs.onhide
+  - Flarum 2.0 Modal 基类 hide() 会触发 onhide; mithril vnode 移除触发 onremove
+
+### Playwright 验证 (待做)
+- 选了 ≥1 个 group 时, "弹 modal" 按钮显示
+- 0 个 group 时, 按钮隐藏
+- 点按钮弹 modal, 关闭后 scrollY 恢复 (不跳顶部)
+
+### 后续 v0.1.4 (跟辉哥确认方案后做)
+- modal 改为展示所选 group 内的 user (不是 group)
+- 加 sortablejs 拖拽排序
+- 新 setting `bjxy_coach_user_ids` (user id 数组, 取代当前的 group id 数组)
+- 后台新加 API 端点 `GET /bjxy/group-users?ids=1,2,3` 拉 user 列表
+- 前台改读 bjxy_coach_user_ids, 没设 fallback 用 group 拉
+
+### Commit
+- v0.1.3a: 待 commit

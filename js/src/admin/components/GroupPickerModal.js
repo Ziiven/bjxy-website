@@ -19,10 +19,22 @@ export default class GroupPickerModal extends Modal {
 
   oninit(vnode) {
     super.oninit(vnode);
-    // vnode.attrs: { allGroups, selectedIds, onSelect }
+    // vnode.attrs: { allGroups, selectedIds, onSelect, onhide }
     this.allGroups = (vnode.attrs.allGroups || []).slice();
     this.selectedIds = (vnode.attrs.selectedIds || []).slice();
     this.onSelect = vnode.attrs.onSelect || (() => {});
+    this.attrsOnhide = vnode.attrs.onhide || null;  // 父级传的 onhide 回调 (modal 关闭时调)
+  }
+
+  // v0.1.3 修: 多个关闭钩子确保父级 onhide 一定被触发
+  //   Flarum 2.0 Modal 基类会在 hide() 时触发 onhide 钩子
+  onhide() {
+    if (this.attrsOnhide) this.attrsOnhide();
+  }
+
+  // 兜底: mithril vnode 从 DOM 移除时也触发 (防止 Modal.onhide 行为差异)
+  onremove() {
+    if (this.attrsOnhide) this.attrsOnhide();
   }
 
   className() {

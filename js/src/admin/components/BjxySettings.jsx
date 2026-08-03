@@ -277,7 +277,10 @@ export default class BjxySettings extends ExtensionPage {
                 g.nameSingular + ' (' + (g.userCount || 0) + ' 人)',
               ]);
             }),
-            m('div', { class: 'BjxyField-group-pick', onclick: () => this.openGroupModal() }, '🎯 弹 modal 选用户组 (v0.1.1)'),
+            // v0.1.3 改: 弹 modal 选用户组 按钮条件显示 — 只在选了 ≥1 个 group 时才出现
+            //   辉哥反馈 "用户只有选了至少一个用户组后, 才会展示那个弹modal的按钮"
+            //   之前无条件显示, 用户没选 group 时点击会弹 "没有可用的用户组" 提示, 体验不好
+            this.coachGroupIds.length > 0 ? m('div', { class: 'BjxyField-group-pick', onclick: () => this.openGroupModal() }, '🎯 弹 modal 选用户组 (v0.1.1)') : null,
             m('div', { class: 'BjxyField-hint' }, '💡 选中用户组内的所有用户将作为教练展示. 拖拽排序 + 弹 modal 在 v0.1.1.'),
           ]),
         ]),
@@ -410,13 +413,23 @@ export default class BjxySettings extends ExtensionPage {
   // v0.1.3 改: 弹真正的 mithril Modal (GroupPickerModal) 替代 v0.1.0f 留的 alert 占位
   //   Flarum 2.0 ModalManager.show(modalClass, attrs) 传 Component class, 不要传 plain object
   //   选中后回调 onSelect(ids) 更新 this.coachGroupIds
+  // v0.1.3 + 修: 弹 modal 前保存 scrollY, modal 关闭后恢复 (修 Flarum 2.0 ModalManager
+  //   副作用: 弹 modal 时会自动重置页面滚动位置, 用户在 admin 页面滚到教练 section
+  //   点按钮 → modal 弹 → 页面 scroll 变 0 (跳到顶部). 修法: 弹之前记 scrollY, 关 modal 后恢复
   openGroupModal() {
+    const scrollY = window.scrollY || document.documentElement.scrollTop || 0;
     app.modal.show(GroupPickerModal, {
       allGroups: this.allGroups,
       selectedIds: this.coachGroupIds,
       onSelect: (ids) => {
         this.coachGroupIds = ids;
         m.redraw();
+      },
+      onhide: () => {
+        // modal 关闭后恢复 scrollY (避免跳到顶部)
+        requestAnimationFrame(() => {
+          window.scrollTo(0, scrollY);
+        });
       },
     });
   }
