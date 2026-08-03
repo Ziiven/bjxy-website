@@ -647,3 +647,48 @@
 
 ### Commit
 - v0.1.2: 待 commit
+
+---
+
+## v0.1.3 (2026-08-03) — 教练选组 Modal 化 (替代 v0.1.0f 留的 alert 占位)
+
+### 改
+- 辉哥 v0.1.1 顺序里 step 3: 弹 modal 选用户组, 替代 v0.1.0f 留的 alert 占位 (实装, 不再等 v0.1.1)
+- v0.1.0f 留的: `openGroupModal()` 用 `app.alerts.show({type: 'info'}, '弹 modal 选用户组 + 拖拽排序在 v0.1.1 实现')` 是 placeholder
+- v0.1.0h 留的: 拖拽排序 + 弹 modal 在 v0.1.1 实现 (本版本只做弹 modal, 拖拽排序 v0.1.4 单独做)
+
+### 改 3 个文件 + 1 个新文件
+- **新文件**: `js/src/admin/components/GroupPickerModal.js`
+  - 继承 vendor `flarum/common/components/Modal`
+  - oninit 拿 attrs: { allGroups, selectedIds, onSelect }
+  - className: 'Modal--small GroupPickerModal'
+  - title: '选择用户组 (作为教练展示)'
+  - content: 列表 + 多选复选框 + 取消/确认 按钮
+  - toggle(id) 多选/取消
+  - confirm() 调 onSelect(ids) + hide
+- **js/src/admin/components/BjxySettings.jsx**:
+  - import GroupPickerModal
+  - openGroupModal() 改: `app.modal.show(GroupPickerModal, { allGroups, selectedIds, onSelect })`
+  - onSelect 回调更新 this.coachGroupIds + m.redraw
+- **less/admin.less**:
+  - :root 加 `--bjxy-blue-soft: #E0EBF8` (modal item 选中背景)
+  - 新增 .GroupPickerModal-list/item/empty/footer 样式 (4 个)
+  - 复用 vendor --control-bg/color vars (admin 自带)
+- **CHANGELOG.md**: v0.1.3 记录
+
+### Playwright 验证 (待做)
+- 0 page error / 0 console error
+- 点 "弹 modal 选用户组" 按钮 → 弹真正的 mithril Modal
+- modal 列出所有 group, 复选框, 默认选中已选 group
+- 选 / 取消 / 确认 → this.coachGroupIds 更新
+- 取消 / 关闭 → 不修改
+- 0 选中时确认按钮 disabled
+- 深色 / 浅色 双版 OK
+
+### 后续 v0.1.4 拖拽排序
+- sortablejs 或 mithril 自己的 drag-and-drop
+- 改 bjxy_coach_order setting (新), 前台按这个顺序渲染
+- 影响中
+
+### Commit
+- v0.1.3: 待 commit

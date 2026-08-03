@@ -6,6 +6,8 @@
 import app from 'flarum/admin/app';
 import ExtensionPage from 'flarum/admin/components/ExtensionPage';
 import ColorPreviewInput from 'flarum/common/components/ColorPreviewInput';
+// v0.1.3: 弹 modal 选用户组 (替代 v0.1.0f 留的 alert 占位)
+import GroupPickerModal from './GroupPickerModal';
 // mithril 走 vendor 注入的 global m (zct 同款, 不 import)
 
 const DEFAULT_FEATURES = [
@@ -405,12 +407,18 @@ export default class BjxySettings extends ExtensionPage {
     m.redraw();
   }
 
-  // v0.1.0f 修: openGroupModal 不能用 app.modal.show({title, content}) 传 plain object
-  // Flarum 2.0 ModalManager 期望 Component class, plain object 抛 "ModalManager can only show Modals"
-  // 这个 throw 会让整个 admin app 状态崩, 后续操作全部白屏, mobile 看到 forum
-  // "加载论坛时出错" 误以为是 page load 失败. 改用 alert 占位 (v0.1.1 实装 modal 选用户组)
+  // v0.1.3 改: 弹真正的 mithril Modal (GroupPickerModal) 替代 v0.1.0f 留的 alert 占位
+  //   Flarum 2.0 ModalManager.show(modalClass, attrs) 传 Component class, 不要传 plain object
+  //   选中后回调 onSelect(ids) 更新 this.coachGroupIds
   openGroupModal() {
-    app.alerts.show({ type: 'info' }, '弹 modal 选用户组 + 拖拽排序在 v0.1.1 实现');
+    app.modal.show(GroupPickerModal, {
+      allGroups: this.allGroups,
+      selectedIds: this.coachGroupIds,
+      onSelect: (ids) => {
+        this.coachGroupIds = ids;
+        m.redraw();
+      },
+    });
   }
 
   async uploadFile(e, key) {
