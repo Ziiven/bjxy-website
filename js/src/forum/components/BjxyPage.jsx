@@ -124,6 +124,11 @@ export default class BjxyPage extends Component {
       ],
     };
     const features = (app.data && app.data.bjxyFeatures) || [];
+    // v0.1.6e 改: 过滤空 desc 的特色项, 避免 6+1 布局不平衡 (移动端 2 列变 3+3+1 孤零零)
+    //   辉哥 14:04 反馈 "后台办学特色中的内容在移动端右侧出视界了"
+    //   根因: 后台"添加特色"按钮会 push 一个空 desc 的占位项, 用户没填就保存, 布局不齐
+    //   修法: 前端过滤 title 或 desc 为空的项, 不渲染; 6 项默认 = 桌面 2 行 3 列 + 移动 3 行 2 列 (整齐)
+    const visibleFeatures = features.filter(f => f && f.title && f.desc);
     const reviewsHtml = s('bjxy_reviews_html', '');
     const studentsHtml = s('bjxy_students_html', '');
     // v0.1.6: 评价 + 学员结构化 JSON (替代 HTML 自由区)
@@ -385,7 +390,7 @@ export default class BjxyPage extends Component {
       m('section', { class: 'bjxy-section', id: 'features' }, [
         m('div', { class: 'bjxy-sub' }, 'FEATURES'),
         m('h2', null, '办学特色'),
-        m('div', { class: 'bjxy-feature-grid' }, features.map((f, i) => m('div', { class: 'bjxy-feature', key: 'f' + i }, [
+        m('div', { class: 'bjxy-feature-grid' }, visibleFeatures.map((f, i) => m('div', { class: 'bjxy-feature', key: 'f' + i }, [
           m('div', { class: 'bjxy-feature-icon' }, f.icon || '★'),
           m('h3', null, f.title || ''),
           m('p', null, f.desc || ''),

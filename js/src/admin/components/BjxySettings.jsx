@@ -745,7 +745,12 @@ export default class BjxySettings extends ExtensionPage {
     this.saving = true;
     m.redraw();
     const payload = Object.assign({}, this.data);
-    payload.bjxy_features_json = JSON.stringify(this.features);
+    // v0.1.6e 改: 过滤空 title/desc 的特色项, 避免 6+1 布局不平衡
+    //   辉哥 14:04 反馈: 后台添加特色没填就保存, 移动端 2 列布局变 3+3+1 孤零零
+    //   修法: save() payload 过滤 title/desc 都不全的非空项
+    payload.bjxy_features_json = JSON.stringify(
+      this.features.filter(f => f && f.title && f.title.trim() && f.desc && f.desc.trim())
+    );
     // v0.1.0s 改: boards array 写到 bjxy_curriculum_boards_json 新字段
     payload.bjxy_curriculum_boards_json = JSON.stringify(this.boards);
     payload.bjxy_coach_group_ids = JSON.stringify(this.coachGroupIds);
