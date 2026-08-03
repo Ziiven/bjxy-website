@@ -605,6 +605,22 @@
     font-size: 9px;
     text-align: center;
 }
+// v0.1.6: 学员成就 (hover 显示)
+.bjxy-student-achievement {
+    position: absolute;
+    top: 4px;
+    left: 4px;
+    right: 4px;
+    padding: 3px 6px;
+    background: rgba(45, 123, 229, 0.85);
+    color: #fff;
+    border-radius: 3px;
+    font-size: 9px;
+    text-align: center;
+    opacity: 0;
+    transition: opacity 0.2s;
+}
+.bjxy-student:hover .bjxy-student-achievement { opacity: 1; }
 
 // ===== 联系我们 =====
 .bjxy-contact-grid {

@@ -62,6 +62,10 @@ export default class BjxySettings extends ExtensionPage {
     this.allGroups = [];
     // v0.1.5: 教练详情 (map: userId -> {bio, achievements, specialties, photoUrl})
     this.coachDetails = {};
+    // v0.1.6: 评价 array (结构化字段替代 bjxy_reviews_html 自由区)
+    this.reviews = [];
+    // v0.1.6: 学员展示 array (升级 bjxy_students_json 简单 JSON)
+    this.students = [];
     this.loadSettings();
   }
 
@@ -293,43 +297,143 @@ export default class BjxySettings extends ExtensionPage {
         ]),
       ]),
 
-      // Section 7: 学员评价
+      // v0.1.6: Section 7 学员评价 (结构化 JSON 替代 HTML 自由区)
       m('div', { class: 'BjxySection' }, [
-        m('div', { class: 'BjxySection-head' }, '💬 学员评价 (HTML 自由区)'),
+        m('div', { class: 'BjxySection-head' }, '💬 学员评价 (结构化 JSON)'),
         m('div', { class: 'BjxySection-body' }, [
-          m('div', { class: 'BjxyField-label', style: 'padding-top: 0;' }, 'HTML 自由区'),
-          m('textarea', {
-            class: 'BjxyField-textarea',
-            style: 'min-height: 120px; grid-column: 2;',
-            value: this.data.bjxy_reviews_html || '',
-            placeholder: '<div class="review">评价卡片...</div>',
-            oninput: (e) => { this.data.bjxy_reviews_html = e.target.value; },
-          }),
-          m('div', { class: 'BjxyField-hint', style: 'grid-column: 2;' }, '💡 自由布局: 卡片 / 轮播 / 视频 / 嵌入第三方评论, 任意 HTML'),
+          m('div', { class: 'BjxyField-array BjxyField-array-wide' }, [
+            this.reviews.map((r, i) => m('div', { class: 'BjxyField-array-card', key: 'r' + i }, [
+              m('div', { class: 'BjxyField-array-card-head' }, [
+                m('span', { class: 'BjxyField-array-card-num' }, '评价 #' + (i + 1)),
+                m('button', {
+                  class: 'del',
+                  onclick: () => { this.reviews.splice(i, 1); m.redraw(); },
+                }, '× 删除'),
+              ]),
+              m('div', { class: 'BjxyField-array-card-body' }, [
+                m('div', { class: 'BjxyField-row' }, [
+                  m('div', { class: 'BjxyField-label' }, '头像 (走 ziven-core COS)'),
+                  m('div', null, [
+                    m('div', { class: 'BjxyField-file', onclick: (e) => this.uploadFileForArray(e, this.reviews, i, 'photoUrl') }, '📷 点击上传'),
+                    r.photoUrl ? m('div', { class: 'BjxyField-file-preview' }, [
+                      m('div', null, '✓ ' + r.photoUrl),
+                      m('img', { src: r.photoUrl, alt: '' }),
+                    ]) : null,
+                  ]),
+                ]),
+                m('div', { class: 'BjxyField-row' }, [
+                  m('div', { class: 'BjxyField-label' }, '作者昵称'),
+                  m('input', {
+                    class: 'BjxyField-input',
+                    value: r.author,
+                    placeholder: '王同学',
+                    oninput: (e) => { r.author = e.target.value; },
+                  }),
+                ]),
+                m('div', { class: 'BjxyField-row' }, [
+                  m('div', { class: 'BjxyField-label' }, '评分 (1-5)'),
+                  m('input', {
+                    class: 'BjxyField-input',
+                    type: 'number',
+                    min: '1',
+                    max: '5',
+                    value: r.rating,
+                    oninput: (e) => { r.rating = Math.max(1, Math.min(5, parseInt(e.target.value) || 5)); },
+                  }),
+                ]),
+                m('div', { class: 'BjxyField-row' }, [
+                  m('div', { class: 'BjxyField-label' }, '评价文字'),
+                  m('textarea', {
+                    class: 'BjxyField-textarea',
+                    value: r.text,
+                    placeholder: '教练很专业, 学到了很多...',
+                    rows: '3',
+                    oninput: (e) => { r.text = e.target.value; },
+                  }),
+                ]),
+                m('div', { class: 'BjxyField-row' }, [
+                  m('div', { class: 'BjxyField-label' }, '日期 (可选)'),
+                  m('input', {
+                    class: 'BjxyField-input',
+                    value: r.date,
+                    placeholder: '2026-08-03',
+                    oninput: (e) => { r.date = e.target.value; },
+                  }),
+                ]),
+              ]),
+            ])),
+            m('div', {
+              class: 'BjxyField-array-add',
+              onclick: () => {
+                this.reviews.push({ author: '', rating: 5, text: '', date: '', photoUrl: '' });
+                m.redraw();
+              },
+            }, '+ 添加评价'),
+          ]),
         ]),
       ]),
 
-      // Section 8: 学员展示
+      // v0.1.6: Section 8 学员展示 (升级 bjxy_students_json → bjxy_students)
       m('div', { class: 'BjxySection' }, [
-        m('div', { class: 'BjxySection-head' }, '📸 学员展示'),
+        m('div', { class: 'BjxySection-head' }, '📸 学员展示 (结构化 JSON)'),
         m('div', { class: 'BjxySection-body' }, [
-          m('div', { class: 'BjxyField-label', style: 'padding-top: 0;' }, 'HTML 自由区 (瀑布流 / 时间线 / 视频集)'),
-          m('textarea', {
-            class: 'BjxyField-textarea',
-            style: 'min-height: 80px; grid-column: 2;',
-            value: this.data.bjxy_students_html || '',
-            placeholder: '<div class="student-grid">...</div>',
-            oninput: (e) => { this.data.bjxy_students_html = e.target.value; },
-          }),
-          m('div', { class: 'BjxyField-hint', style: 'grid-column: 2;' }, '💡 也可以用下面的简化 JSON: [{"image":"url","name":"王同学"}]'),
-          m('div', { class: 'BjxyField-label' }, '学员 JSON (简单版)'),
-          m('textarea', {
-            class: 'BjxyField-textarea',
-            style: 'min-height: 60px; grid-column: 2;',
-            value: this.data.bjxy_students_json || '',
-            placeholder: '[{"name":"王同学 · 初级毕业"}, ...]',
-            oninput: (e) => { this.data.bjxy_students_json = e.target.value; },
-          }),
+          m('div', { class: 'BjxyField-array BjxyField-array-wide' }, [
+            this.students.map((s, i) => m('div', { class: 'BjxyField-array-card', key: 's' + i }, [
+              m('div', { class: 'BjxyField-array-card-head' }, [
+                m('span', { class: 'BjxyField-array-card-num' }, '学员 #' + (i + 1)),
+                m('button', {
+                  class: 'del',
+                  onclick: () => { this.students.splice(i, 1); m.redraw(); },
+                }, '× 删除'),
+              ]),
+              m('div', { class: 'BjxyField-array-card-body' }, [
+                m('div', { class: 'BjxyField-row' }, [
+                  m('div', { class: 'BjxyField-label' }, '照片 (走 ziven-core COS)'),
+                  m('div', null, [
+                    m('div', { class: 'BjxyField-file', onclick: (e) => this.uploadFileForArray(e, this.students, i, 'photoUrl') }, '📷 点击上传'),
+                    s.photoUrl ? m('div', { class: 'BjxyField-file-preview' }, [
+                      m('div', null, '✓ ' + s.photoUrl),
+                      m('img', { src: s.photoUrl, alt: '' }),
+                    ]) : null,
+                  ]),
+                ]),
+                m('div', { class: 'BjxyField-row' }, [
+                  m('div', { class: 'BjxyField-label' }, '姓名'),
+                  m('input', {
+                    class: 'BjxyField-input',
+                    value: s.name,
+                    placeholder: '王同学',
+                    oninput: (e) => { s.name = e.target.value; },
+                  }),
+                ]),
+                m('div', { class: 'BjxyField-row' }, [
+                  m('div', { class: 'BjxyField-label' }, '等级 (例: 初级毕业)'),
+                  m('input', {
+                    class: 'BjxyField-input',
+                    value: s.level,
+                    placeholder: '初级毕业',
+                    oninput: (e) => { s.level = e.target.value; },
+                  }),
+                ]),
+                m('div', { class: 'BjxyField-row' }, [
+                  m('div', { class: 'BjxyField-label' }, '成就 (可选)'),
+                  m('input', {
+                    class: 'BjxyField-input',
+                    value: s.achievement,
+                    placeholder: '3 个月零基础到刻滑',
+                    oninput: (e) => { s.achievement = e.target.value; },
+                  }),
+                ]),
+              ]),
+            ])),
+            m('div', {
+              class: 'BjxyField-array-add',
+              onclick: () => {
+                this.students.push({ name: '', level: '', photoUrl: '', achievement: '' });
+                m.redraw();
+              },
+            }, '+ 添加学员'),
+          ]),
         ]),
       ]),
 
@@ -413,6 +517,35 @@ export default class BjxySettings extends ExtensionPage {
                 };
               }
             });
+          }
+        } catch (e) {}
+      }
+      // v0.1.6: 加载 reviews (结构化 JSON, 替代老的 bjxy_reviews_html)
+      if (this.data.bjxy_reviews) {
+        try {
+          const arr = JSON.parse(this.data.bjxy_reviews);
+          if (Array.isArray(arr)) {
+            this.reviews = arr.map(r => ({
+              author: r.author || '',
+              rating: r.rating || 5,
+              text: r.text || '',
+              date: r.date || '',
+              photoUrl: r.photoUrl || '',
+            }));
+          }
+        } catch (e) {}
+      }
+      // v0.1.6: 加载 students (升级老的 bjxy_students_json 简单 JSON)
+      if (this.data.bjxy_students) {
+        try {
+          const arr = JSON.parse(this.data.bjxy_students);
+          if (Array.isArray(arr)) {
+            this.students = arr.map(s => ({
+              name: s.name || '',
+              level: s.level || '',
+              photoUrl: s.photoUrl || '',
+              achievement: s.achievement || '',
+            }));
           }
         } catch (e) {}
       }
@@ -509,6 +642,39 @@ export default class BjxySettings extends ExtensionPage {
     fileInput.click();
   }
 
+  // v0.1.6: 给 array 元素上传文件 (评价 photoUrl / 学员 photoUrl)
+  //   跟 uploadFile 区别: 写入的是 this.reviews[i].photoUrl 不是 this.data[key]
+  async uploadFileForArray(e, arr, i, field) {
+    e.preventDefault();
+    const fileInput = document.createElement('input');
+    fileInput.type = 'file';
+    fileInput.accept = 'image/*';
+    fileInput.onchange = async (ev) => {
+      const file = ev.target.files[0];
+      if (!file) return;
+      const form = new FormData();
+      form.append('file', file);
+      form.append('key', 'bjxy_' + (arr === this.reviews ? 'review' : 'student') + '_' + field + '_' + i);
+      try {
+        const r = await app.request({
+          method: 'POST',
+          url: app.forum.attribute('apiUrl') + '/bjxy/upload',
+          body: form,
+        });
+        if (r.ok && r.url) {
+          arr[i][field] = r.url;
+          app.alerts.show({ type: 'success' }, '上传成功');
+          m.redraw();
+        } else {
+          app.alerts.show({ type: 'error' }, r.error || '上传失败');
+        }
+      } catch (err) {
+        app.alerts.show({ type: 'error' }, '上传异常: ' + err.message);
+      }
+    };
+    fileInput.click();
+  }
+
   async save() {
     this.saving = true;
     m.redraw();
@@ -532,6 +698,16 @@ export default class BjxySettings extends ExtensionPage {
           specialties: this.coachDetails[uid].specialties,
           photoUrl: this.coachDetails[uid].photoUrl,
         }))
+    );
+    // v0.1.6: 评价 (结构化 array 替代 bjxy_reviews_html 自由区)
+    //   只保存有任意字段填了的 review (避免空对象污染 DB)
+    payload.bjxy_reviews = JSON.stringify(
+      this.reviews.filter(r => r.author || r.text || r.photoUrl)
+    );
+    // v0.1.6: 学员展示 (升级 bjxy_students_json 简单 JSON → bjxy_students 完整 array)
+    //   只保存有任意字段填了的 student
+    payload.bjxy_students = JSON.stringify(
+      this.students.filter(s => s.name || s.photoUrl)
     );
     try {
       await app.request({

@@ -81,6 +81,53 @@
         border-radius: 4px;
     }
     .BjxyField-array { grid-column: 2; }
+    // v0.1.6: 评价/学员结构化 array editor (每条 item 一张卡片, 跨整行)
+    .BjxyField-array-wide {
+        grid-column-start: 1;
+        grid-column-end: -1;
+    }
+    .BjxyField-array-card {
+        margin-bottom: 12px;
+        padding: 10px;
+        border: 1px solid var(--control-color-soft);
+        border-radius: 6px;
+        background: var(--control-bg);
+    }
+    .BjxyField-array-card-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 8px;
+        padding-bottom: 6px;
+        border-bottom: 1px dashed var(--control-color-soft);
+    }
+    .BjxyField-array-card-num {
+        font-size: 12px;
+        font-weight: 700;
+        color: var(--bjxy-primary, #2D7BE5);
+    }
+    .BjxyField-array-card-head .del {
+        background: transparent;
+        border: 1px solid var(--control-color-soft);
+        color: var(--control-color-soft);
+        border-radius: 3px;
+        cursor: pointer;
+        font-size: 11px;
+        padding: 2px 8px;
+    }
+    .BjxyField-array-card-head .del:hover {
+        border-color: #d83e3e;
+        color: #d83e3e;
+    }
+    .BjxyField-array-card-body {
+        display: grid;
+        grid-template-columns: 140px 1fr;
+        gap: 8px 12px;
+        align-items: start;
+    }
+    .BjxyField-row {
+        display: contents;
+    }
     .BjxyField-array-row {
         display: grid;
         grid-template-columns: 30px 1fr 1fr 1fr 32px;

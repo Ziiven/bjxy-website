@@ -20,6 +20,12 @@ export default class BjxyPage extends Component {
     this.activeBoard = 0;
   }
 
+  // v0.1.6: 评分转 ★☆ 字符串 (1-5 整数)
+  renderStars(rating) {
+    const r = Math.max(1, Math.min(5, parseInt(rating) || 5));
+    return '★'.repeat(r) + '☆'.repeat(5 - r);
+  }
+
   view() {
     // v0.1.0l 修: extend.php 用 Extend\Settings::serializeToForum() 把 bjxy_* 加进
     //   forum.attributes, 前台 app.forum.attribute('bjxy_*') 直接拿到 (跟走 vendor 一样)
@@ -37,6 +43,18 @@ export default class BjxyPage extends Component {
     const features = (app.data && app.data.bjxyFeatures) || [];
     const reviewsHtml = s('bjxy_reviews_html', '');
     const studentsHtml = s('bjxy_students_html', '');
+    // v0.1.6: 评价 + 学员结构化 JSON (替代 HTML 自由区)
+    //   app.forum.attribute 拿 string, JSON.parse 转 array
+    const reviews = (() => {
+      const raw = s('bjxy_reviews', '[]');
+      if (!raw) return [];
+      try { const arr = JSON.parse(raw); return Array.isArray(arr) ? arr : []; } catch (e) { return []; }
+    })();
+    const students = (() => {
+      const raw = s('bjxy_students', '[]');
+      if (!raw) return [];
+      try { const arr = JSON.parse(raw); return Array.isArray(arr) ? arr : []; } catch (e) { return []; }
+    })();
 
     // v0.1.0y: 背景渐变从 .bjxy-page block 背景, 抽到内部第一个 .bjxy-page-bg
     //   position: fixed; inset: 0 → 背景永远铺满 viewport (1vh), 不再随 body 拉长
@@ -246,22 +264,44 @@ export default class BjxyPage extends Component {
               })),
       ]),
 
-      // ===== 评价 (HTML 自由区) =====
+      // ===== 评价 (v0.1.6 结构化字段替代 HTML 自由区) =====
+      // 优先级: 新 bjxy_reviews (array) > 老 bjxy_reviews_html (fallback 兼容旧部署)
       m('section', { class: 'bjxy-section', id: 'reviews' }, [
         m('div', { class: 'bjxy-sub' }, 'REVIEWS'),
         m('h2', null, '学员评价'),
-        reviewsHtml
-          ? m('div', { class: 'bjxy-reviews-html', oncreate: ({ dom }) => { dom.innerHTML = reviewsHtml; } })
-          : m('p', null, '（暂无评价, 在后台 HTML 自由区添加）'),
+        reviews.length > 0
+          ? m('div', { class: 'bjxy-review-grid' }, reviews.map((r, i) => m('div', { class: 'bjxy-review', key: 'r' + i }, [
+              m('div', { class: 'bjxy-review-stars' }, this.renderStars(r.rating || 5)),
+              m('div', { class: 'bjxy-review-quote' }, r.text || ''),
+              m('div', { class: 'bjxy-review-author' }, [
+                m('span', { class: 'bjxy-review-author-av' }, [
+                  r.photoUrl ? m('img', { src: r.photoUrl, alt: r.author || '' }) : (r.author || '?').charAt(0),
+                ]),
+                m('span', null, r.author || '匿名'),
+                r.date ? m('span', { class: 'bjxy-review-date' }, ' · ' + r.date) : null,
+              ]),
+            ])))
+          : reviewsHtml
+            ? m('div', { class: 'bjxy-reviews-html', oncreate: ({ dom }) => { dom.innerHTML = reviewsHtml; } })
+            : m('p', null, '（暂无评价, 请在后台添加）'),
       ]),
 
-      // ===== 学员展示 (HTML 自由区) =====
+      // ===== 学员展示 (v0.1.6 升级老 bjxy_students_json 简单 JSON) =====
       m('section', { class: 'bjxy-section bjxy-section-alt', id: 'students' }, [
         m('div', { class: 'bjxy-sub' }, 'STUDENTS'),
         m('h2', null, '学员展示'),
-        studentsHtml
-          ? m('div', { class: 'bjxy-student-grid', oncreate: ({ dom }) => { dom.innerHTML = studentsHtml; } })
-          : m('p', null, '（暂无学员展示, 在后台 HTML 自由区添加）'),
+        students.length > 0
+          ? m('div', { class: 'bjxy-student-grid' }, students.map((s, i) => m('div', { class: 'bjxy-student', key: 's' + i }, [
+              s.photoUrl ? m('img', { src: s.photoUrl, alt: s.name || '' }) : null,
+              m('div', { class: 'bjxy-student-label' }, [
+                s.name || '学员',
+                s.level ? ' · ' + s.level : '',
+              ]),
+              s.achievement ? m('div', { class: 'bjxy-student-achievement' }, s.achievement) : null,
+            ])))
+          : studentsHtml
+            ? m('div', { class: 'bjxy-student-grid', oncreate: ({ dom }) => { dom.innerHTML = studentsHtml; } })
+            : m('p', null, '（暂无学员展示, 请在后台添加）'),
       ]),
 
       // ===== 联系 =====
