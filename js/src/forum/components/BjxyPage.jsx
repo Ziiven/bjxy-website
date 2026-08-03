@@ -138,8 +138,8 @@ export default class BjxyPage extends Component {
     //   根因: 后台"添加特色"按钮会 push 一个空 desc 的占位项, 用户没填就保存, 布局不齐
     //   修法: 前端过滤 title 或 desc 为空的项, 不渲染; 6 项默认 = 桌面 2 行 3 列 + 移动 3 行 2 列 (整齐)
     const visibleFeatures = features.filter(f => f && f.title && f.desc);
-    const reviewsHtml = s('bjxy_reviews_html', '');
-    const studentsHtml = s('bjxy_students_html', '');
+    // v0.1.7a 改: 删 bjxy_reviews_html + bjxy_students_html fallback 读取
+    //   老的 HTML 自由区字段已经废弃, 评价/活动统一用结构化 JSON
     // v0.1.6: 评价 + 学员结构化 JSON (替代 HTML 自由区)
     //   app.forum.attribute 拿 string, JSON.parse 转 array
     const reviews = (() => {

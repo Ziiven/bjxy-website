@@ -8,6 +8,8 @@ import ExtensionPage from 'flarum/admin/components/ExtensionPage';
 import ColorPreviewInput from 'flarum/common/components/ColorPreviewInput';
 // v0.1.3: 弹 modal 选用户组 (替代 v0.1.0f 留的 alert 占位)
 import GroupPickerModal from './GroupPickerModal';
+// v0.1.7: 评价 / 活动 拖拽排序 (复用 v0.1.4 GroupPickerModal sortablejs 模式)
+import Sortable from 'sortablejs';
 // mithril 走 vendor 注入的 global m (zct 同款, 不 import)
 
 const DEFAULT_FEATURES = [
@@ -68,6 +70,9 @@ export default class BjxySettings extends ExtensionPage {
     this.students = [];
     // v0.1.6g: 活动 swiper 自动轮播间隔 (毫秒, 默认 3000)
     this.eventsAutoplayMs = 3000;
+    // v0.1.7: sortablejs 实例 (评价 + 活动 拖拽排序, onremove 时 destroy)
+    this.reviewsSortable = null;
+    this.studentsSortable = null;
     this.loadSettings();
   }
 
@@ -303,7 +308,11 @@ export default class BjxySettings extends ExtensionPage {
       m('div', { class: 'BjxySection' }, [
         m('div', { class: 'BjxySection-head' }, '💬 学员评价 (结构化 JSON, 多图)'),
         m('div', { class: 'BjxySection-body' }, [
-          m('div', { class: 'BjxyField-array BjxyField-array-wide' }, [
+          m('div', {
+            class: 'BjxyField-array BjxyField-array-wide BjxyField-sortable',
+            oncreate: (vnode) => this.initSortable(vnode, 'reviews'),
+            onremove: () => this.destroySortable('reviews'),
+          }, [
             this.reviews.map((r, i) => m('div', { class: 'BjxyField-array-card', key: 'r' + i }, [
               m('div', { class: 'BjxyField-array-card-head' }, [
                 m('span', { class: 'BjxyField-array-card-num' }, '评价 #' + (i + 1)),
@@ -401,7 +410,11 @@ export default class BjxySettings extends ExtensionPage {
             }),
             m('div', { class: 'BjxyField-hint' }, '默认 3000, 范围 500-60000'),
           ]),
-          m('div', { class: 'BjxyField-array BjxyField-array-wide' }, [
+          m('div', {
+            class: 'BjxyField-array BjxyField-array-wide BjxyField-sortable',
+            oncreate: (vnode) => this.initSortable(vnode, 'students'),
+            onremove: () => this.destroySortable('students'),
+          }, [
             this.students.map((s, i) => m('div', { class: 'BjxyField-array-card', key: 's' + i }, [
               m('div', { class: 'BjxyField-array-card-head' }, [
                 m('span', { class: 'BjxyField-array-card-num' }, '活动 #' + (i + 1)),
@@ -514,6 +527,35 @@ export default class BjxySettings extends ExtensionPage {
         }, this.saving ? '保存中...' : '保存全部'),
       ]),
     ]);
+  }
+
+  // v0.1.7: 评价 / 活动 拖拽排序 (复用 v0.1.4 GroupPickerModal sortablejs 模式)
+  //   which: 'reviews' 或 'students', 排序哪个 array
+  //   Sortable.create() 创建, onEnd 互换 splice 顺序, m.redraw() 重渲
+  initSortable(vnode, which) {
+    if (this[`${which}Sortable`]) this[`${which}Sortable`].destroy();
+    this[`${which}Sortable`] = Sortable.create(vnode.dom, {
+      animation: 150,
+      handle: '.BjxyField-array-card-head',  // 拖拽手柄 = 卡片头部 (含 #序号 + 删除按钮)
+      ghostClass: 'BjxyField-sortable-ghost',  // 拖拽时 ghost 元素 class
+      chosenClass: 'BjxyField-sortable-chosen',  // 选中元素 class
+      dragClass: 'BjxyField-sortable-drag',  // 拖拽中元素 class
+      onEnd: (e) => {
+        if (e.oldIndex === e.newIndex) return;
+        const arr = this[which];
+        const moved = arr.splice(e.oldIndex, 1)[0];
+        arr.splice(e.newIndex, 0, moved);
+        m.redraw();
+      },
+    });
+  }
+
+  // 销毁 sortable 实例 (ExtensionPage 切走时 onremove 触发)
+  destroySortable(which) {
+    if (this[`${which}Sortable`]) {
+      this[`${which}Sortable`].destroy();
+      this[`${which}Sortable`] = null;
+    }
   }
 
   async loadSettings() {

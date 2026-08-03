@@ -100,7 +100,15 @@
         margin-bottom: 8px;
         padding-bottom: 6px;
         border-bottom: 1px dashed var(--control-color-soft);
+        // v0.1.7: 拖拽手柄 (sortablejs handle), 整条 card-head 可拖
+        //   sortablejs 默认 ghost/chosen/drag class 也加视觉反馈
+        cursor: grab;
     }
+    .BjxyField-array-card-head:active { cursor: grabbing; }
+    // v0.1.7: 拖拽中元素视觉反馈
+    .BjxyField-sortable-ghost { opacity: 0.4; background: var(--bjxy-primary, #2D7BE5); border-style: dashed; }
+    .BjxyField-sortable-chosen { cursor: grabbing !important; }
+    .BjxyField-sortable-drag { box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15); opacity: 0.9; }
     .BjxyField-array-card-num {
         font-size: 12px;
         font-weight: 700;

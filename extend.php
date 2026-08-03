@@ -101,8 +101,8 @@ return [
         // v0.1.5: 教练详细内容 (JSON array: [{userId, bio, achievements, specialties, photoUrl}])
         //   key 用 userId 跟 bjxy_coach_user_ids 配对, 前台 CoachesController join 拼一起
         ->serializeToForum('bjxy_coach_details', 'bjxy_coach_details')
-        ->serializeToForum('bjxy_reviews_html', 'bjxy_reviews_html')
-        ->serializeToForum('bjxy_students_html', 'bjxy_students_html')
+        // v0.1.7a 删: bjxy_reviews_html + bjxy_students_html (老的 HTML 自由区字段已废弃)
+        //   评价/活动统一走结构化 JSON (bjxy_reviews / bjxy_students)
         // v0.1.6: 评价结构化 (JSON array: [{author, rating, text, date, photoUrl}])
         //   替代老 bjxy_reviews_html (HTML 自由区, 干坏处多: XSS + 不便维护)
         ->serializeToForum('bjxy_reviews', 'bjxy_reviews')
