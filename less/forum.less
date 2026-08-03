@@ -107,6 +107,33 @@
     will-change: background-position;
     transition: background-position 0.08s linear;
 }
+// v0.1.6i: 玻璃拟态风格背景 (辉哥 16:26 "把现在前端的背景渐变, 改成办学特色那块的玻璃拟态风格")
+//   复用 .bjxy-features-glass 的蓝/紫光斑效果, 跟办学特色同款
+//   ::before 顶部右上角蓝/紫光斑 + ::after 底部左下角紫色光斑
+//   视差 background + 光斑叠加: 用户还可以改 4 色 settings 调渐变, 光斑是固定装饰
+//   pointer-events: none 不挡点击
+//   注意: ::before 不会跟着 background-size 100% 300vh 拉长 (伪元素相对 .bjxy-page-bg viewport 尺寸,
+//     因为 .bjxy-page-bg 是 position: fixed inset: 0, 所以 ::before 100%/100% 就是 viewport 尺寸)
+.bjxy-page-bg::before {
+    content: '';
+    position: absolute;
+    top: -150px; right: -150px;
+    width: 500px; height: 500px;
+    background: radial-gradient(circle, rgba(45, 123, 229, 0.28) 0%, transparent 70%);
+    filter: blur(40px);
+    pointer-events: none;
+    z-index: 0;
+}
+.bjxy-page-bg::after {
+    content: '';
+    position: absolute;
+    bottom: -100px; left: -150px;
+    width: 400px; height: 400px;
+    background: radial-gradient(circle, rgba(139, 92, 246, 0.22) 0%, transparent 70%);
+    filter: blur(40px);
+    pointer-events: none;
+    z-index: 0;
+}
 
 // ===== 公告条 =====
 .bjxy-announce {
