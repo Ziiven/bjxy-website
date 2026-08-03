@@ -471,18 +471,22 @@
 // v0.1.5 新加: 详细模式教练卡片 (有 bio/achievements/specialties)
 //   跨整行 (1/7 占 6 列), flex row 布局: 头像在左, 文字在右
 //   之前的 grid 6 列只适合头像+名字的简单卡片, 详细卡片需要更多空间展示文字
+// v0.1.5b 修: grid-column 拆 start/end (SOP 79, wikimedia/less.php 编译坑)
+//   之前 `grid-column: 1 / -1` 被 less 解析成 1 / -1 = -1 (除法), CSS 是 `grid-column: -1` 单值, 浏览器 invalid 不跨整行
 .bjxy-coach-detailed {
-    grid-column: 1 / -1;
+    grid-column-start: 1;
+    grid-column-end: -1;
     text-align: left;
     display: flex;
     align-items: flex-start;
     gap: 16px;
     padding: 16px;
-    background: var(--bjxy-bg-card);
+    background: var(--bjxy-bg-soft);
     border: 1px solid var(--bjxy-border);
+    border-radius: 8px;
     cursor: default;
 }
-.bjxy-coach-detailed:hover { background: var(--bjxy-bg-card-hover); }
+.bjxy-coach-detailed:hover { background: var(--bjxy-bg); }
 .bjxy-coach-detailed .bjxy-coach-avatar {
     width: 80px;
     height: 80px;
