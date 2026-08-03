@@ -396,10 +396,18 @@ export default class BjxyPage extends Component {
       ]),
 
       // ===== 特色 =====
-      m('section', { class: 'bjxy-section', id: 'features' }, [
-        m('div', { class: 'bjxy-sub' }, 'FEATURES'),
-        m('h2', null, '办学特色'),
+      // v0.1.6h: 改玻璃拟态 (辉哥 16:06 选 A 方案)
+      //   - section 顶部 + 底部加渐变光斑 (蓝/紫)
+      //   - 头部居中: eyebrow badge + 渐变大标题 + 浅色副标题
+      //   - 卡片: backdrop-filter blur + 右上角 01-06 编号 + icon 渐变光晕背景
+      m('section', { class: 'bjxy-section bjxy-section-alt bjxy-features-glass', id: 'features' }, [
+        m('div', { class: 'bjxy-section-head' }, [
+          m('div', { class: 'bjxy-features-eyebrow' }, 'Why Choose Us'),
+          m('h2', null, '为什么选择北极雪屿'),
+          m('p', { class: 'bjxy-features-sub' }, '从环境到教练, 从课程到装备, 每一个细节都为你精心准备'),
+        ]),
         m('div', { class: 'bjxy-feature-grid' }, visibleFeatures.map((f, i) => m('div', { class: 'bjxy-feature', key: 'f' + i }, [
+          m('span', { class: 'bjxy-feature-num' }, String(i + 1).padStart(2, '0')),
           m('div', { class: 'bjxy-feature-icon' }, f.icon || '★'),
           m('h3', null, f.title || ''),
           m('p', null, f.desc || ''),
