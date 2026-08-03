@@ -10,7 +10,12 @@
 import app from 'flarum/forum/app';
 import Component from 'flarum/common/Component';
 // v0.1.6a: 引入 swiper ES module
+// v0.1.6c 改: swiper 11 navigation/pagination 是独立 modules, 必须显式 import + 传 modules: [...]
+//   之前 v0.1.6a+b 只 import Swiper default, swiper 11 默认不 attach navigation/pagination
+//   (modules 数组只有 ['0', '1'] 表示 core + virtual), 按钮 click 没绑 event
+//   辉哥 12:55 反馈 "swiper 左右切换箭头点击没效果", 确认 navigation 初始化失败
 import Swiper from 'swiper';
+import { Navigation, Pagination } from 'swiper/modules';
 import 'swiper/css';
 
 const DEFAULT_BRAND = '北极雪屿';
@@ -73,10 +78,13 @@ export default class BjxyPage extends Component {
   // v0.1.6a: swiper 初始化 (评价/活动 轮播)
   //   vnode.dom 是 swiper container
   //   onremove 时销毁避免内存泄漏
+  // v0.1.6c 改: 加 modules: [Navigation, Pagination]
   initSwiper(vnode) {
     if (!vnode || !vnode.dom) return;
     if (this.swiper) this.swiper.destroy(true, true);
     this.swiper = new Swiper(vnode.dom, {
+      // v0.1.6c: 必须传 modules, 不传 swiper 11 navigation/pagination 不会 attach
+      modules: [Navigation, Pagination],
       loop: true,
       slidesPerView: 1,
       spaceBetween: 16,
