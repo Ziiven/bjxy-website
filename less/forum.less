@@ -385,7 +385,10 @@
 //   辉哥 16:36 反馈 "为什么选择北极雪屿 section 中的背景可以移除了"
 //   保留 alt section 浅背景 (跟其他 section 一致), 去掉玻璃拟态光斑装饰
 //   卡片本身的玻璃拟态 (backdrop-filter blur 20px) 保留
-.bjxy-features-glass { /* 背景光斑已移除 (v0.1.6j) */ }
+// v0.1.6j+ 改: 去掉 .bjxy-section-alt 的浅背景, 改 transparent
+//   辉哥 16:54 反馈 "section 中还是有背景颜色吧?" → 把 alt 背景也去掉
+//   现在 section 完全透明, 让后面 .bjxy-page-bg 蓝/紫光斑透出来
+.bjxy-features-glass { background: transparent; }
 
 // 居中头部 (eyebrow + 大标题 + 副标题)
 .bjxy-section-head {
