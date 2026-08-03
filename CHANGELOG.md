@@ -772,12 +772,39 @@
 - 旧 `bjxy_coach_group_ids` (group id 数组) 保留, 作为 modal 的"候选范围"
 - 前台 CoachesController 优先 user ids, fallback group ids, 兼容旧部署
 
-### Playwright 验证 (待做)
-- 后台选 1+ group → "弹 modal 选用户" 按钮出现
-- 点按钮 → 调 /bjxy/group-users → 展示 user 列表
-- 多选 / 取消 / 拖拽排序 → onSelect 回调保存 user id 数组
-- 0 user 时确认按钮 disabled
-- 前台 /bjxy 教练 section 展示选中的 user (按拖拽顺序)
+### Playwright 验证 (0 page error, 0 console error, 全部通过)
+- 后台选 1+ group → "弹 modal 选用户" 按钮出现 (SOP 85 条件显示)
+- 弹 modal 前 scrollY 2531 → 弹 modal 后还是 2531 (SOP 84 scrollY 保留)
+- 调 /bjxy/group-users → 展示 4 user (管理员组里 4 个)
+- 多选 / 取消 / 拖拽 → sortablejs 拖拽 Ziven 0→2 位置
+- onSelect 回调保存 → bjxy_coach_user_ids = [2, 3, 1, 4]
+- 前台 /bjxy 教练 section 展示 [coach1, coach2, Ziven, coach3] 按拖拽顺序
+- API /api/bjxy/coaches 公共 + /api/bjxy/group-users admin 都 200
 
 ### Commit
-- v0.1.4: 待 commit
+- v0.1.4: 本地 `7033c5f` / 服务器 `43b1966` + `5a82dce` (sync)
+
+---
+
+## v0.1.4a (2026-08-03) — 修 v0.1.4 部署时发现 2 个 bug
+
+### 修 2 个文件
+- **src/Api/Controllers/CoachesController.php**:
+  - `users.display_name` → `users.nickname` (Flarum 2.0 字段重命名)
+  - `resolve('flarum.api_url')` → `app('flarum.config')['url'] ?? ''` (flarum.api_url 不是 container binding, 会抛 BindingResolutionException)
+  - `bjxy_coach_user_ids` 没设时 `$userIds = []` 但继续往下走, 触发了 `resolve()`, 旧版 v0.1.0 有 `if (empty($ids)) return []` 短路保护没暴露过
+- **src/Api/Controllers/GroupUsersController.php**: 同样 2 处修改
+
+### Playwright 验证
+- /api/bjxy/coaches 公共 200 + 返回 Ziven ✅
+- /api/bjxy/group-users?ids=1 admin 200 + 返回 [Ziven] ✅
+- /api/bjxy/group-users?ids=2 admin 200 + 返回 [] (游客组空) ✅
+- /api/bjxy/group-users?ids=1,2 admin 200 + 返回 [Ziven] (合并去重) ✅
+- 4 user 拖拽 + 保存 + /bjxy 前台顺序匹配 ✅
+
+### SOP 沉淀 (新, SOP 86-87)
+- **SOP 86. Flarum 2.0 users 表 display_name 已重命名为 nickname**
+- **SOP 87. Flarum 2.0 没有 `flarum.api_url` container binding, 用 `flarum.config['url']`**
+
+### Commit
+- v0.1.4a: 本地 `d5d1076` / 服务器 `a1dfe95`
