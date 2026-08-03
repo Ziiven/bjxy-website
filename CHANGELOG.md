@@ -611,3 +611,39 @@
 
 ### Commit
 - v0.1.1: 待 commit
+
+---
+
+## v0.1.2 (2026-08-03) — 公安备案号 + 网安链接 (合规)
+
+### 改
+- 辉哥 v0.1.1 顺序里 step 2: 国家规定中国大陆站点 footer 必须有公安备案号 + 网安链接
+- 当前 footer 只有 ICP 备案号, 公安备案缺失 (合规风险)
+
+### 改 4 个文件
+- **extend.php**: 加 2 个 `serializeToForum`
+  - `bjxy_police_number` — 公安备案号 (例: 11010102000000)
+  - `bjxy_police_link` — 网安链接 (例: http://www.beian.gov.cn/portal/registerSystemInfo)
+- **js/src/admin/components/BjxySettings.jsx**: Section 10 加 2 个 field
+  - field('公安备案号', 'bjxy_police_number', '11010102000000')
+  - field('网安链接', 'bjxy_police_link', 'http://www.beian.gov.cn/portal/registerSystemInfo')
+- **js/src/forum/components/BjxyPage.jsx**:
+  - footer 改 flex column 布局 (2 行)
+  - 第 1 行: ICP 备案号
+  - 第 2 行: 公安备案号 + 网安链接 (留空时不渲染, 避免显示空链接)
+  - 公安备案号前加 SVG 警徽 icon (inline data URI, 避免外部依赖)
+  - 链接 target=_blank + rel=noopener noreferrer
+- **less/forum.less**:
+  - .bjxy-footer 改 flex column, align-items center, gap 4px (2 行备案号居中)
+  - .bjxy-footer-line 行级
+  - .bjxy-footer-link 颜色 + hover underline
+  - .bjxy-footer-police-icon 警徽对齐 + opacity 0.9
+
+### Playwright 验证 (待做)
+- 后台填公安备案号 → 前台 footer 显示 2 行 (ICP + 公安)
+- 公安备案号留空 → 前台 footer 只有 1 行 ICP, 不显示空链接
+- 浅色 + 深色 双版 OK
+- 公安备案链接 target=_blank + rel=noopener
+
+### Commit
+- v0.1.2: 待 commit

@@ -569,8 +569,16 @@
     text-align: center;
     font-size: 12px;
     margin-top: 48px;
+    // v0.1.2 改: 多行备案号 (ICP + 公安备案) 居中, 行间 4px
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
 }
-.bjxy-footer .bjxy-footer-link { color: var(--bjxy-bg-soft); margin: 0 8px; text-decoration: none; }
+.bjxy-footer .bjxy-footer-line { line-height: 1.6; }
+.bjxy-footer .bjxy-footer-link { color: var(--bjxy-footer-color); text-decoration: none; opacity: 0.9; }
+.bjxy-footer .bjxy-footer-link:hover { opacity: 1; text-decoration: underline; }
+.bjxy-footer .bjxy-footer-police-icon { vertical-align: -2px; opacity: 0.9; }
 
 // ===== 教练 modal =====
 .bjxy-coach-modal .Modal-body { padding: 32px; text-align: center; }

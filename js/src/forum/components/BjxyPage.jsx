@@ -262,8 +262,15 @@ export default class BjxyPage extends Component {
       // ===== footer =====
       // v0.1.0ab 改: 备案号从 bjxy_icp_number setting 读 (后台可设)
       //   留空时 fallback 到默认 '2026xxxxxx' (跟之前 hard-coded 一致, 兼容旧部署)
+      // v0.1.2 改: 加 公安备案号 + 网安链接 (国家规定中国大陆站点 footer 必须有)
+      //   留空时不渲染公安备案行 (避免显示空链接)
       m('footer', { class: 'bjxy-footer' }, [
-        m('span', null, '© ' + new Date().getFullYear() + ' ' + s('bjxy_brand_name', DEFAULT_BRAND) + ' · ICP 备 ' + (s('bjxy_icp_number', '2026xxxxxx') || '2026xxxxxx') + ' 号'),
+        m('div', { class: 'bjxy-footer-line' }, '© ' + new Date().getFullYear() + ' ' + s('bjxy_brand_name', DEFAULT_BRAND) + ' · ICP 备 ' + (s('bjxy_icp_number', '2026xxxxxx') || '2026xxxxxx') + ' 号'),
+        s('bjxy_police_number') ? m('div', { class: 'bjxy-footer-line' }, [
+          m('img', { class: 'bjxy-footer-police-icon', src: 'data:image/svg+xml;utf8,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" width="14" height="14"><path fill="#fff" d="M10 1l8 3v6c0 5-3.5 8.5-8 9-4.5-.5-8-4-8-9V4l8-3zm0 2.2L4 5.4V10c0 4 2.7 6.8 6 7.3 3.3-.5 6-3.3 6-7.3V5.4l-6-2.2zM7 8h6v1H7V8zm0 2h6v1H7v-1zm0 2h4v1H7v-1z"/></svg>'), alt: '公安备案' }),
+          ' ',
+          m('a', { href: s('bjxy_police_link', 'http://www.beian.gov.cn/portal/registerSystemInfo') || 'http://www.beian.gov.cn/portal/registerSystemInfo', target: '_blank', rel: 'noopener noreferrer', class: 'bjxy-footer-link' }, '京公网安备 ' + s('bjxy_police_number', '') + ' 号'),
+        ]) : null,
       ]),
       ]),
     ];

@@ -334,10 +334,13 @@ export default class BjxySettings extends ExtensionPage {
 
       // v0.1.0ab: Section 10 页脚 / 备案号
       //   之前 footer 备案号 hard-coded '2026xxxxxx', 辉哥要求后台可设置
+      // v0.1.2 改: 加 公安备案号 + 网安链接 (国家规定中国大陆站点 footer 必须有)
       m('div', { class: 'BjxySection' }, [
         m('div', { class: 'BjxySection-head' }, '🦶 页脚 / 备案号'),
         m('div', { class: 'BjxySection-body' }, [
           field('ICP 备案号', 'bjxy_icp_number', '2026xxxxxx'),
+          field('公安备案号', 'bjxy_police_number', '11010102000000'),
+          field('网安链接', 'bjxy_police_link', 'http://www.beian.gov.cn/portal/registerSystemInfo'),
         ]),
       ]),
 
