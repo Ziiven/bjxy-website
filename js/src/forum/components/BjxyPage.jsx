@@ -285,6 +285,12 @@ export default class BjxyPage extends Component {
       //   辉哥 12:22 反馈: 活动展示是亮点 (春节冬令营/周末进阶班 实物图), 应该紧跟关于介绍之后,
       //   之前放在最后显得不重要. 同步调整 nav 顺序.
       //   swiper 11 CSS 完整 base 样式 (button/pagination/scrollbar) 在 v0.1.6b 补全
+      // v0.1.6d 改: 活动展示支持点击跳转 URL (辉哥 13:08 需求)
+      //   - 后台每个活动可填 url 字段 (留空 = 不跳转, 跟之前一样点开 fancybox)
+      //   - 内部链接 (以 / 开头, 例如 /dressUp, /t/123-slug) 走 m.route 软路由
+      //   - 外部链接 (http:// / https://) target=_blank 新窗口打开
+      //   - 软路由 link 标签加 bjxy-event-link class (less 加 cursor: pointer + hover 高亮)
+      //   - 跳转 link 包活动 info 整个 (名字 + 副标题 + 介绍 + N 张)
       m('section', { class: 'bjxy-section bjxy-section-alt', id: 'events' }, [
         m('div', { class: 'bjxy-sub' }, 'EVENTS'),
         m('h2', null, '活动展示'),
@@ -294,18 +300,75 @@ export default class BjxyPage extends Component {
                 events.map((ev, i) => {
                   const photos = Array.isArray(ev.photos) ? ev.photos : (ev.photoUrl ? [ev.photoUrl] : []);
                   const firstPhoto = photos[0];
+                  // v0.1.6d: 判断 url 是不是 Flarum 内部 (以 / 开头, 不带 protocol)
+                  const url = (ev.url || '').trim();
+                  const isInternal = url.startsWith('/') && !url.startsWith('//');
+                  const hasUrl = url.length > 0;
                   return m('div', { class: 'swiper-slide bjxy-event-slide', key: 'ev' + i }, [
-                    firstPhoto ? m('a', {
-                      class: 'bjxy-event-photo',
-                      style: { backgroundImage: 'url(' + firstPhoto + ')' },
-                      onclick: (e) => { e.preventDefault(); this.openFancyboxGallery(photos, 0); },
-                    }) : m('div', { class: 'bjxy-event-photo bjxy-event-photo-empty' }),
-                    m('div', { class: 'bjxy-event-info' }, [
-                      m('div', { class: 'bjxy-event-name' }, ev.name || '活动 #' + (i + 1)),
-                      ev.level ? m('div', { class: 'bjxy-event-level' }, ev.level) : null,
-                      ev.achievement ? m('div', { class: 'bjxy-event-desc' }, ev.achievement) : null,
-                      photos.length > 1 ? m('div', { class: 'bjxy-event-photo-count' }, '📷 ' + photos.length + ' 张, 点击查看全部') : null,
-                    ]),
+                    // v0.1.6d: 活动主图包不包 a 标签, 看 url 类型
+                    //   - 有 url 内部 → 包 a + onclick m.route 跳转 (阻止默认)
+                    //   - 有 url 外部 → 包 a + href + target=_blank (新窗口)
+                    //   - 无 url → 包 a + onclick 触发 fancybox gallery (跟之前一样)
+                    firstPhoto
+                      ? (hasUrl
+                          ? (isInternal
+                              ? m('a', {
+                                  class: 'bjxy-event-photo',
+                                  style: { backgroundImage: 'url(' + firstPhoto + ')' },
+                                  href: url,
+                                  // v0.1.6d 修: mithril 软路由 API 是 m.route.set(path), 不是 m.route(path)
+                                  //   (之前 v0.1.6d 写错 m.route(url) → 抛 "Cannot convert undefined" 错误)
+                                  //   m.route.set 是 ziven-dress-up 用的同款 (SeedreamHistoryPage.js / EquipmentPage.js)
+                                  onclick: (e) => { e.preventDefault(); m.route.set(url); },
+                                })
+                              : m('a', {
+                                  class: 'bjxy-event-photo',
+                                  style: { backgroundImage: 'url(' + firstPhoto + ')' },
+                                  href: url,
+                                  target: '_blank',
+                                  rel: 'noopener noreferrer',
+                                })
+                            )
+                          : m('a', {
+                              class: 'bjxy-event-photo',
+                              style: { backgroundImage: 'url(' + firstPhoto + ')' },
+                              onclick: (e) => { e.preventDefault(); this.openFancyboxGallery(photos, 0); },
+                            })
+                        )
+                      : m('div', { class: 'bjxy-event-photo bjxy-event-photo-empty' }),
+                    // v0.1.6d: 活动 info card 也包 link (如果填了 url)
+                    //   让用户点 info 也能跳转 (不仅是主图)
+                    hasUrl
+                      ? (isInternal
+                          ? m('a', {
+                              class: 'bjxy-event-info bjxy-event-link',
+                              href: url,
+                              // v0.1.6d 修: mithril 软路由用 m.route.set (同 ziven-dress-up)
+                              onclick: (e) => { e.preventDefault(); m.route.set(url); },
+                            }, [
+                              m('div', { class: 'bjxy-event-name' }, ev.name || '活动 #' + (i + 1)),
+                              ev.level ? m('div', { class: 'bjxy-event-level' }, ev.level) : null,
+                              ev.achievement ? m('div', { class: 'bjxy-event-desc' }, ev.achievement) : null,
+                              photos.length > 1 ? m('div', { class: 'bjxy-event-photo-count' }, '📷 ' + photos.length + ' 张, 点击查看全部') : null,
+                            ])
+                          : m('a', {
+                              class: 'bjxy-event-info bjxy-event-link',
+                              href: url,
+                              target: '_blank',
+                              rel: 'noopener noreferrer',
+                            }, [
+                              m('div', { class: 'bjxy-event-name' }, ev.name || '活动 #' + (i + 1)),
+                              ev.level ? m('div', { class: 'bjxy-event-level' }, ev.level) : null,
+                              ev.achievement ? m('div', { class: 'bjxy-event-desc' }, ev.achievement) : null,
+                              photos.length > 1 ? m('div', { class: 'bjxy-event-photo-count' }, '📷 ' + photos.length + ' 张, 点击查看全部') : null,
+                            ])
+                        )
+                      : m('div', { class: 'bjxy-event-info' }, [
+                          m('div', { class: 'bjxy-event-name' }, ev.name || '活动 #' + (i + 1)),
+                          ev.level ? m('div', { class: 'bjxy-event-level' }, ev.level) : null,
+                          ev.achievement ? m('div', { class: 'bjxy-event-desc' }, ev.achievement) : null,
+                          photos.length > 1 ? m('div', { class: 'bjxy-event-photo-count' }, '📷 ' + photos.length + ' 张, 点击查看全部') : null,
+                        ]),
                   ]);
                 })
               ),

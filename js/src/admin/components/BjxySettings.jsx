@@ -421,6 +421,19 @@ export default class BjxySettings extends ExtensionPage {
                     oninput: (e) => { s.achievement = e.target.value; },
                   }),
                 ]),
+                // v0.1.6d 改: 加 URL 输入框 — 填写后点击活动内容跳转
+                //   Flarum 内部链接 (以 / 开头, 例如 /dressUp) 走 m.route
+                //   外部链接 (http:// / https://) 新窗口打开
+                //   留空 = 不跳转 (跟之前一样点开 fancybox)
+                m('div', { class: 'BjxyField-row' }, [
+                  m('div', { class: 'BjxyField-label' }, '跳转 URL (可选)'),
+                  m('input', {
+                    class: 'BjxyField-input',
+                    value: s.url || '',
+                    placeholder: '留空不跳转 / 内部: /dressUp / 外部: https://example.com',
+                    oninput: (e) => { s.url = e.target.value; },
+                  }),
+                ]),
                 // v0.1.6a: 活动多图 (前台 swiper 轮播, 点击看 fancybox)
                 m('div', { class: 'BjxyField-row' }, [
                   m('div', { class: 'BjxyField-label' }, '活动图片 (多图)'),
@@ -442,7 +455,8 @@ export default class BjxySettings extends ExtensionPage {
             m('div', {
               class: 'BjxyField-array-add',
               onclick: () => {
-                this.students.push({ name: '', level: '', achievement: '', photos: [] });
+                // v0.1.6d: 新建活动带 url: '' 字段
+                this.students.push({ name: '', level: '', achievement: '', photos: [], url: '' });
                 m.redraw();
               },
             }, '+ 添加活动'),
@@ -560,6 +574,8 @@ export default class BjxySettings extends ExtensionPage {
               level: s.level || '',
               achievement: s.achievement || '',
               photos: Array.isArray(s.photos) ? s.photos : (s.photoUrl ? [s.photoUrl] : []),
+              // v0.1.6d: URL 字段 (可选, 留空不跳转)
+              url: s.url || '',
             }));
           }
         } catch (e) {}
@@ -760,8 +776,10 @@ export default class BjxySettings extends ExtensionPage {
     //   v0.1.6a: photos 数组 (替代 photoUrl string), 兼容老的 photoUrl 字段
     //   只保存有任意字段填了的活动
     payload.bjxy_students = JSON.stringify(
+      // v0.1.6d 改: url 字段保留 (空字符串保留, 前台不跳转)
+      //   保留条件: 至少有 name 或 photos 才保存 (空对象不保存)
       this.students.filter(s => s.name || (s.photos && s.photos.length > 0))
-        .map(s => ({ name: s.name, level: s.level, achievement: s.achievement, photos: s.photos || [] }))
+        .map(s => ({ name: s.name, level: s.level, achievement: s.achievement, photos: s.photos || [], url: s.url || '' }))
     );
     try {
       await app.request({
