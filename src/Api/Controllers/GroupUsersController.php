@@ -36,16 +36,17 @@ class GroupUsersController implements RequestHandlerInterface
         $rows = DB::table('group_user')
             ->join('users', 'group_user.user_id', '=', 'users.id')
             ->whereIn('group_user.group_id', $ids)
-            ->select('users.id', 'users.username', 'users.display_name', 'users.avatar_url', 'users.is_email_confirmed')
+            ->select('users.id', 'users.username', 'users.nickname', 'users.avatar_url', 'users.is_email_confirmed')
             // v0.1.4: 排除未激活邮箱的用户 (admin 误创建的废账号)
             ->where('users.is_email_confirmed', 1)
             ->distinct()
             ->orderBy('users.id')
             ->get();
 
-        $apiUrl = resolve('flarum.api_url');
+        // v0.1.4 修: 用 flarum.config['url'] 拿 base URL, 跟 CoachesController 保持一致
+        $apiUrl = app('flarum.config')['url'] ?? '';
         $users = $rows->map(function ($r) use ($apiUrl) {
-            $displayName = $r->display_name ?: $r->username;
+            $displayName = $r->nickname ?: $r->username;
             $avatarUrl = null;
             if ($r->avatar_url) {
                 $avatarUrl = preg_match('/^https?:/i', $r->avatar_url)

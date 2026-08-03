@@ -28,14 +28,18 @@ class CoachesController implements RequestHandlerInterface
         $userIds = json_decode($userIdsRaw, true);
         if (!is_array($userIds)) $userIds = [];
 
-        $apiUrl = resolve('flarum.api_url');
+        // v0.1.4 修: 用 flarum.config['url'] 拿 base URL, 之前用 resolve('flarum.api_url')
+        //   错误 (flarum.api_url 不是 container binding, 会抛 BindingResolutionException)
+        //   旧版 v0.1.0 有 if (empty($ids)) return [] 短路保护, 没触发过 resolve()
+        //   新版 v0.1.4 user_ids 默认是空数组但继续往下走, 触发了 resolve() 才暴露问题
+        $apiUrl = app('flarum.config')['url'] ?? '';
 
         if (!empty($userIds)) {
             // 直接按 user id 查 (admin 拖拽排序后保存的就是这个顺序)
             $rows = DB::table('users')
                 ->whereIn('users.id', $userIds)
                 ->where('users.is_email_confirmed', 1)
-                ->select('users.id', 'users.username', 'users.display_name', 'users.avatar_url')
+                ->select('users.id', 'users.username', 'users.nickname', 'users.avatar_url')
                 ->get();
 
             // 按 userIds 顺序排 (sortablejs 拖拽后的顺序)
@@ -47,7 +51,7 @@ class CoachesController implements RequestHandlerInterface
             }
 
             $coaches = array_map(function ($r) use ($apiUrl) {
-                $displayName = $r->display_name ?: $r->username;
+                $displayName = $r->nickname ?: $r->username;
                 $avatarUrl = null;
                 if ($r->avatar_url) {
                     $avatarUrl = preg_match('/^https?:/i', $r->avatar_url)
@@ -76,13 +80,13 @@ class CoachesController implements RequestHandlerInterface
             ->join('users', 'group_user.user_id', '=', 'users.id')
             ->whereIn('group_user.group_id', $ids)
             ->where('users.is_email_confirmed', 1)
-            ->select('users.id', 'users.username', 'users.display_name', 'users.avatar_url')
+            ->select('users.id', 'users.username', 'users.nickname', 'users.avatar_url')
             ->distinct()
             ->orderBy('users.id')
             ->get();
 
         $coaches = $rows->map(function ($r) use ($apiUrl) {
-            $displayName = $r->display_name ?: $r->username;
+            $displayName = $r->nickname ?: $r->username;
             $avatarUrl = null;
             if ($r->avatar_url) {
                 $avatarUrl = preg_match('/^https?:/i', $r->avatar_url)
