@@ -173,7 +173,13 @@ export default class GroupPickerModal extends Modal {
   renderDetailForm(uid) {
     const u = this.allUsers.find(x => x.id === uid);
     if (!u) return null;
-    const d = this.details[uid] || { bio: '', achievements: '', specialties: '', photoUrl: '' };
+    // v0.1.5 修: this.details[uid] 不存在时新建, 同时写回 this.details
+    //   之前只创建本地 d 但不写回, oninput 改 d.bio 不会同步到 this.details,
+    //   确认时 this.details 仍是空, 永远保存不到
+    if (!this.details[uid]) {
+      this.details[uid] = { bio: '', achievements: '', specialties: '', photoUrl: '' };
+    }
+    const d = this.details[uid];
 
     return (
       <div className="GroupPickerModal-detail-form">
