@@ -37,7 +37,9 @@ class UploadController implements RequestHandlerInterface
         if (!$file || $file->getError() !== UPLOAD_ERR_OK) {
             return new JsonResponse(['error' => 'no file uploaded'], 400);
         }
-        if (!preg_match('/^bjxy_[a-z_]+$/', $key)) {
+        // v0.1.6a 修: 允许数字 (uploadPhotoToArray 用 bjxy_review_photo_0_1785505949137
+        //   包含 array index + Date.now() timestamp, 原来 ^[a-z_]+$ 严格不接受)
+        if (!preg_match('/^bjxy_[a-z0-9_]+$/', $key)) {
             return new JsonResponse(['error' => 'invalid key (must be bjxy_*)'], 400);
         }
 
