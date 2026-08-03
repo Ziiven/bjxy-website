@@ -586,3 +586,28 @@
 
 ### Commit
 - v0.1.0ac: 待 commit
+
+---
+
+## v0.1.1 (2026-08-03) — Hero banner 留空 fallback
+
+### 改
+- 辉哥拍板 v0.1.1 顺序: 1) Hero banner fallback 2) 公安备案号 3) 教练 modal 化
+- 当前 hero 区域右侧 .bjxy-hero-banner 是空的 (banner_light + banner_dark 都空), 视觉上 hero 右半边空白
+- 复用 v0.1.0 留的 dead code 样式 .bjxy-hero-banner-fallback, 真正渲染 fallback 内容
+
+### 改 2 个文件
+- **js/src/forum/components/BjxyPage.jsx**:
+  - m('img') 加 class `bjxy-hero-banner-light` / `bjxy-hero-banner-dark` (less 里之前定义了但 img 没 class, 现在补上)
+  - banner light + dark 都空时, 渲染 `<div class="bjxy-hero-banner-fallback">` 含品牌名 + slogan
+- **less/forum.less**:
+  - .bjxy-hero-banner-fallback 改 flex-direction: column, justify-content: center
+  - 加 .bjxy-hero-banner-fallback-name (36px 大字) + .bjxy-hero-banner-fallback-slogan (14px 小字 opacity 0.85)
+
+### Playwright 验证 (待做)
+- banner light + dark 都空时, hero 右半部显示 fallback 渐变 + "北极雪屿" + "室内滑雪 · 全国连锁"
+- 浅色: 浅蓝→店照蓝渐变; 深色: 深蓝→蓝黑渐变
+- 上传 banner 后 fallback 隐藏, 显示图
+
+### Commit
+- v0.1.1: 待 commit

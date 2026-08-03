@@ -153,8 +153,15 @@ export default class BjxyPage extends Component {
           ]),
         ]),
         m('div', { class: 'bjxy-hero-banner' }, [
-          s('bjxy_hero_banner_light') ? m('img', { src: s('bjxy_hero_banner_light'), alt: 'Hero' }) : null,
-          s('bjxy_hero_banner_dark') ? m('img', { src: s('bjxy_hero_banner_dark'), alt: 'Hero Dark' }) : null,
+          s('bjxy_hero_banner_light') ? m('img', { class: 'bjxy-hero-banner-light', src: s('bjxy_hero_banner_light'), alt: 'Hero' }) : null,
+          s('bjxy_hero_banner_dark') ? m('img', { class: 'bjxy-hero-banner-dark', src: s('bjxy_hero_banner_dark'), alt: 'Hero Dark' }) : null,
+          // v0.1.1 改: banner light + dark 都空时, 显示 fallback 渐变 + 品牌名 + slogan
+          //   复用 less 里的 .bjxy-hero-banner-fallback 样式 (v0.1.0 留的 dead code)
+          //   浅色: 浅蓝→店照蓝渐变; 深色: 深蓝→蓝黑渐变
+          (!s('bjxy_hero_banner_light') && !s('bjxy_hero_banner_dark')) ? m('div', { class: 'bjxy-hero-banner-fallback' }, [
+            m('div', { class: 'bjxy-hero-banner-fallback-name' }, s('bjxy_brand_name', DEFAULT_BRAND)),
+            m('div', { class: 'bjxy-hero-banner-fallback-slogan' }, s('bjxy_brand_slogan', DEFAULT_SLOGAN)),
+          ]) : null,
         ]),
       ]),
 

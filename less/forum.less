@@ -276,17 +276,20 @@
 [data-theme^="dark"] .bjxy-hero-banner-dark { display: block; }
 
 // Hero banner fallback (没传图时显示)
+// v0.1.1 改: 加 flex-direction column, 品牌名大字 + slogan 小字
 .bjxy-hero-banner-fallback {
     position: absolute;
     inset: 0;
     background: linear-gradient(135deg, #B8D4F0 0%, #2D7BE5 100%);
     display: flex;
+    flex-direction: column;
     align-items: center;
+    justify-content: center;
     padding: 32px;
     color: #fff;
-    font-size: 18px;
-    font-weight: 700;
 }
+.bjxy-hero-banner-fallback-name { font-size: 36px; font-weight: 800; line-height: 1.2; }
+.bjxy-hero-banner-fallback-slogan { font-size: 14px; font-weight: 500; margin-top: 12px; opacity: 0.85; }
 [data-theme^="dark"] .bjxy-hero-banner-fallback {
     background: linear-gradient(135deg, #0A1A3F 0%, #1E5AA8 100%);
 }
