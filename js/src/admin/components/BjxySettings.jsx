@@ -68,10 +68,16 @@ const DEFAULT_BOARDS = [
 // v0.1.8 11 tab 配置 — 跟 ziven-core 同款 [{key, icon, label}] 列表
 //   渲染时遍历生成 .bjxy-tab-btn, switchTab(key) 改 this.activeTab + m.redraw()
 // v0.1.9 改: tab 顺序改成可拖拽 (sortablejs), this.tabOrder 持久化到 bjxy_section_order_json
-//   前台 BjxyPage.jsx 读这个 settings, 按顺序渲染 8 主体 section (过滤 brand/bg/footer)
+//   前台 BjxyPage.jsx 读这个 settings, 按顺序渲染 8 主体 section (过滤 brand/footer)
+//
+// v0.1.12 改: 删 'bg' 项 (11 → 10 个可拖 tab)
+//   辉哥 15:32 拍板: "'背景渐变'不属于一个前端的section，所以这个tab单拿出来放在一个独立区域中，这个区域也不需要有拖拽排序功能"
+//   bg 是全局设置, 不属于前台任何 section (前台 BjxyPage.jsx getSectionOrder() 已经 filter 掉 bg)
+//   现在 bg 单独在后台主页面顶部独立区域 (always-visible, 跟 ziven-core 顶部 card 同款风格),
+//   10 个可拖 tab: brand + 8 主体 + footer
+//   bjxy_section_order_json 持久化 10 个 key (旧 11 个 setting 自动 fallback 默认)
 const BJXY_TABS = [
   { key: 'brand',      icon: '🏔',  label: '品牌信息' },
-  { key: 'bg',         icon: '🎨',  label: '背景渐变' },
   { key: 'hero',       icon: '🖼',   label: 'Hero 区域' },
   { key: 'about',      icon: '📖',  label: '关于我们' },
   { key: 'features',   icon: '✨',  label: '办学特色' },
@@ -83,11 +89,10 @@ const BJXY_TABS = [
   { key: 'footer',     icon: '🦶',  label: '页脚 / 备案' },
 ];
 
-// v0.1.9: 默认 tab 顺序 (跟 v0.1.6b 沉淀一致: hero/abouts/events 在前, contact 在后, footer 永远最底)
-//   注: v0.1.6b 顺序: hero → about → events → features → curriculum → coaches → reviews → contact + footer
-//   这里把 brand/bg 也包进 11 tab 数组, 因为后台管理需要 11 个, 前台只取 8 主体
+// v0.1.9: 默认 tab 顺序 (跟 v0.1.6b 沉淀一致: hero/about/events 在前, contact 在后, footer 永远最底)
+//   v0.1.12 改: 删 'bg', 现在 10 个 (前台 BjxyPage.jsx getSectionOrder() 仍然 filter 掉 brand/footer, 渲染 8 主体)
 const DEFAULT_TAB_ORDER = [
-  'brand', 'bg', 'hero', 'about', 'events', 'features', 'curriculum', 'coach', 'reviews', 'contact', 'footer'
+  'brand', 'hero', 'about', 'events', 'features', 'curriculum', 'coach', 'reviews', 'contact', 'footer'
 ];
 
 export default class BjxySettings extends ExtensionPage {
@@ -679,10 +684,10 @@ export default class BjxySettings extends ExtensionPage {
   }
 
   // v0.1.8 active tab → 对应 render method 映射
+  // v0.1.12 改: 删 'bg' case (bg 拿到独立区域, 永远在主页面顶部显示)
   renderActiveSection() {
     switch (this.activeTab) {
       case 'brand':      return this.renderBrandSection();
-      case 'bg':         return this.renderBgSection();
       case 'hero':       return this.renderHeroSection();
       case 'about':      return this.renderAboutSection();
       case 'features':   return this.renderFeaturesSection();
@@ -709,8 +714,13 @@ export default class BjxySettings extends ExtensionPage {
           {/* 顶部标题 + tab bar */}
           <div className="bjxy-settings-intro">
             <h2><i className="fas fa-snowflake"></i> 北极雪屿官网配置</h2>
-            <p className="desc">配置 /bjxy 页面所有内容 (11 个 tab + 后台上传走 ziven-core COS)</p>
+            <p className="desc">配置 /bjxy 页面所有内容 (10 个可拖 tab + 1 个独立背景渐变区 + 后台上传走 ziven-core COS)</p>
           </div>
+
+          {/* v0.1.12: 独立背景渐变区 (顶部永远显示, 不参与 tab 拖拽, 不属于前台 section)
+              辉哥 15:32 拍板: "'背景渐变'不属于一个前端的section, 所以这个tab单拿出来放在一个独立区域中" */}
+          {this.renderBgSection()}
+
           {this.renderTabBar()}
 
           {/* 当前 tab 对应的 section */}
@@ -774,14 +784,21 @@ export default class BjxySettings extends ExtensionPage {
       this.data = data.settings || {};
       // v0.1.9: 读 bjxy_section_order_json 同步 tab 顺序
       //   防御: 解析失败 / 不是数组 / 数组里 key 跟 BJXY_TABS 不匹配时 fallback 到默认
+      // v0.1.12 改: 兼容旧 11 个 key 数组 (含 'bg'), filter 掉 'bg' 后用剩下 10 个
+      //   旧版本存的 11 key 数组: ['brand','bg','hero','about','events','features','curriculum','coach','reviews','contact','footer']
+      //   现状只接收 10 key, 移掉 'bg' 后还能用, 不清空用户的拖拽顺序
       if (this.data.bjxy_section_order_json) {
         try {
           const parsed = JSON.parse(this.data.bjxy_section_order_json);
-          if (Array.isArray(parsed) && parsed.length === DEFAULT_TAB_ORDER.length) {
-            // 验证每个 key 都在 BJXY_TABS 里
+          if (Array.isArray(parsed)) {
             const validKeys = BJXY_TABS.map(t => t.key);
-            const allValid = parsed.every(k => validKeys.indexOf(k) >= 0);
-            if (allValid) this.tabOrder = parsed;
+            // 过滤掉 'bg' + 任何不在 BJXY_TABS 里的 key (v0.1.12 加 'bg' filter)
+            const filtered = parsed.filter(k => k !== 'bg' && validKeys.indexOf(k) >= 0);
+            // 长度匹配 + 没有重复时采用
+            if (filtered.length === DEFAULT_TAB_ORDER.length &&
+                new Set(filtered).size === filtered.length) {
+              this.tabOrder = filtered;
+            }
           }
         } catch (e) {}
       }
