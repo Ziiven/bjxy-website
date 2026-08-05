@@ -70,15 +70,29 @@ const DEFAULT_BOARDS = [
 // v0.1.9 改: tab 顺序改成可拖拽 (sortablejs), this.tabOrder 持久化到 bjxy_section_order_json
 //   前台 BjxyPage.jsx 读这个 settings, 按顺序渲染 8 主体 section (过滤 brand/footer)
 //
-// v0.1.13 改: bg 改回 tab 形式 (从 v0.1.12 的独立 section 改回 tab 按钮)
-//   辉哥 16:08 拍板: "把单拉出来的背景渐变也做成一个tab吧，因为将来可能会有其他设置放到这里面"
-//   bg 用 static: true 标记 (不可拖, 永远第 1 位), sortablejs filter 排除
-//   视觉上: bg 走 .bjxy-tab-btn-static 样式 (cursor: default, 略灰), 跟 10 个可拖 tab 分开
-//   renderBgSection() 容器可以容纳其他全局设置 (未来扩展, 比如 footer 全局 / SEO / theme 等)
-//   this.tabOrder 仍然只存 10 个可拖 key (bg 不参与排序, 不存 settings)
-//   renderActiveSection() 加 'bg' case 调 renderBgSection() 渲染 bg 全局设置
+// v0.1.14 改: bg tab 从主 tab bar 完全分离, 放到独立 "全局设置" 区域 (不参与排序)
+//   辉哥 16:25 拍板: "不是现在这样，我是说把颜色渐变做成个tab放到另一个区域里，不要跟那些section的tab放到一起"
+//   bg 还是 tab 形式, 但放在主 tab bar 之外的一个独立 "🎨 全局设置" card 区域
+//   主 tab bar 仍然 10 个可拖 (brand + 8 主体 + footer)
+//   独立全局设置区可以容纳其他全局 tab (bg / footer 全局 / SEO / theme 等)
+//   this.tabOrder 只存 10 个可拖 key, bg 不参与排序, 不存 settings
+//   this.activeGlobalTab 状态机: 当前全局 tab (目前只有 'bg')
+//
+//   设计上:
+//     <div.bjxy-global-section>  <- 独立 card 区域 (顶部, 跟主 tab bar 分开)
+//       <div.bjxy-global-section-header>🎨 全局设置</div>
+//       <div.bjxy-global-tab-bar>  <- 全局 tab bar (目前只 bg, 未来可加)
+//         <button> 背景渐变 </button>
+//       </div>
+//       <div.bjxy-global-section-content>  <- 当前 active 全局 tab 的内容
+//         {renderBgSection()}
+//       </div>
+//     </div>
+//     <div.bjxy-section-tab-area>  <- 主 tab bar + 主 section 容器 (跟全局区分)
+//       {renderTabBar()}  <- 10 个可拖 tab
+//       {renderActiveSection()}  <- 10 个对应 section
+//     </div>
 const BJXY_TABS = [
-  { key: 'bg',         icon: '🎨',  label: '背景渐变', static: true },
   { key: 'brand',      icon: '🏔',  label: '品牌信息' },
   { key: 'hero',       icon: '🖼',   label: 'Hero 区域' },
   { key: 'about',      icon: '📖',  label: '关于我们' },
@@ -92,9 +106,17 @@ const BJXY_TABS = [
 ];
 
 // v0.1.9: 默认 tab 顺序 (跟 v0.1.6b 沉淀一致: hero/about/events 在前, contact 在后, footer 永远最底)
-//   v0.1.13 改: 不含 'bg' (10 个可拖), bg 永远在 BJXY_TABS[0] 位置, 不参与排序
+//   v0.1.14 改: 不含 'bg' (10 个可拖), bg 在独立全局设置区, 不参与主排序
 const DEFAULT_TAB_ORDER = [
   'brand', 'hero', 'about', 'events', 'features', 'curriculum', 'coach', 'reviews', 'contact', 'footer'
+];
+
+// v0.1.14: 全局设置 tab 数组 (跟主 tab bar 分开, 独立渲染在 .bjxy-global-section 区域)
+//   跟 BJXY_TABS 1:1 结构 [{key, icon, label}], 未来可加 footer 全局 / SEO / theme 等
+//   全局 tab 不参与主 tab 排序, 不存 settings
+//   this.activeGlobalTab 状态机控制当前显示哪个全局 tab 的内容
+const BJXY_GLOBAL_TABS = [
+  { key: 'bg', icon: '🎨', label: '背景渐变' },
 ];
 
 export default class BjxySettings extends ExtensionPage {
@@ -119,6 +141,9 @@ export default class BjxySettings extends ExtensionPage {
     this.studentsSortable = null;
     // v0.1.8 tab 状态: 跟 ziven-core 1:1 模式, oninit 给初始值, switchTab() 改 + m.redraw()
     this.activeTab = 'brand';
+    // v0.1.14: 全局设置区 active tab 状态机 (独立于主 activeTab, 跟主 tab bar 完全分离)
+    //   全局 tab 永远在独立 card 区域 (.bjxy-global-section), 跟主 10 个可拖 tab 不混
+    this.activeGlobalTab = 'bg';
     // v0.1.9: tab 顺序 (可拖拽, 持久化到 bjxy_section_order_json)
     //   oninit 给默认顺序, loadSettings() 读 settings 覆盖
     this.tabOrder = DEFAULT_TAB_ORDER.slice();
@@ -126,10 +151,20 @@ export default class BjxySettings extends ExtensionPage {
     this.loadSettings();
   }
 
-  // v0.1.8 tab 切换 (跟 ziven-core ZivenCoreSettingsPage.switchTab 1:1 模式)
+  // v0.1.8 主 tab 切换 (跟 ziven-core ZivenCoreSettingsPage.switchTab 1:1 模式)
   switchTab(tab) {
     if (this.activeTab !== tab) {
       this.activeTab = tab;
+      m.redraw();
+    }
+  }
+
+  // v0.1.14: 全局设置区 tab 切换 (独立状态机, 跟主 activeTab 完全分离)
+  //   走独立 .bjxy-global-section 区域, 跟主 10 个可拖 tab 不混
+  //   未来加全局 tab: 在 BJXY_GLOBAL_TABS 数组加项 + renderActiveGlobalSection 加 case
+  switchGlobalTab(tab) {
+    if (this.activeGlobalTab !== tab) {
+      this.activeGlobalTab = tab;
       m.redraw();
     }
   }
@@ -138,17 +173,13 @@ export default class BjxySettings extends ExtensionPage {
   //   加 sortablejs 拖拽, 整个 tab bar 可拖, onEnd 改 this.tabOrder + m.redraw()
   //   注: 拖拽时不能切 tab (避免误点), 切 tab 用 click; sortable handle 是 .bjxy-tab-handle (右侧拖拽图标)
   //
-  // v0.1.13 改: bg 永远在 tab bar 第 1 位 (静态不可拖)
-  //   渲染顺序: [bg (static, 第 1)] + 10 个可拖 tab (按 this.tabOrder)
-  //   bg 用 .bjxy-tab-btn-static class 走 css 区分 (cursor: default, 略灰)
-  //   sortablejs initTabBarSortable() 配 filter: '.bjxy-tab-btn-static' 排除 bg
+  // v0.1.14 改: bg 从这里拿走 (独立到 .bjxy-global-section 区域, 跟主 tab bar 完全分开)
+  //   现在 renderTabBar 只渲染 10 个主可拖 tab, bg 不再出现
   renderTabBar() {
     // 按 this.tabOrder 排序生成可拖 tabs
     const tabMap = {};
     BJXY_TABS.forEach(t => { tabMap[t.key] = t; });
     const orderedDraggableTabs = this.tabOrder.map(k => tabMap[k]).filter(Boolean);
-    // v0.1.13: bg 永远是第 1 个静态 tab (不参与排序, 不存 tabOrder)
-    const bgTab = tabMap['bg'];
 
     return (
       <div className="bjxy-tab-bar-wrapper">
@@ -161,12 +192,10 @@ export default class BjxySettings extends ExtensionPage {
           oncreate={(vnode) => this.initTabBarSortable(vnode)}
           onremove={() => this.destroyTabBarSortable()}
         >
-          {/* v0.1.13: bg 静态 tab + 10 个可拖 tab 用同一 array 渲染, 避免 mithril fragments key 不一致
-              bg 在数组第 0 位 (永远第 1), 用 static class 区分 */}
-          {[bgTab, ...orderedDraggableTabs].filter(Boolean).map(t => (
+          {orderedDraggableTabs.map(t => (
             <button
               type="button"
-              className={`bjxy-tab-btn${t.static ? ' bjxy-tab-btn-static' : ''} ${this.activeTab === t.key ? 'active' : ''}`}
+              className={`bjxy-tab-btn ${this.activeTab === t.key ? 'active' : ''}`}
               onclick={() => this.switchTab(t.key)}
               key={t.key}
               data-tab-key={t.key}
@@ -180,30 +209,66 @@ export default class BjxySettings extends ExtensionPage {
     );
   }
 
+  // v0.1.14: 独立全局设置区 (跟主 tab bar 完全分开的独立 card 区域)
+  //   渲染 .bjxy-global-section 容器, 里面有:
+  //     - .bjxy-global-section-header (图标 + 标题 + hint)
+  //     - .bjxy-global-tab-bar (全局 tab 按钮, 跟主 tab bar 视觉一致但独立)
+  //     - .bjxy-global-section-content (当前 active 全局 tab 的内容, 走 renderActiveGlobalSection)
+  //   跟主 tab bar (.bjxy-tab-bar) 用 class namespace 区分, CSS 也是独立 .bjxy-global-* 样式
+  //   未来加全局 tab: 在 BJXY_GLOBAL_TABS 数组加项 + renderActiveGlobalSection 加 case
+  renderGlobalSection() {
+    return (
+      <div className="bjxy-global-section glass-card">
+        {this.sectionHead('🎨', '全局设置', '不属于前台 section, 影响整个页面 (背景 / 主题 / SEO 等)')}
+        <div className="bjxy-global-tab-bar">
+          {BJXY_GLOBAL_TABS.map(t => (
+            <button
+              type="button"
+              className={`bjxy-tab-btn bjxy-global-tab-btn ${this.activeGlobalTab === t.key ? 'active' : ''}`}
+              onclick={() => this.switchGlobalTab(t.key)}
+              key={`global-${t.key}`}
+              data-global-tab-key={t.key}
+            >
+              <i>{t.icon}</i>
+              {t.label}
+            </button>
+          ))}
+        </div>
+        <div className="bjxy-global-section-content">
+          {this.renderActiveGlobalSection()}
+        </div>
+      </div>
+    );
+  }
+
+  // v0.1.14: 全局 tab → 对应 render method 映射
+  //   跟 renderActiveSection() 同款结构, 但走独立全局 section
+  //   未来加全局 tab: 加 case + 写新 renderXxxGlobalSection() 方法
+  renderActiveGlobalSection() {
+    switch (this.activeGlobalTab) {
+      case 'bg':         return this.renderBgSection();
+      // 未来: case 'footer':  return this.renderFooterGlobalSection();
+      // 未来: case 'seo':     return this.renderSeoGlobalSection();
+      // 未来: case 'theme':   return this.renderThemeGlobalSection();
+      default:           return this.renderBgSection();
+    }
+  }
+
   // v0.1.9: 初始化 tab bar sortablejs (复用 v0.1.4 GroupPickerModal / v0.1.7 reviews 拖拽模式)
   //   animation 150 + ghost/chosen/drag class
   //   onEnd 改 this.tabOrder + m.redraw() 立即重渲
+  // v0.1.14 改: 移除 filter (bg 已经从主 tab bar 完全独立到 .bjxy-global-section 区域, 主 tab bar 都是可拖)
   initTabBarSortable(vnode) {
     if (this.tabBarSortable) this.tabBarSortable.destroy();
     this.tabBarSortable = Sortable.create(vnode.dom, {
       animation: 150,
       // v0.1.9: 拖拽手柄 = 整个 tab button (整条可拖, 跟 zct 评价卡片同款)
       //   不用指定 handle, 整个 .bjxy-tab-btn 可拖
-      // v0.1.13 改: filter 排除 .bjxy-tab-btn-static (bg 静态 tab 不可拖)
-      //   防止 sortablejs 把 bg 拖到可拖 tab 区域, 保持 bg 永远在第 1 位
-      filter: '.bjxy-tab-btn-static',
-      preventOnFilter: true,  // 防止 click 事件被 sortable 吞掉 (bg 需要 onclick 切换 active)
       ghostClass: 'bjxy-tab-sortable-ghost',
       chosenClass: 'bjxy-tab-sortable-chosen',
       dragClass: 'bjxy-tab-sortable-drag',
       onEnd: (e) => {
         if (e.oldIndex === e.newIndex) return;
-        // v0.1.13 改: onEnd 时判断 moved 元素是不是 static, 是的话不修改 tabOrder
-        //   (filter 已排除拖拽, 这里双保险)
-        if (e.item && e.item.classList && e.item.classList.contains('bjxy-tab-btn-static')) {
-          m.redraw();  // sortablejs 视觉变化立即还原
-          return;
-        }
         // 改 this.tabOrder 顺序
         const moved = this.tabOrder.splice(e.oldIndex, 1)[0];
         this.tabOrder.splice(e.newIndex, 0, moved);
@@ -706,11 +771,10 @@ export default class BjxySettings extends ExtensionPage {
 
   // v0.1.8 active tab → 对应 render method 映射
   // v0.1.12 改: 删 'bg' case (bg 拿到独立区域, 永远在主页面顶部显示)
-  // v0.1.13 改: 加回 'bg' case (bg 改回 tab 形式, 第 1 位静态不可拖)
-  //   renderBgSection() 容器未来可以容纳其他全局设置 (footer 全局 / SEO / theme 等)
+  // v0.1.14 改: 删 'bg' case (bg 已经独立到 .bjxy-global-section 区域, 走 renderActiveGlobalSection 切换)
+  //   主 10 个可拖 tab 对应 section 走这里
   renderActiveSection() {
     switch (this.activeTab) {
-      case 'bg':         return this.renderBgSection();
       case 'brand':      return this.renderBrandSection();
       case 'hero':       return this.renderHeroSection();
       case 'about':      return this.renderAboutSection();
@@ -735,19 +799,26 @@ export default class BjxySettings extends ExtensionPage {
     return (
       <div className="ExtensionPage bjxy-settings">
         <div className="container">
-          {/* 顶部标题 + tab bar */}
+          {/* 顶部标题 */}
           <div className="bjxy-settings-intro">
             <h2><i className="fas fa-snowflake"></i> 北极雪屿官网配置</h2>
-            <p className="desc">配置 /bjxy 页面所有内容 (1 个静态全局 tab + 10 个可拖 tab + 后台上传走 ziven-core COS)</p>
+            <p className="desc">配置 /bjxy 页面所有内容 (顶部独立全局设置区 + 下面 10 个可拖 section tab + 后台上传走 ziven-core COS)</p>
           </div>
 
-          {/* v0.1.12 删: 独立背景渐变区 (v0.1.13 改回 tab 形式, 永远在 tab bar 第 1 位) */}
+          {/* v0.1.14: 独立全局设置区 (跟主 tab bar 完全分开, 永远是顶部独立 card)
+              辉哥 16:25 拍板: "把颜色渐变做成个tab放到另一个区域里，不要跟那些section的tab放到一起"
+              bg tab 走 .bjxy-global-tab-btn (独立样式, 跟主 .bjxy-tab-btn 视觉一致但 class 不同)
+              bg section 容器永远在 .bjxy-global-section-content 里 (跟主 .bjxy-section-container 分开) */}
+          {this.renderGlobalSection()}
 
-          {this.renderTabBar()}
+          {/* v0.1.14: 主 section 区 (10 个可拖 tab + 当前 active section 容器) */}
+          <div className="bjxy-section-tab-area">
+            {this.renderTabBar()}
 
-          {/* 当前 tab 对应的 section */}
-          <div className="bjxy-section-container">
-            {this.renderActiveSection()}
+            {/* 当前 tab 对应的 section */}
+            <div className="bjxy-section-container">
+              {this.renderActiveSection()}
+            </div>
           </div>
 
           {/* 保存栏 — sticky bottom */}

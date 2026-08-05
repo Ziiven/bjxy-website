@@ -202,6 +202,44 @@
     margin-bottom: 16px;
 }
 
+// v0.1.14: 独立全局设置区 (跟主 section 区完全分开的独立 card 容器)
+//   顶部永远显示, 跟主 10 个可拖 tab 完全分离
+.bjxy-global-section {
+    margin-bottom: 20px;
+    // 跟主 .bjxy-section.glass-card 同款玻璃风, 这里直接复用 glass-card class
+    // 视觉上: 顶部黄边提示这是"全局"性质
+    border: 1px solid rgba(251, 188, 4, 0.35) !important;  // 黄边, 跟主 .bjxy-section 白边区分
+    box-shadow: 0 4px 20px rgba(251, 188, 4, 0.08);  // 略黄阴影, 强调"全局"概念
+}
+
+// v0.1.14: 全局 tab bar (跟主 tab bar 同款样式, 但独立 class 区分)
+//   跟主 .bjxy-tab-bar 走同一份 pill 容器, 但 wrap 在 .bjxy-global-section-content 上方
+.bjxy-global-tab-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    padding: 0 0 12px 0;
+    border-bottom: 1px dashed rgba(251, 188, 4, 0.25);  // 黄色虚线分隔, 跟主 tab bar 实色区分
+    margin-bottom: 16px;
+}
+
+.bjxy-global-tab-btn {
+    // 跟 .bjxy-tab-btn 共享 .bjxy-tab-btn class 样式 (cursor: grab, 圆角, padding, active 黄渐变)
+    // 这里是跟主 .bjxy-tab-btn 视觉一致, 但 class 区分 (CSS namespace)
+    cursor: pointer;  // 跟主可拖 .bjxy-tab-btn 的 grab 区分, 全局 tab 不可拖
+}
+.bjxy-global-tab-btn:active { cursor: pointer !important; }  // 覆盖 grabbing
+
+// v0.1.14: 全局 section 内容容器
+.bjxy-global-section-content {
+    padding: 4px 0 0 0;
+}
+
+// v0.1.14: 主 section 区 wrapper (把主 tab bar + section 容器包起来, 跟全局区分)
+.bjxy-section-tab-area {
+    margin-top: 8px;
+}
+
 .bjxy-section {
     background: rgba(255, 255, 255, 0.06);
     border: 1px solid var(--bjxy-glass-border);
