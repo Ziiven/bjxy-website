@@ -732,7 +732,27 @@ export default class BjxySettings extends ExtensionPage {
           app.alerts.show({ type: 'error' }, r.error || '上传失败');
         }
       } catch (err) {
-        app.alerts.show({ type: 'error' }, '上传异常: ' + err.message);
+        // v0.1.7 修 (重要, 辉哥 11:00 反馈): 之前 `err.message` 是 undefined
+        //   vendor RequestError 没 message 属性, 只有 status / responseText / response
+        //   上传大文件 (超 upload_max_filesize) 时 server 返 400 + {error: '文件超过 ...'}
+        //   之前 catch 显示 "上传异常: undefined", 用户看不到具体错
+        //   修法: 从 err.responseText 解析 server error 字段, 显示具体错误信息
+        let errMsg = '上传异常';
+        if (err && err.responseText) {
+          try {
+            const parsed = JSON.parse(err.responseText);
+            if (parsed && parsed.error) {
+              errMsg = parsed.error;
+            } else {
+              errMsg = err.responseText;
+            }
+          } catch (e) {
+            errMsg = err.responseText;
+          }
+        } else if (err && err.status) {
+          errMsg = `HTTP ${err.status} 错误`;
+        }
+        app.alerts.show({ type: 'error' }, errMsg);
       }
     };
     fileInput.click();
@@ -765,7 +785,20 @@ export default class BjxySettings extends ExtensionPage {
           app.alerts.show({ type: 'error' }, r.error || '上传失败');
         }
       } catch (err) {
-        app.alerts.show({ type: 'error' }, '上传异常: ' + err.message);
+        // v0.1.7 修: 跟 uploadFile 一样从 err.responseText 拿具体错误
+        let errMsg = '上传异常';
+        if (err && err.responseText) {
+          try {
+            const parsed = JSON.parse(err.responseText);
+            if (parsed && parsed.error) errMsg = parsed.error;
+            else errMsg = err.responseText;
+          } catch (e) {
+            errMsg = err.responseText;
+          }
+        } else if (err && err.status) {
+          errMsg = `HTTP ${err.status} 错误`;
+        }
+        app.alerts.show({ type: 'error' }, errMsg);
       }
     };
     fileInput.click();
@@ -800,7 +833,20 @@ export default class BjxySettings extends ExtensionPage {
           app.alerts.show({ type: 'error' }, r.error || '上传失败');
         }
       } catch (err) {
-        app.alerts.show({ type: 'error' }, '上传异常: ' + err.message);
+        // v0.1.7 修: 跟 uploadFile 一样从 err.responseText 拿具体错误
+        let errMsg = '上传异常';
+        if (err && err.responseText) {
+          try {
+            const parsed = JSON.parse(err.responseText);
+            if (parsed && parsed.error) errMsg = parsed.error;
+            else errMsg = err.responseText;
+          } catch (e) {
+            errMsg = err.responseText;
+          }
+        } else if (err && err.status) {
+          errMsg = `HTTP ${err.status} 错误`;
+        }
+        app.alerts.show({ type: 'error' }, errMsg);
       }
     };
     fileInput.click();

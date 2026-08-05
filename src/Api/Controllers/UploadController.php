@@ -34,8 +34,46 @@ class UploadController implements RequestHandlerInterface
         if (!$key) {
             return new JsonResponse(['error' => 'missing key'], 400);
         }
-        if (!$file || $file->getError() !== UPLOAD_ERR_OK) {
-            return new JsonResponse(['error' => 'no file uploaded'], 400);
+        // v0.1.7 修 (重要, 辉哥 11:00 反馈): 详细错误码, 不再统一报 "no file uploaded"
+        //   之前一律 400 + "no file uploaded", 用户看不到是文件太大还是其他
+        //   实际 PHP 上传失败有 5 种错误码 (UPLOAD_ERR_*):
+        //   - UPLOAD_ERR_INI_SIZE (1) = 超过 upload_max_filesize (默认 2M)
+        //   - UPLOAD_ERR_FORM_SIZE (2) = 超过 form MAX_FILE_SIZE
+        //   - UPLOAD_ERR_PARTIAL (3) = 文件只上传了一部分
+        //   - UPLOAD_ERR_NO_FILE (4) = 没有文件被上传
+        //   - UPLOAD_ERR_NO_TMP_DIR (6) = 缺少临时文件夹
+        //   - UPLOAD_ERR_CANT_WRITE (7) = 写入磁盘失败
+        //   - UPLOAD_ERR_EXTENSION (8) = PHP 扩展阻止了上传
+        //   修复: 区分错误码, 返回具体错误信息, 帮用户知道是文件太大还是其他
+        if (!$file) {
+            return new JsonResponse(['error' => 'no file uploaded (前端没传 file 字段)'], 400);
+        }
+        if ($file->getError() === UPLOAD_ERR_INI_SIZE) {
+            $maxSize = ini_get('upload_max_filesize');
+            return new JsonResponse([
+                'error' => "文件超过 PHP upload_max_filesize 限制 ({$maxSize}). 请压缩图片到 {$maxSize} 以下, 或联系管理员调大 php.ini",
+            ], 400);
+        }
+        if ($file->getError() === UPLOAD_ERR_FORM_SIZE) {
+            return new JsonResponse(['error' => '文件超过 form MAX_FILE_SIZE 限制'], 400);
+        }
+        if ($file->getError() === UPLOAD_ERR_PARTIAL) {
+            return new JsonResponse(['error' => '文件只上传了一部分, 请重新上传'], 400);
+        }
+        if ($file->getError() === UPLOAD_ERR_NO_FILE) {
+            return new JsonResponse(['error' => '没有选择文件, 请重新选择'], 400);
+        }
+        if ($file->getError() === UPLOAD_ERR_NO_TMP_DIR) {
+            return new JsonResponse(['error' => '服务器缺少临时文件夹, 联系管理员'], 500);
+        }
+        if ($file->getError() === UPLOAD_ERR_CANT_WRITE) {
+            return new JsonResponse(['error' => '服务器写入文件失败, 联系管理员'], 500);
+        }
+        if ($file->getError() === UPLOAD_ERR_EXTENSION) {
+            return new JsonResponse(['error' => 'PHP 扩展阻止了上传, 联系管理员'], 500);
+        }
+        if ($file->getError() !== UPLOAD_ERR_OK) {
+            return new JsonResponse(['error' => '上传失败 (未知错误码 ' . $file->getError() . ')'], 400);
         }
         // v0.1.6a 修: 允许数字 (uploadPhotoToArray 用 bjxy_review_photo_0_1785505949137
         //   包含 array index + Date.now() timestamp, 原来 ^[a-z_]+$ 严格不接受)
