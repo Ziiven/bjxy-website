@@ -1,371 +1,577 @@
-// ziven-bjxy-website admin.less
-// 后台 settings 样式 (admin extension page)
+// ====================================================================
+// ziven-bjxy-website admin.less — 后台 settings 样式 (v0.1.8 tab 化重构)
+// ====================================================================
+//
+// v0.1.8 改动 (辉哥反馈 "网站后台 tab 改做成跟 ziven-core 那样, 沿用 ziven-core 样式"):
+//   - 整页走 ziven-core 同款深色玻璃风
+//     background: linear-gradient(180deg, #1a1a2e 0%, #16213e 100%) + 黄 #fbbc04 高亮
+//   - 顶部 .bjxy-tab-bar 11 tab 切换器 (跟 ziven-core .ziven-core-tab-bar 1:1)
+//   - section 容器 .bjxy-section.glass-card (跟 ziven-core .ziven-core-section.glass-card 1:1)
+//   - 内部 .BjxyField-* 工具组件 (colorField / fileField / array / sortable / modal / savebar) 全部保留
+//   - 颜色 token 跟 ziven-core 共享 (黄 #fbbc04, 不再走 v0.1.0p 的 --bjxy-primary 蓝)
+//
+// 8 section 拆 11 tab:
+//   brand / bg / hero / about / features / curriculum / coach / reviews / events / contact / footer
+//
+// 关键 class 命名:
+//   .bjxy-settings (page container, 跟 ziven-core .ziven-core-settings 1:1)
+//   .bjxy-tab-bar / .bjxy-tab-btn / .bjxy-tab-btn.active
+//   .bjxy-section.glass-card / .bjxy-section-header / .bjxy-section-content / .bjxy-section-hint
+//   .bjxy-section-container
+//   .bjxy-settings-intro
+//   保留 .BjxyField-* (内部组件) / .BjxySavebar
+// ====================================================================
 
-// v0.1.0p 修: 店照蓝 #2D7BE5 硬编码 (之前用 var(--bjxy-primary) 但 vendor 没定义这个 var,
-// CSS 解析失败 → background/color 变 transparent, 看起来"白色按钮")
-// 设计稿 v3 主色就是 #2D7BE5, 不跟模式走, hard-code 最稳
+// --------- 颜色 token (跟 ziven-core --ziven-core-* 一致) ---------
 :root {
+    // 跟 ziven-core 共享黄 #fbbc04
+    --bjxy-accent: #fbbc04;
+    --bjxy-accent-deep: #f59e0b;
+    --bjxy-glass-border: rgba(255, 255, 255, 0.12);
+    --bjxy-radius-md: 16px;
+    --bjxy-radius-pill: 999px;
+    --bjxy-text-primary: #ffffff;
+    --bjxy-text-secondary: rgba(255, 255, 255, 0.78);
+    --bjxy-text-muted: rgba(255, 255, 255, 0.55);
+    --bjxy-danger: #f87171;
+    --bjxy-warning: #fb923c;
+    --bjxy-success: #34d399;
+    --bjxy-info: #60a5fa;
+    // 兼容 v0.1.0p 旧 --bjxy-primary (教练 user 头像 内部组件 BjxyField-array-row .ic-mini 还在用)
     --bjxy-primary: #2D7BE5;
     --bjxy-primary-rgb: 45, 123, 229;
-    // v0.1.3: 加 --bjxy-blue-soft (modal item 选中背景色, 跟论坛 .bjxy-blue-soft 保持一致)
     --bjxy-blue-soft: #E0EBF8;
 }
 
-.BjxySettings {
-    padding: 20px;
-    max-width: 900px;
+// --------- Sidebar 图标 ---------
+.Extensions-navItem--ziiven-ziven-bjxy-website .icon {
+    background: linear-gradient(135deg, #fbbc04 0%, #f59e0b 100%);
+}
 
-    h1 { font-size: 20px; font-weight: 700; margin-bottom: 4px; }
-    .desc { font-size: 12px; color: var(--control-color-soft); margin-bottom: 20px; }
+// --------- Page 容器 (ziven-core 同款深色玻璃风) ---------
+.ExtensionPage.bjxy-settings {
+    padding: 32px 24px;
+    min-height: 100vh;
+    background: linear-gradient(180deg, #1a1a2e 0%, #16213e 100%);
+    color: var(--bjxy-text-primary);
+}
 
-    .BjxySection {
-        background: var(--control-bg);
-        border: 1px solid var(--control-color-soft);
-        border-radius: 8px;
-        margin-bottom: 16px;
-        overflow: hidden;
-    }
-    // v0.1.0o 修: section head 背景用 var(--control-bg) (vendor 正版 admin theme var, light/dark 模式自动适配)
-    // 之前用 var(--control-bg-soft, #f6f7f9) — vendor 没定义 -soft, fallback #f6f7f9 (近白色)
-    // 在深色模式下反差太大 (浅白 + 深背景)
-    // v0.1.0p 修: 同样原因, 4 处剩余 -soft (BjxyField-file / BjxyField-array-add / BjxyField-group-select / BjxySavebar) 全部改用 var(--control-bg)
-    .BjxySection-head {
-        padding: 12px 16px;
-        background: var(--control-bg);
-        border-bottom: 1px solid var(--control-color-soft);
-        font-size: 13px;
+.ExtensionPage.bjxy-settings .container {
+    max-width: 960px;
+    margin: 0 auto;
+}
+
+// --------- 顶部标题 (ziven-core 风格) ---------
+.bjxy-settings-intro {
+    margin-bottom: 16px;
+
+    h2 {
+        font-size: 20px;
         font-weight: 700;
+        color: var(--bjxy-text-primary);
+        margin: 0 0 4px 0;
         display: flex;
         align-items: center;
         gap: 8px;
     }
-    .BjxySection-body {
-        padding: 16px;
-        display: grid;
-        grid-template-columns: 140px 1fr;
-        gap: 10px 14px;
-        align-items: start;
+    h2 i {
+        color: var(--bjxy-accent);
     }
-    .BjxyField-label { font-size: 12px; padding-top: 7px; }
-    .BjxyField-input, .BjxyField-textarea, .BjxyField-select {
-        width: 100%;
-        padding: 6px 10px;
-        border: 1px solid var(--control-color-soft);
-        border-radius: 4px;
+    p.desc {
         font-size: 12px;
-        background: var(--control-bg);
-        color: var(--control-color);
-    }
-    .BjxyField-textarea { min-height: 60px; font-family: 'SF Mono', monospace; }
-    .BjxyField-file {
-        padding: 8px 10px;
-        border: 1px dashed var(--control-color-soft);
-        border-radius: 4px;
-        font-size: 12px;
-        text-align: center;
-        cursor: pointer;
-        background: var(--control-bg);
-    }
-    .BjxyField-file:hover { border-color: var(--bjxy-primary); }
-    .BjxyField-file-preview {
-        margin-top: 6px;
-        font-size: 11px;
-        color: var(--control-color-soft);
-        word-break: break-all;
-    }
-    .BjxyField-file-preview img {
-        max-width: 200px;
-        max-height: 80px;
-        margin-top: 4px;
-        border: 1px solid var(--control-color-soft);
-        border-radius: 4px;
-    }
-    .BjxyField-array { grid-column: 2; }
-    // v0.1.6: 评价/学员结构化 array editor (每条 item 一张卡片, 跨整行)
-    .BjxyField-array-wide {
-        grid-column-start: 1;
-        grid-column-end: -1;
-    }
-    .BjxyField-array-card {
-        margin-bottom: 12px;
-        padding: 10px;
-        border: 1px solid var(--control-color-soft);
-        border-radius: 6px;
-        background: var(--control-bg);
-    }
-    .BjxyField-array-card-head {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        margin-bottom: 8px;
-        padding-bottom: 6px;
-        border-bottom: 1px dashed var(--control-color-soft);
-        // v0.1.7: 拖拽手柄 (sortablejs handle), 整条 card-head 可拖
-        //   sortablejs 默认 ghost/chosen/drag class 也加视觉反馈
-        cursor: grab;
-    }
-    .BjxyField-array-card-head:active { cursor: grabbing; }
-    // v0.1.7: 拖拽中元素视觉反馈
-    .BjxyField-sortable-ghost { opacity: 0.4; background: var(--bjxy-primary, #2D7BE5); border-style: dashed; }
-    .BjxyField-sortable-chosen { cursor: grabbing !important; }
-    .BjxyField-sortable-drag { box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15); opacity: 0.9; }
-    .BjxyField-array-card-num {
-        font-size: 12px;
-        font-weight: 700;
-        color: var(--bjxy-primary, #2D7BE5);
-    }
-    .BjxyField-array-card-head .del {
-        background: transparent;
-        border: 1px solid var(--control-color-soft);
-        color: var(--control-color-soft);
-        border-radius: 3px;
-        cursor: pointer;
-        font-size: 11px;
-        padding: 2px 8px;
-    }
-    .BjxyField-array-card-head .del:hover {
-        border-color: #d83e3e;
-        color: #d83e3e;
-    }
-    .BjxyField-array-card-body {
-        display: grid;
-        grid-template-columns: 140px 1fr;
-        gap: 8px 12px;
-        align-items: start;
-    }
-    .BjxyField-row {
-        display: contents;
-    }
-    // v0.1.6a: 评价/活动 多图 array editor
-    .BjxyField-photos-grid {
-        display: grid;
-        grid-template-columns: repeat(4, 1fr);
-        gap: 6px;
-        margin-bottom: 6px;
-        padding: 6px;
-        background: var(--control-bg);
-        border-radius: 4px;
-    }
-    .BjxyField-photo-item {
-        position: relative;
-        aspect-ratio: 1;
-        background: var(--control-color-soft);
-        border-radius: 3px;
-        overflow: hidden;
-        img { width: 100%; height: 100%; object-fit: cover; display: block; }
-    }
-    .BjxyField-photo-del {
-        position: absolute;
-        top: 2px;
-        right: 2px;
-        width: 18px;
-        height: 18px;
-        background: rgba(0, 0, 0, 0.7);
-        color: #fff;
-        border: none;
-        border-radius: 50%;
-        font-size: 12px;
-        line-height: 1;
-        cursor: pointer;
-        padding: 0;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
-    .BjxyField-photo-del:hover { background: #d83e3e; }
-    .BjxyField-array-row {
-        display: grid;
-        grid-template-columns: 30px 1fr 1fr 1fr 32px;
-        gap: 6px;
-        margin-bottom: 6px;
-    }
-    .BjxyField-array-row input {
-        padding: 5px 8px;
-        font-size: 11px;
-        border: 1px solid var(--control-color-soft);
-        border-radius: 3px;
-        background: var(--control-bg);
-        color: var(--control-color);
-    }
-    .BjxyField-array-row .ic-mini {
-        width: 26px; height: 26px;
-        background: var(--bjxy-primary);
-        color: #fff;
-        border-radius: 4px;
-        display: flex; align-items: center; justify-content: center;
-        font-size: 11px; font-weight: 700;
-    }
-    .BjxyField-array-row .del {
-        background: transparent;
-        border: 1px solid var(--control-color-soft);
-        color: var(--control-color-soft);
-        border-radius: 3px;
-        cursor: pointer;
-        font-size: 12px;
-    }
-    .BjxyField-array-add {
-        grid-column: 2;
-        padding: 6px;
-        background: var(--control-bg);
-        color: var(--bjxy-primary);
-        border-radius: 4px;
-        font-size: 11px;
-        text-align: center;
-        cursor: pointer;
-        border: 1px dashed var(--bjxy-primary);
-    }
-    // v0.1.0s 修: 教学体系 board 卡片样式 (单板/双板/雪橇/冰球 任意多类型)
-    .BjxyField-board {
-        // v0.1.0v 改: 跨整行 (grid-column: 1 / -1), 之前 grid-column: 2 只占右半边
-        //   辉哥 14:50 反馈 "教学体系section，里面的内容现在只占了半边，左半边是空的"
-        //   教学体系 section 没有 BjxyField-label (140px column 没用到), 改跨整行
-        grid-column-start: 1;
-        grid-column-end: -1;
-        margin-bottom: 12px;
-        border: 1px solid var(--control-color-soft);
-        border-radius: 6px;
-        padding: 10px;
-        background: var(--control-bg);
-    }
-    .BjxyField-board-head {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        margin-bottom: 8px;
-        padding-bottom: 8px;
-        border-bottom: 1px solid var(--control-color-soft);
-    }
-    .BjxyField-board-name {
-        flex: 1;
-        padding: 5px 8px;
-        font-size: 12px;
-        font-weight: 700;
-        border: 1px solid var(--control-color-soft);
-        border-radius: 3px;
-        background: var(--control-bg);
-        color: var(--control-color);
-    }
-    .BjxyField-board-count {
-        font-size: 11px;
-        color: var(--control-color-soft);
-        padding: 2px 6px;
-        background: var(--bjxy-primary);
-        color: #fff;
-        border-radius: 3px;
-        font-weight: 600;
-    }
-    .BjxyField-board-head .del {
-        background: transparent;
-        border: 1px solid var(--control-color-soft);
-        color: var(--control-color-soft);
-        border-radius: 3px;
-        cursor: pointer;
-        font-size: 11px;
-        padding: 4px 8px;
-    }
-    .BjxyField-board-head .del:hover {
-        border-color: #d83e3e;
-        color: #d83e3e;
-    }
-    .BjxyField-board-add {
-        // v0.1.0v 改: 跨整行 (跟 BjxyField-board 一致)
-        grid-column-start: 1;
-        grid-column-end: -1;
-        padding: 8px;
-        background: var(--control-bg);
-        color: var(--bjxy-primary);
-        border-radius: 4px;
-        font-size: 12px;
-        text-align: center;
-        cursor: pointer;
-        border: 2px dashed var(--bjxy-primary);
-        font-weight: 600;
-    }
-    .BjxyField-board-add:hover {
-        background: rgba(45, 123, 229, 0.05);
-    }
-
-    .BjxyField-group-select {
-        padding: 8px;
-        background: var(--control-bg);
-        border-radius: 4px;
-    }
-    .BjxyField-group-select .opt {
-        padding: 6px 10px;
-        margin: 2px 0;
-        background: var(--control-bg);
-        border-radius: 4px;
-        border: 1px solid var(--control-color-soft);
-        display: flex;
-        align-items: center;
-        gap: 6px;
-        font-size: 12px;
-        cursor: pointer;
-    }
-    .BjxyField-group-select .opt:hover { border-color: var(--bjxy-primary); }
-    .BjxyField-group-select .opt .ck {
-        width: 14px; height: 14px;
-        border: 1.5px solid var(--control-color-soft);
-        border-radius: 3px;
-        background: #fff;
-        display: inline-flex; align-items: center; justify-content: center;
-        font-size: 9px; color: #fff;
-    }
-    .BjxyField-group-select .opt.on { border-color: var(--bjxy-primary); background: rgba(45, 123, 229, 0.05); }
-    .BjxyField-group-select .opt.on .ck { background: var(--bjxy-primary); border-color: var(--bjxy-primary); }
-    .BjxyField-group-pick {
-        margin-top: 6px;
-        padding: 6px 10px;
-        background: var(--bjxy-primary);
-        color: #fff;
-        border-radius: 4px;
-        font-size: 11px;
-        text-align: center;
-        cursor: pointer;
-    }
-    .BjxyField-group-pick:hover { filter: brightness(0.95); }
-    .BjxyField-hint { font-size: 10px; color: var(--control-color-soft); margin-top: 4px; line-height: 1.5; }
-
-    .BjxySavebar {
-        padding: 12px 16px;
-        background: var(--control-bg);
-        border-top: 1px solid var(--control-color-soft);
-        display: flex;
-        justify-content: flex-end;
-        gap: 8px;
-        position: sticky;
-        bottom: 0;
-    }
-    .BjxySavebar .btn-primary {
-        padding: 6px 16px;
-        background: var(--bjxy-primary);
-        color: #fff;
-        border-radius: 4px;
-        font-size: 12px;
-        font-weight: 600;
-        cursor: pointer;
-        border: none;
-    }
-    // v0.1.0p 修: 保险起见加更高优先级, 避免 vendor .Button 默认 background 覆盖
-    // (Playwright 之前测出 .BjxySavebar .btn-primary dark 是 transparent)
-    .BjxySettings .BjxySavebar .btn-primary {
-        background: var(--bjxy-primary) !important;
-        color: #fff !important;
-    }
-    .BjxySavebar .btn-secondary {
-        padding: 6px 16px;
-        background: var(--control-bg);
-        color: var(--control-color-soft);
-        border: 1px solid var(--control-color-soft);
-        border-radius: 4px;
-        font-size: 12px;
-        cursor: pointer;
+        color: var(--bjxy-text-muted);
+        margin: 0;
     }
 }
 
-// v0.1.0m 颜色选择器: native <input type="color"> + 旁边一个 swatch 兜底
-// 辉哥反馈浅色 end + 深色 end 颜色块不显示 (v0.1.0j 的 background: none 把内置 swatch 覆盖了)
-// 改: 给 .BjxyField-color 加内联 swatch 背景 + box-shadow inset, 跨浏览器一致
+// --------- Tab Bar (顶部 11 tab 切换) ---------
+.bjxy-tab-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-bottom: 24px;
+    padding: 4px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--bjxy-glass-border);
+    border-radius: var(--bjxy-radius-pill);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+}
+
+.bjxy-tab-btn {
+    flex: 1 1 auto;
+    min-width: 100px;
+    padding: 10px 16px;
+    border: none;
+    background: transparent;
+    color: var(--bjxy-text-secondary);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    border-radius: var(--bjxy-radius-pill);
+    transition: background 0.18s ease, color 0.18s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    white-space: nowrap;
+}
+
+.bjxy-tab-btn:hover {
+    color: var(--bjxy-text-primary);
+    background: rgba(255, 255, 255, 0.04);
+}
+
+.bjxy-tab-btn.active {
+    background: linear-gradient(135deg, #fbbc04 0%, #f59e0b 100%);
+    color: #1a1a2e;
+    box-shadow: 0 4px 12px rgba(251, 188, 4, 0.3);
+}
+
+.bjxy-tab-btn i {
+    font-style: normal;
+    font-size: 14px;
+    line-height: 1;
+}
+
+// --------- Section 容器 (ziven-core 同款玻璃风) ---------
+.bjxy-section-container {
+    margin-bottom: 16px;
+}
+
+.bjxy-section {
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid var(--bjxy-glass-border);
+    border-radius: var(--bjxy-radius-md);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    overflow: hidden;
+    margin-bottom: 16px;
+}
+
+.bjxy-section-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 16px 20px;
+    background: rgba(255, 255, 255, 0.03);
+    border-bottom: 1px solid var(--bjxy-glass-border);
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--bjxy-text-primary);
+}
+
+.bjxy-section-header i {
+    color: var(--bjxy-accent);
+    font-size: 16px;
+    font-style: normal;
+}
+
+.bjxy-section-hint {
+    margin-left: auto;
+    font-size: 12px;
+    font-weight: 400;
+    color: var(--bjxy-text-muted);
+}
+
+.bjxy-section-content {
+    padding: 20px;
+    display: grid;
+    grid-template-columns: 140px 1fr;
+    gap: 10px 14px;
+    align-items: start;
+}
+
+// --------- BjxyField 内部组件 (保留 v0.1.0 沉淀, 适配 ziven-core 玻璃风) ---------
+// v0.1.8 改动: 之前 BjxyField-input 等是 var(--control-bg) (light/dark admin 主题适配),
+//   现在 ziven-core 玻璃风是固定的半透明白 (跟 ziven-dress-up 一致),
+//   全部改 rgba(255,255,255,0.05-0.1) + 白字, 跟玻璃风融合
+.BjxyField-row {
+    display: contents;
+}
+.BjxyField-label {
+    font-size: 12px;
+    padding-top: 7px;
+    color: var(--bjxy-text-secondary);
+}
+.BjxyField-input,
+.BjxyField-textarea,
+.BjxyField-select {
+    width: 100%;
+    padding: 6px 10px;
+    border: 1px solid var(--bjxy-glass-border);
+    border-radius: 4px;
+    font-size: 12px;
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--bjxy-text-primary);
+    font-family: inherit;
+}
+.BjxyField-textarea {
+    min-height: 60px;
+    font-family: 'SF Mono', monospace;
+    resize: vertical;
+}
+.BjxyField-input::placeholder,
+.BjxyField-textarea::placeholder {
+    color: var(--bjxy-text-muted);
+}
+
+.BjxyField-file {
+    padding: 8px 10px;
+    border: 1px dashed var(--bjxy-glass-border);
+    border-radius: 4px;
+    font-size: 12px;
+    text-align: center;
+    cursor: pointer;
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--bjxy-text-secondary);
+    transition: border-color 0.18s ease, background 0.18s ease;
+}
+.BjxyField-file:hover {
+    border-color: var(--bjxy-accent);
+    background: rgba(251, 188, 4, 0.06);
+    color: var(--bjxy-text-primary);
+}
+.BjxyField-file-preview {
+    margin-top: 6px;
+    font-size: 11px;
+    color: var(--bjxy-text-muted);
+    word-break: break-all;
+}
+.BjxyField-file-preview img {
+    max-width: 200px;
+    max-height: 80px;
+    margin-top: 4px;
+    border: 1px solid var(--bjxy-glass-border);
+    border-radius: 4px;
+}
+
+.BjxyField-array { grid-column: 2; }
+.BjxyField-array-wide {
+    grid-column-start: 1;
+    grid-column-end: -1;
+}
+
+.BjxyField-array-card {
+    margin-bottom: 12px;
+    padding: 10px;
+    border: 1px solid var(--bjxy-glass-border);
+    border-radius: 6px;
+    background: rgba(255, 255, 255, 0.04);
+}
+.BjxyField-array-card-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+    padding-bottom: 6px;
+    border-bottom: 1px dashed var(--bjxy-glass-border);
+    cursor: grab;
+}
+.BjxyField-array-card-head:active { cursor: grabbing; }
+.BjxyField-sortable-ghost { opacity: 0.4; background: var(--bjxy-primary, #2D7BE5); border-style: dashed; }
+.BjxyField-sortable-chosen { cursor: grabbing !important; }
+.BjxyField-sortable-drag { box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15); opacity: 0.9; }
+.BjxyField-array-card-num {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--bjxy-accent, #fbbc04);
+}
+.BjxyField-array-card-head .del {
+    background: transparent;
+    border: 1px solid var(--bjxy-glass-border);
+    color: var(--bjxy-text-muted);
+    border-radius: 3px;
+    cursor: pointer;
+    font-size: 11px;
+    padding: 2px 8px;
+    transition: border-color 0.18s ease, color 0.18s ease;
+}
+.BjxyField-array-card-head .del:hover {
+    border-color: var(--bjxy-danger);
+    color: var(--bjxy-danger);
+}
+.BjxyField-array-card-body {
+    display: grid;
+    grid-template-columns: 140px 1fr;
+    gap: 8px 12px;
+    align-items: start;
+}
+
+.BjxyField-photos-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 6px;
+    margin-bottom: 6px;
+    padding: 6px;
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 4px;
+}
+.BjxyField-photo-item {
+    position: relative;
+    aspect-ratio: 1;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 3px;
+    overflow: hidden;
+    img { width: 100%; height: 100%; object-fit: cover; display: block; }
+}
+.BjxyField-photo-del {
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    width: 18px;
+    height: 18px;
+    background: rgba(0, 0, 0, 0.7);
+    color: #fff;
+    border: none;
+    border-radius: 50%;
+    font-size: 12px;
+    line-height: 1;
+    cursor: pointer;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.BjxyField-photo-del:hover { background: var(--bjxy-danger); }
+
+.BjxyField-array-row {
+    display: grid;
+    grid-template-columns: 30px 1fr 1fr 1fr 32px;
+    gap: 6px;
+    margin-bottom: 6px;
+}
+.BjxyField-array-row input {
+    padding: 5px 8px;
+    font-size: 11px;
+    border: 1px solid var(--bjxy-glass-border);
+    border-radius: 3px;
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--bjxy-text-primary);
+}
+.BjxyField-array-row input::placeholder {
+    color: var(--bjxy-text-muted);
+}
+.BjxyField-array-row .ic-mini {
+    width: 26px; height: 26px;
+    background: var(--bjxy-primary, #2D7BE5);
+    color: #fff;
+    border-radius: 4px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 700;
+}
+.BjxyField-array-row .del {
+    background: transparent;
+    border: 1px solid var(--bjxy-glass-border);
+    color: var(--bjxy-text-muted);
+    border-radius: 3px;
+    cursor: pointer;
+    font-size: 12px;
+    transition: border-color 0.18s ease, color 0.18s ease;
+}
+.BjxyField-array-row .del:hover {
+    border-color: var(--bjxy-danger);
+    color: var(--bjxy-danger);
+}
+
+.BjxyField-array-add {
+    grid-column: 2;
+    padding: 6px;
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--bjxy-accent, #fbbc04);
+    border-radius: 4px;
+    font-size: 11px;
+    text-align: center;
+    cursor: pointer;
+    border: 1px dashed var(--bjxy-accent, #fbbc04);
+    transition: background 0.18s ease;
+}
+.BjxyField-array-add:hover {
+    background: rgba(251, 188, 4, 0.08);
+}
+
+.BjxyField-board {
+    grid-column-start: 1;
+    grid-column-end: -1;
+    margin-bottom: 12px;
+    border: 1px solid var(--bjxy-glass-border);
+    border-radius: 6px;
+    padding: 10px;
+    background: rgba(255, 255, 255, 0.04);
+}
+.BjxyField-board-head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--bjxy-glass-border);
+}
+.BjxyField-board-name {
+    flex: 1;
+    padding: 5px 8px;
+    font-size: 12px;
+    font-weight: 700;
+    border: 1px solid var(--bjxy-glass-border);
+    border-radius: 3px;
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--bjxy-text-primary);
+}
+.BjxyField-board-name::placeholder {
+    color: var(--bjxy-text-muted);
+}
+.BjxyField-board-count {
+    font-size: 11px;
+    color: #fff;
+    padding: 2px 6px;
+    background: var(--bjxy-accent, #fbbc04);
+    color: #1a1a2e;
+    border-radius: 3px;
+    font-weight: 600;
+}
+.BjxyField-board-head .del {
+    background: transparent;
+    border: 1px solid var(--bjxy-glass-border);
+    color: var(--bjxy-text-muted);
+    border-radius: 3px;
+    cursor: pointer;
+    font-size: 11px;
+    padding: 4px 8px;
+    transition: border-color 0.18s ease, color 0.18s ease;
+}
+.BjxyField-board-head .del:hover {
+    border-color: var(--bjxy-danger);
+    color: var(--bjxy-danger);
+}
+.BjxyField-board-add {
+    grid-column-start: 1;
+    grid-column-end: -1;
+    padding: 8px;
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--bjxy-accent, #fbbc04);
+    border-radius: 4px;
+    font-size: 12px;
+    text-align: center;
+    cursor: pointer;
+    border: 2px dashed var(--bjxy-accent, #fbbc04);
+    font-weight: 600;
+    transition: background 0.18s ease;
+}
+.BjxyField-board-add:hover {
+    background: rgba(251, 188, 4, 0.08);
+}
+
+.BjxyField-group-select {
+    padding: 8px;
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 4px;
+}
+.BjxyField-group-select .opt {
+    padding: 6px 10px;
+    margin: 2px 0;
+    background: rgba(255, 255, 255, 0.04);
+    border-radius: 4px;
+    border: 1px solid var(--bjxy-glass-border);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    cursor: pointer;
+    color: var(--bjxy-text-secondary);
+    transition: border-color 0.18s ease, background 0.18s ease;
+}
+.BjxyField-group-select .opt:hover {
+    border-color: var(--bjxy-accent, #fbbc04);
+    color: var(--bjxy-text-primary);
+}
+.BjxyField-group-select .opt .ck {
+    width: 14px; height: 14px;
+    border: 1.5px solid var(--bjxy-glass-border);
+    border-radius: 3px;
+    background: rgba(255, 255, 255, 0.05);
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 9px; color: #1a1a2e;
+}
+.BjxyField-group-select .opt.on {
+    border-color: var(--bjxy-accent, #fbbc04);
+    background: rgba(251, 188, 4, 0.08);
+}
+.BjxyField-group-select .opt.on .ck {
+    background: var(--bjxy-accent, #fbbc04);
+    border-color: var(--bjxy-accent, #fbbc04);
+}
+.BjxyField-group-pick {
+    margin-top: 6px;
+    padding: 6px 10px;
+    background: var(--bjxy-accent, #fbbc04);
+    color: #1a1a2e;
+    border-radius: 4px;
+    font-size: 11px;
+    text-align: center;
+    cursor: pointer;
+    font-weight: 600;
+    transition: filter 0.18s ease;
+}
+.BjxyField-group-pick:hover { filter: brightness(0.95); }
+.BjxyField-hint {
+    font-size: 10px;
+    color: var(--bjxy-text-muted);
+    margin-top: 4px;
+    line-height: 1.5;
+}
+
+// --------- 保存栏 (sticky bottom) ---------
+.BjxySavebar {
+    padding: 12px 16px;
+    background: rgba(255, 255, 255, 0.05);
+    border-top: 1px solid var(--bjxy-glass-border);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    position: sticky;
+    bottom: 0;
+    border-radius: 0 0 var(--bjxy-radius-md) var(--bjxy-radius-md);
+    margin-top: 16px;
+}
+.BjxySavebar .btn-primary {
+    padding: 8px 18px;
+    background: linear-gradient(135deg, #fbbc04 0%, #f59e0b 100%);
+    color: #1a1a2e;
+    border-radius: var(--bjxy-radius-pill);
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    border: none;
+    box-shadow: 0 4px 12px rgba(251, 188, 4, 0.3);
+    transition: filter 0.18s ease;
+}
+.BjxySavebar .btn-primary:hover { filter: brightness(0.95); }
+.BjxySavebar .btn-primary:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+.bjxy-settings .BjxySavebar .btn-primary {
+    background: linear-gradient(135deg, #fbbc04 0%, #f59e0b 100%) !important;
+    color: #1a1a2e !important;
+}
+.BjxySavebar .btn-secondary {
+    padding: 8px 18px;
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--bjxy-text-secondary);
+    border: 1px solid var(--bjxy-glass-border);
+    border-radius: var(--bjxy-radius-pill);
+    font-size: 12px;
+    cursor: pointer;
+    transition: border-color 0.18s ease, color 0.18s ease;
+}
+.BjxySavebar .btn-secondary:hover {
+    border-color: var(--bjxy-accent, #fbbc04);
+    color: var(--bjxy-text-primary);
+}
+
+// --------- 颜色选择器 (BjxyField-color / BjxyField-color-text) ---------
 .BjxyField-color-wrap {
     display: flex;
     align-items: center;
@@ -375,7 +581,7 @@
     width: 48px;
     height: 32px;
     padding: 0;
-    border: 1px solid var(--control-color-soft);
+    border: 1px solid var(--bjxy-glass-border);
     border-radius: 4px;
     cursor: pointer;
     background-color: var(--color, transparent);
@@ -385,72 +591,62 @@
     flex: 1;
     height: 32px;
     padding: 6px 10px;
-    border: 1px solid var(--control-color-soft);
+    border: 1px solid var(--bjxy-glass-border);
     border-radius: 4px;
     font-family: ui-monospace, SFMono-Regular, monospace;
     font-size: 12px;
-    background: var(--control-bg);
-    color: var(--control-color);
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--bjxy-text-primary);
 }
 
-// v0.1.0t 修: 教学体系 section 移动端响应式 (max-width: 768px)
-//   辉哥 14:10 反馈 "教学体系这块里面的配置, 在移动端显示不全"
-//   之前 grid `30px 1fr 1fr 1fr 32px` 在窄屏把 4 个 input 列压成 145px,
-//   select 跟 input 内容被截断, name/desc 完全看不到
-//   修法: 窄屏下 array-row 改 2 行 (序号+level+del 一行, name+desc 另一行)
-//   ⚠️ 辉哥 14:30 反馈 "其他 section 排版不用变", 所以 @media 块只针对教学体系 (.BjxyField-board 内部),
-//     不影响其他 section (品牌/Hero/关于/特色/教练/评价/学员展示/联系)
-//   ⚠️ wikimedia/less.php 5.x 不支持嵌套 @media (vendor 用 less.php 不是 less-js),
-//      必须用展开写法 (顶层 @media + 完全展开的 .BjxySettings .X 选择器)
-//   ⚠️ 必须放文件最末尾, CSS cascade 后写 win, 否则会被普通选择器覆盖
-//   ⚠️ 避免 less 把 1 / -1 当作除法, 分开写 grid-column-start / grid-column-end
+// --------- 移动端响应式 (max-width: 768px) ---------
+// v0.1.8 跟 ziven-core 1:1 玻璃风断点 — 11 tab 在窄屏下换行
+// v0.1.0t 沉淀: wikimedia/less.php 5.x 不支持嵌套 @media,
+//   必须用展开写法 (顶层 @media + 完全展开的 .bjxy-settings .X 选择器)
 @media (max-width: 768px) {
-    // 只针对教学体系 .BjxyField-board 内部, 不影响其他 section
-    .BjxyField-board { padding: 8px; }
-    .BjxyField-board-head { flex-wrap: wrap; gap: 6px; }
-    .BjxyField-board-name { flex: 1 1 100%; min-width: 0; }
-    .BjxyField-board-count { flex: 0 0 auto; }
-    .BjxyField-board-head .del { flex: 0 0 auto; }
-    .BjxyField-board .BjxyField-array-row {
-        grid-template-columns: 26px 1fr 28px;
-        gap: 4px;
-        margin-bottom: 6px;
-        padding: 5px;
-        border: 1px solid var(--control-color-soft);
-        border-radius: 4px;
+    .ExtensionPage.bjxy-settings {
+        padding: 20px 12px;
     }
-    .BjxyField-board .BjxyField-array-row .ic-mini { grid-column: 1; }
-    .BjxyField-board .BjxyField-array-row select { grid-column: 2; min-width: 0; }
-    .BjxyField-board .BjxyField-array-row input:nth-of-type(1) { grid-column-start: 1; grid-column-end: -1; }
-    .BjxyField-board .BjxyField-array-row input:nth-of-type(2) { grid-column-start: 1; grid-column-end: -1; }
-    .BjxyField-board .BjxyField-array-row .del { grid-column: 3; }
-
-    // v0.1.6f 加: 通用 .BjxyField-array-row (办学特色 / 教学体系 level list) 移动端布局
-    //   辉哥 14:13 反馈 "移动端下, 我怎么没看到删除办学特色的按钮呢"
-    //   根因: 5 列 grid (30+1fr+1fr+1fr+32) 在窄 viewport 下 input 挤没空间, delete 按钮被挤没
-    //   修法: 移动端改 3 列 grid: icon + 中间 stack (title/icon/desc 三行) + del
-    //   适用: 教学体系 .BjxyField-board 内部 + 办学特色 .BjxyField-features 通用
-    // v0.1.6f fix: specificity 0,1,0 输给默认 0,2,0 (.BjxySettings .BjxyField-array-row),
-    //   @media 块 cascade 后写但 specificity 弱也输; 加 .BjxySettings 前缀让 specificity 一样 (0,2,0)
-    // v0.1.6f fix2: grid-row 1 / -1 less 编译踩 SOP 79 除法坑, 拆成 grid-row-start/end
-    .BjxySettings .BjxyField-array-row {
-        grid-template-columns: 30px 1fr 36px;
+    .bjxy-tab-bar {
+        border-radius: var(--bjxy-radius-md);
+    }
+    .bjxy-tab-btn {
+        flex: 1 1 30%;
+        min-width: 80px;
+        padding: 8px 10px;
+        font-size: 12px;
+    }
+    .bjxy-section-content {
+        grid-template-columns: 1fr;
+        gap: 8px;
+    }
+    .BjxyField-label {
+        padding-top: 0;
+        font-weight: 600;
+    }
+    .BjxyField-array { grid-column: 1; }
+    .BjxyField-array-wide { grid-column-start: 1; grid-column-end: -1; }
+    .BjxyField-array-card-body {
+        grid-template-columns: 1fr;
+    }
+    .BjxyField-array-row {
+        grid-template-columns: 30px 1fr 32px;
         gap: 6px;
         margin-bottom: 8px;
         padding: 6px;
-        border: 1px solid var(--control-color-soft);
+        border: 1px solid var(--bjxy-glass-border);
         border-radius: 4px;
-        background: var(--control-bg);
+        background: rgba(255, 255, 255, 0.03);
     }
-    .BjxySettings .BjxyField-array-row .ic-mini {
+    .bjxy-settings .BjxyField-array-row .ic-mini {
         grid-column: 1;
         grid-row-start: 1;
         grid-row-end: -1;
     }
-    .BjxySettings .BjxyField-array-row input:nth-of-type(1) { grid-column: 2; grid-row: 1; min-width: 0; }
-    .BjxySettings .BjxyField-array-row input:nth-of-type(2) { grid-column: 2; grid-row: 2; min-width: 0; }
-    .BjxySettings .BjxyField-array-row input:nth-of-type(3) { grid-column: 2; grid-row: 3; min-width: 0; }
-    .BjxySettings .BjxyField-array-row .del {
+    .bjxy-settings .BjxyField-array-row input:nth-of-type(1) { grid-column: 2; grid-row: 1; min-width: 0; }
+    .bjxy-settings .BjxyField-array-row input:nth-of-type(2) { grid-column: 2; grid-row: 2; min-width: 0; }
+    .bjxy-settings .BjxyField-array-row input:nth-of-type(3) { grid-column: 2; grid-row: 3; min-width: 0; }
+    .bjxy-settings .BjxyField-array-row .del {
         grid-column: 3;
         grid-row-start: 1;
         grid-row-end: -1;
@@ -458,206 +654,21 @@
         display: flex; align-items: center; justify-content: center;
         font-size: 16px; font-weight: 700;
     }
-}
-
-// v0.1.0u 修: 教学体系 section 紧凑布局 (辉哥 14:30 反馈 "数据多了以后, 版面拉的太长了")
-//   之前 18 级 + 2 boards = 18 rows × 30px = 540px + board head 28px + padding 20px ≈ 700px
-//   优化: board 内部 padding 10→6, row margin-bottom 6→2, input padding 5→3, font-size 11→10
-//   ⚠️ 只针对 .BjxyField-board 内部, 不影响其他 section
-.BjxyField-board {
-    padding: 6px;
-    margin-bottom: 8px;
-    .BjxyField-board-head {
-        margin-bottom: 4px;
-        padding-bottom: 4px;
-    }
-    .BjxyField-board-name {
-        padding: 3px 6px;
-        font-size: 11px;
-    }
-    .BjxyField-board-count {
-        font-size: 10px;
-        padding: 1px 5px;
-    }
-    .BjxyField-board-head .del {
-        font-size: 10px;
-        padding: 3px 6px;
-    }
-    .BjxyField-array-row {
+    .BjxyField-board { padding: 8px; }
+    .BjxyField-board-head { flex-wrap: wrap; gap: 6px; }
+    .BjxyField-board-name { flex: 1 1 100%; min-width: 0; }
+    .BjxyField-board-count { flex: 0 0 auto; }
+    .BjxyField-board-head .del { flex: 0 0 auto; }
+    .bjxy-settings .BjxyField-board .BjxyField-array-row {
+        grid-template-columns: 26px 1fr 28px;
         gap: 4px;
-        margin-bottom: 2px;
-        input {
-            padding: 3px 6px;
-            font-size: 10px;
-        }
-        .ic-mini {
-            width: 20px;
-            height: 20px;
-            font-size: 9px;
-        }
-        .del {
-            font-size: 10px;
-            padding: 2px 4px;
-        }
-        select {
-            padding: 2px 6px;
-            font-size: 10px;
-        }
+        margin-bottom: 6px;
+        padding: 5px;
+        border: 1px solid var(--bjxy-glass-border);
+        border-radius: 4px;
     }
-    .BjxyField-array-add {
-        padding: 4px;
-        font-size: 10px;
-        margin-top: 4px;
-    }
-}
-
-// v0.1.0w 修: 办学特色 section 紧凑布局
-//   辉哥反馈 "把'特色卡片'文字去掉, 然后让右边的内容显示完全"
-//   之前 .BjxyField-array 默认 grid-column: 2 只占右半 1fr, 6 个 row 内容挤
-//   修法: 删 "特色卡片" label, 加 .BjxyField-features class 让 less 独立命名空间
-//   .BjxyField-features 跨整行, row 紧凑 (跟教学体系 board 一致)
-//   ⚠️ 不影响 .BjxyField-board 内的 array (那个是 display block, grid-column 不生效)
-.BjxyField-features {
-    // v0.1.0w: 覆盖 .BjxyField-array 的 grid-column: 2
-    //   简写 grid-column: 1 / -1 会被 less 解析成 -1 (除法坑, SOP 79)
-    //   单独写 start/end + !important 强制覆盖 (因为 .BjxyField-array 的 grid-column 简写会重置 end)
-    grid-column-start: 1 !important;
-    grid-column-end: -1 !important;
-    .BjxyField-array-row {
-        gap: 6px;
-        margin-bottom: 4px;
-        input {
-            padding: 4px 8px;
-            font-size: 11px;
-        }
-        .ic-mini {
-            width: 22px;
-            height: 22px;
-            font-size: 11px;
-        }
-        .del {
-            font-size: 11px;
-        }
-    }
-    .BjxyField-array-add {
-        padding: 6px;
-        font-size: 11px;
-    }
-}
-
-// v0.1.3: GroupPickerModal 样式 (弹 modal 选用户组, 替代 v0.1.0f 留的 alert 占位)
-// v0.1.4 改: modal 展示 user (不是 group), 加 sortablejs 拖拽样式
-// v0.1.5 改: modal 加右栏 详情 form (bio/achievements/specialties/photo), 2 列布局
-.GroupPickerModal-body {
-    display: grid;
-    grid-template-columns: 1fr 1.2fr;
-    gap: 16px;
-    min-height: 400px;
-}
-.GroupPickerModal-list { display: flex; flex-direction: column; gap: 6px; max-height: 60vh; overflow-y: auto; }
-.GroupPickerModal-item {
-    display: grid;
-    grid-template-columns: 20px 24px 32px 1fr auto;
-    align-items: center;
-    gap: 8px;
-    padding: 8px 12px;
-    border: 1px solid var(--control-bg);
-    border-radius: 6px;
-    cursor: pointer;
-    transition: background 0.15s, border-color 0.15s, box-shadow 0.15s;
-}
-.GroupPickerModal-item:hover { background: var(--control-bg); }
-.GroupPickerModal-item.on { background: var(--bjxy-blue-soft, #E0EBF8); border-color: var(--bjxy-primary, #2D7BE5); }
-.GroupPickerModal-item.active { box-shadow: 0 0 0 2px var(--bjxy-primary, #2D7BE5); }
-// sortablejs 拖拽中的样式
-.GroupPickerModal-item.sortable-ghost { opacity: 0.4; background: var(--bjxy-primary, #2D7BE5); }
-.GroupPickerModal-item.sortable-chosen { cursor: grabbing; }
-.GroupPickerModal-item.sortable-drag { box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
-.GroupPickerModal-item-handle { color: var(--control-color-soft); user-select: none; cursor: grab; font-size: 12px; }
-.GroupPickerModal-item input[type="checkbox"] { margin: 0; cursor: pointer; }
-.GroupPickerModal-item-avatar {
-    width: 32px; height: 32px; border-radius: 50%; overflow: hidden;
-    background: var(--control-bg); display: flex; align-items: center; justify-content: center;
-    font-size: 13px; font-weight: 600; color: var(--control-color);
-    img { width: 100%; height: 100%; object-fit: cover; }
-}
-.GroupPickerModal-item-name { font-weight: 600; color: var(--control-color); }
-.GroupPickerModal-item-username { font-size: 12px; color: var(--control-color-soft); }
-.GroupPickerModal-empty { padding: 24px; text-align: center; color: var(--control-color-soft); }
-.GroupPickerModal-loading { padding: 24px; text-align: center; color: var(--control-color-soft); }
-.GroupPickerModal-hint { padding: 8px 12px; background: var(--control-bg); border-radius: 4px; font-size: 12px; color: var(--control-color-soft); margin-bottom: 12px; }
-.GroupPickerModal-footer { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--control-bg); }
-.GroupPickerModal-actions { display: flex; gap: 8px; }
-.GroupPickerModal-count { font-size: 12px; color: var(--control-color-soft); }
-
-// v0.1.5: 详情 form 样式
-.GroupPickerModal-details {
-    background: var(--control-bg);
-    border-radius: 6px;
-    padding: 16px;
-    max-height: 60vh;
-    overflow-y: auto;
-}
-.GroupPickerModal-details-empty {
-    height: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: var(--control-color-soft);
-    font-size: 13px;
-    text-align: center;
-    padding: 32px 16px;
-}
-.GroupPickerModal-detail-form { display: flex; flex-direction: column; gap: 12px; }
-.GroupPickerModal-detail-head {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding-bottom: 12px;
-    border-bottom: 1px solid var(--control-color-soft);
-}
-.GroupPickerModal-detail-avatar {
-    width: 48px;
-    height: 48px;
-    border-radius: 50%;
-    background: var(--bjxy-primary, #2D7BE5);
-    color: #fff;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 18px;
-    font-weight: 700;
-    overflow: hidden;
-    flex-shrink: 0;
-    img { width: 100%; height: 100%; object-fit: cover; }
-}
-.GroupPickerModal-detail-name { font-size: 15px; font-weight: 700; color: var(--control-color); }
-.GroupPickerModal-detail-username { font-size: 12px; color: var(--control-color-soft); }
-.GroupPickerModal-field {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-    label { font-size: 12px; font-weight: 600; color: var(--control-color); }
-}
-.GroupPickerModal-input, .GroupPickerModal-textarea {
-    width: 100%;
-    padding: 6px 10px;
-    border: 1px solid var(--control-color-soft);
-    border-radius: 4px;
-    font-size: 12px;
-    background: var(--control-bg);
-    color: var(--control-color);
-    font-family: inherit;
-}
-.GroupPickerModal-textarea { resize: vertical; min-height: 60px; }
-.GroupPickerModal-photo-row { display: flex; gap: 6px; align-items: center; }
-.GroupPickerModal-photo-row .GroupPickerModal-input { flex: 1; }
-.GroupPickerModal-photo-preview {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin-top: 6px;
-    font-size: 11px;
-    color: var(--control-color-soft);
-    img { width: 48px; height: 48px; object-fit: cover; border-radius: 4px; border: 1px solid var(--control-color-soft); }
+    .bjxy-settings .BjxyField-board .BjxyField-array-row .ic-mini { grid-column: 1; }
+    .bjxy-settings .BjxyField-board .BjxyField-array-row input:nth-of-type(1) { grid-column-start: 1; grid-column-end: -1; }
+    .bjxy-settings .BjxyField-board .BjxyField-array-row input:nth-of-type(2) { grid-column-start: 1; grid-column-end: -1; }
+    .bjxy-settings .BjxyField-board .BjxyField-array-row .del { grid-column: 3; }
 }

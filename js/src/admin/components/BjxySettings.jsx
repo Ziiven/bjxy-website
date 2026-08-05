@@ -1,8 +1,27 @@
-// BjxySettings.jsx — 后台 settings UI
-// 8 section: 品牌 / Hero / 关于 / 特色 / 教学体系 / 教练 / 评价 / 学员展示 / 联系
-// Flarum 2.0 admin ExtensionPage pattern (跟 ziven-dress-up SeedreamAdminPage 同款)
-// v0.1.0c 修: BjxySettings extends ExtensionPage (vendor Flarum 2.0 class),
-//              override content() 方法 (走 vendor sections().toArray() 框架)
+// ====================================================================
+// BjxySettings.jsx — 后台 settings UI (v0.1.8 tab 化重构)
+// ====================================================================
+//
+// v0.1.8 改动 (辉哥反馈 "网站后台 tab 改做成跟 ziven-core 那样, 沿用 ziven-core 样式"):
+//   - 8 section 拆 11 tab (背景/品牌是 2 个, 联系 + 页脚是 2 个, 11 个独立 tab)
+//   - 顶部 .bjxy-tab-bar + 11 个 .bjxy-tab-btn 切换
+//   - 容器 .bjxy-settings 走 ziven-core 同款深色玻璃风背景
+//     (linear-gradient(180deg, #1a1a2e 0%, #16213e 100%) + 黄 #fbbc04 高亮)
+//   - section 容器改 .bjxy-section.glass-card (跟 ziven-core .ziven-core-section.glass-card 1:1)
+//   - 内部 .BjxyField-* 工具函数 (colorField / fileField / array / sortable / modal / savebar) 全部保留
+//   - save() / loadSettings() / uploadFile / uploadPhotoToArray / sortablejs / coach modal 不变
+//
+// 11 tab 顺序 (跟 ziven-core 2 tab 同款 oninit 初始 activeTab + m.redraw() 模式):
+//   brand / bg / hero / about / features / curriculum / coach / reviews / events / contact / footer
+//
+// 沿用 ziven-core admin 设计语言:
+//   - 黄 #fbbc04 (跟 ziven-core --ziven-core-accent 一致, 不走 bjxy 旧 --bjxy-primary 蓝)
+//   - 玻璃风 backdrop-filter blur(20px)
+//   - 圆角 16px
+//
+// 注册: js/src/admin/index.js → app.registry.for('ziiven-ziven-bjxy-website').registerPage(BjxySettings)
+// 路由: Flarum 2.0 admin 自动通过 /extension/:id 渲染 registerPage 注册的 page
+// ====================================================================
 import app from 'flarum/admin/app';
 import ExtensionPage from 'flarum/admin/components/ExtensionPage';
 import ColorPreviewInput from 'flarum/common/components/ColorPreviewInput';
@@ -22,9 +41,6 @@ const DEFAULT_FEATURES = [
 ];
 
 // v0.1.0s 改: 教学体系从 2 个固定 array (single/double) 重构成 boards 数组
-//   每个 board: {name, levels: [{level, name, desc}, ...]}
-//   默认 2 个 board (单板 + 双板), 跟 v0.1.0r 兼容
-//   用户可后台增删 board 本身 (雪橇/冰球/自由式等)
 const DEFAULT_BOARDS = [
   { name: '单板', levels: [
     { level: 'PRIMARY', name: '直滑降后刃推坡', desc: '能够熟练的做直滑降练习...' },
@@ -49,51 +65,88 @@ const DEFAULT_BOARDS = [
   ]},
 ];
 
+// v0.1.8 11 tab 配置 — 跟 ziven-core 同款 [{key, icon, label}] 列表
+//   渲染时遍历生成 .bjxy-tab-btn, switchTab(key) 改 this.activeTab + m.redraw()
+const BJXY_TABS = [
+  { key: 'brand',      icon: '🏔',  label: '品牌信息' },
+  { key: 'bg',         icon: '🎨',  label: '背景渐变' },
+  { key: 'hero',       icon: '🖼',   label: 'Hero 区域' },
+  { key: 'about',      icon: '📖',  label: '关于我们' },
+  { key: 'features',   icon: '✨',  label: '办学特色' },
+  { key: 'curriculum', icon: '📚',  label: '教学体系' },
+  { key: 'coach',      icon: '👥',  label: '教练展示' },
+  { key: 'reviews',    icon: '💬',  label: '学员评价' },
+  { key: 'events',     icon: '🎯',  label: '活动展示' },
+  { key: 'contact',    icon: '📞',  label: '联系我们' },
+  { key: 'footer',     icon: '🦶',  label: '页脚 / 备案' },
+];
+
 export default class BjxySettings extends ExtensionPage {
+  // v0.1.8 跟 ziven-core 1:1: bodyClass 让 admin 路由白底隔离
+  bodyClass = 'App--admin-ziiven-ziven-bjxy-website';
+
   oninit(vnode) {
     super.oninit(vnode);
     this.loading = true;
     this.saving = false;
     this.data = {};
     this.features = JSON.parse(JSON.stringify(DEFAULT_FEATURES));
-    // v0.1.0s 改: this.boards array 替代 this.single / this.double
     this.boards = JSON.parse(JSON.stringify(DEFAULT_BOARDS));
-    // v0.1.4: 教练 user id 数组 (GroupPickerModal 选 user 后保存, 取代之前只用 group 拉)
     this.coachUserIds = [];
     this.coachGroupIds = [];
     this.allGroups = [];
-    // v0.1.5: 教练详情 (map: userId -> {bio, achievements, specialties, photoUrl})
     this.coachDetails = {};
-    // v0.1.6: 评价 array (结构化字段替代 bjxy_reviews_html 自由区)
     this.reviews = [];
-    // v0.1.6: 学员展示 array (升级 bjxy_students_json 简单 JSON)
     this.students = [];
-    // v0.1.6g: 活动 swiper 自动轮播间隔 (毫秒, 默认 3000)
     this.eventsAutoplayMs = 3000;
-    // v0.1.7: sortablejs 实例 (评价 + 活动 拖拽排序, onremove 时 destroy)
     this.reviewsSortable = null;
     this.studentsSortable = null;
+    // v0.1.8 tab 状态: 跟 ziven-core 1:1 模式, oninit 给初始值, switchTab() 改 + m.redraw()
+    this.activeTab = 'brand';
     this.loadSettings();
   }
 
-  // Flarum 2.0 ExtensionPage content() 是 sections().toArray() 的 'content' key
-  // override content() 就能在 vendor ExtensionPage 框架里渲染 bjxy settings
-  content() {
-    if (this.loading) {
-      return m('div', { class: 'BjxySettings' }, m('p', null, '加载中...'));
+  // v0.1.8 tab 切换 (跟 ziven-core ZivenCoreSettingsPage.switchTab 1:1 模式)
+  switchTab(tab) {
+    if (this.activeTab !== tab) {
+      this.activeTab = tab;
+      m.redraw();
     }
+  }
 
+  // v0.1.8 顶部 tab bar — 遍历 BJXY_TABS 生成 11 个 .bjxy-tab-btn
+  renderTabBar() {
+    return (
+      <div className="bjxy-tab-bar">
+        {BJXY_TABS.map(t => (
+          <button
+            type="button"
+            className={`bjxy-tab-btn ${this.activeTab === t.key ? 'active' : ''}`}
+            onclick={() => this.switchTab(t.key)}
+            key={t.key}
+          >
+            <i>{t.icon}</i>
+            {t.label}
+          </button>
+        ))}
+      </div>
+    );
+  }
+
+  // ================== 工具函数 (跟 ziven-core buildSettingComponent 同思路, 走 this.data) ==================
+  // v0.1.8 重构: 之前是 content() 内 local function, 现在拆 11 tab 多次调用, 提到 this method
+  // 保留所有 v0.1.0n value 优先级 (this.data 优先) 跟 v0.1.0m ColorPreviewInput 跨浏览器颜色块修法
+
+  // v0.1.0n value 优先级: this.data[key] 优先 (用户输入), s(key) (load 时 server 值), default
+  _s() {
     // v0.1.0d 修: 不能在 module top-level 缓存 app.forum.attribute.bind() (那时 admin app
-    // 还没 register, app undefined throw). 改在 content() 调用时 lazy 拿 app.
-    const s = app && app.forum ? app.forum.attribute.bind(app.forum) : () => null;
+    // 还没 register, app undefined throw). 改在调用时 lazy 拿 app.
+    return app && app.forum ? app.forum.attribute.bind(app.forum) : () => null;
+  }
 
-    // v0.1.0n 修: value 优先级 反过来 this.data[key] 优先
-    // 之前 (s(key) || this.data[key]) → server load 时的旧值优先, 用户改了 input
-    // mithril redraw 重 render 时 s(key) 仍是 server 旧值 → 覆盖用户输入 → 看似被重置
-    // 现在 this.data[key] 优先 (用户输入), 然后 s(key) (load 时的 server 值), 然后 default
-    // load 完一次 this.data 已经存 server 值, 所以 user 改了 this.data[key] 后 redraw
-    // 拿到的还是 user 改的值, 不会回退到 server 旧值
-    const field = (label, key, defaultValue) => m('div', { class: 'BjxyField-row' }, [
+  field(label, key, defaultValue) {
+    const s = this._s();
+    return m('div', { class: 'BjxyField-row' }, [
       m('div', { class: 'BjxyField-label' }, label),
       m('input', {
         class: 'BjxyField-input',
@@ -102,11 +155,12 @@ export default class BjxySettings extends ExtensionPage {
         oninput: (e) => { this.data[key] = e.target.value; },
       }),
     ]);
+  }
 
-    // v0.1.0m 颜色选择器: 用 vendor ColorPreviewInput (跨浏览器一致)
-    // v0.1.0j 用的 HTML5 native <input type="color"> 在某些浏览器 (iOS Safari, 部分 Android) 不显示 swatch
-    // 辉哥 00:45 反馈浅色 end + 深色 end 的色块空白, 改成 vendor ColorPreviewInput (text + hidden color + icon, 跨浏览器 work)
-    const colorField = (label, key, defaultColor) => m('div', { class: 'BjxyField-row' }, [
+  // v0.1.0m 颜色选择器: 走 vendor ColorPreviewInput (跨浏览器一致)
+  colorField(label, key, defaultColor) {
+    const s = this._s();
+    return m('div', { class: 'BjxyField-row' }, [
       m('div', { class: 'BjxyField-label' }, label),
       m(ColorPreviewInput, {
         className: 'BjxyField-color-text',
@@ -115,8 +169,11 @@ export default class BjxySettings extends ExtensionPage {
         onchange: (e) => { this.data[key] = e.target.value; m.redraw(); },
       }),
     ]);
+  }
 
-    const textareaField = (label, key, defaultValue) => m('div', { class: 'BjxyField-row' }, [
+  textareaField(label, key, defaultValue) {
+    const s = this._s();
+    return m('div', { class: 'BjxyField-row' }, [
       m('div', { class: 'BjxyField-label' }, label),
       m('textarea', {
         class: 'BjxyField-textarea',
@@ -125,116 +182,149 @@ export default class BjxySettings extends ExtensionPage {
         oninput: (e) => { this.data[key] = e.target.value; },
       }),
     ]);
+  }
 
-    const fileField = (label, key, hint) => {
-      const url = this.data[key] || '';
-      return m('div', { class: 'BjxyField-row' }, [
-        m('div', { class: 'BjxyField-label' }, label),
-        m('div', null, [
-          m('div', { class: 'BjxyField-file', onclick: (e) => this.uploadFile(e, key) }, '📷 点击上传 (' + hint + ')'),
-          url ? m('div', { class: 'BjxyField-file-preview' }, [
-            m('div', null, '✓ 已上传: ' + url),
-            (key.indexOf('banner') >= 0 || key.indexOf('logo') >= 0 || key.indexOf('image') >= 0)
-              ? m('div', null, m('img', { src: url, alt: '' }))
-              : null,
-          ]) : null,
-        ]),
-      ]);
-    };
-
-    return m('div', { class: 'BjxySettings' }, [
-      m('div', { class: 'BjxySettings-intro' }, [
-        m('h2', null, '北极雪屿官网配置'),
-        m('p', { class: 'desc' }, '配置 /bjxy 页面所有内容 (8 section + 后台上传走 ziven-core COS)'),
+  fileField(label, key, hint) {
+    const url = this.data[key] || '';
+    return m('div', { class: 'BjxyField-row' }, [
+      m('div', { class: 'BjxyField-label' }, label),
+      m('div', null, [
+        m('div', { class: 'BjxyField-file', onclick: (e) => this.uploadFile(e, key) }, '📷 点击上传 (' + hint + ')'),
+        url ? m('div', { class: 'BjxyField-file-preview' }, [
+          m('div', null, '✓ 已上传: ' + url),
+          (key.indexOf('banner') >= 0 || key.indexOf('logo') >= 0 || key.indexOf('image') >= 0)
+            ? m('div', null, m('img', { src: url, alt: '' }))
+            : null,
+        ]) : null,
       ]),
+    ]);
+  }
 
-      // Section 1: 品牌
-      m('div', { class: 'BjxySection' }, [
-        m('div', { class: 'BjxySection-head' }, '🏔 品牌信息 (全局)'),
-        m('div', { class: 'BjxySection-body' }, [
-          field('品牌名', 'bjxy_brand_name', '北极雪屿'),
-          field('品牌副标', 'bjxy_brand_slogan', '室内滑雪 · 全国连锁'),
-          fileField('Logo 图片', 'bjxy_brand_logo_url', 'logo.svg / png (走 ziven-core COS)'),
-        ]),
-      ]),
+  // v0.1.8 section header 包装 — 跟 ziven-core .ziven-core-section-header 1:1 风格
+  // icon + title + 右侧 hint (可选)
+  sectionHead(icon, title, hint) {
+    return (
+      <div className="bjxy-section-header">
+        <i>{icon}</i>
+        {title}
+        {hint ? <span className="bjxy-section-hint">{hint}</span> : null}
+      </div>
+    );
+  }
 
-      // v0.1.0m: 渐变背景 4 色 — 删了 BjxyField-hint 块 (v0.1.0j 加的提示语占一整行
-      // 把 grid 2 列布局变 1+1+1+1, 辉哥反馈页面不规整)
-      // v0.1.0z: 加 2 个背景图 fileField, 走 ziven-core COS 上传
-      //   有图 → background: url(...), 渐变不生效
-      //   没图 → 4 色渐变生效 (v0.1.0j+y 视差 fixed viewport)
-      m('div', { class: 'BjxySection' }, [
-        m('div', { class: 'BjxySection-head' }, '🎨 背景渐变 (浅深双版)'),
-        m('div', { class: 'BjxySection-body' }, [
-          colorField('浅色模式 - 起始色', 'bjxy_bg_gradient_light_start', '#E0EBF8'),
-          colorField('浅色模式 - 结束色', 'bjxy_bg_gradient_light_end', '#F7FAFC'),
-          colorField('深色模式 - 起始色', 'bjxy_bg_gradient_dark_start', '#0F1419'),
-          colorField('深色模式 - 结束色', 'bjxy_bg_gradient_dark_end', '#1A202C'),
-          // v0.1.0z: 背景图 (走 ziven-core COS, 设置了图就不显示渐变)
-          fileField('浅色模式 - 背景图', 'bjxy_bg_image_light_url', '1920×1080 推荐, 留空用渐变'),
-          fileField('深色模式 - 背景图', 'bjxy_bg_image_dark_url', '1920×1080 推荐, 留空用渐变'),
-        ]),
-      ]),
+  // ================== 11 个 section 渲染方法 ==================
+  // 每个 renderXxxSection 走 ziven-core 1:1 结构:
+  //   <div class="bjxy-section glass-card">
+  //     <div class="bjxy-section-header">icon + title + hint</div>
+  //     <div class="bjxy-section-content">内部 field / fileField / array / sortable</div>
+  //   </div>
 
-      // Section 2: Hero
-      m('div', { class: 'BjxySection' }, [
-        m('div', { class: 'BjxySection-head' }, '🏔 Hero 区域'),
-        m('div', { class: 'BjxySection-body' }, [
-          field('主标题', 'bjxy_hero_title', '探索极致的滑雪体验。'),
-          field('副标题', 'bjxy_hero_subtitle', '专注滑雪领域的全国连锁机构...'),
-          fileField('浅色模式 banner', 'bjxy_hero_banner_light', '1920×600 推荐'),
-          fileField('深色模式 banner', 'bjxy_hero_banner_dark', '1920×600 推荐'),
-          field('CTA 文字', 'bjxy_hero_cta_text', '立即咨询'),
-          field('CTA 链接', 'bjxy_hero_cta_link', '#contact'),
-        ]),
-      ]),
+  // Tab 1: 品牌
+  renderBrandSection() {
+    return (
+      <div className="bjxy-section glass-card">
+        {this.sectionHead('🏔', '品牌信息 (全局)')}
+        <div className="bjxy-section-content">
+          {this.field('品牌名', 'bjxy_brand_name', '北极雪屿')}
+          {this.field('品牌副标', 'bjxy_brand_slogan', '室内滑雪 · 全国连锁')}
+          {this.fileField('Logo 图片', 'bjxy_brand_logo_url', 'logo.svg / png (走 ziven-core COS)')}
+        </div>
+      </div>
+    );
+  }
 
-      // Section 3: 关于
-      m('div', { class: 'BjxySection' }, [
-        m('div', { class: 'BjxySection-head' }, '📖 关于我们'),
-        m('div', { class: 'BjxySection-body' }, [
-          field('小标题', 'bjxy_about_sub', 'ABOUT US'),
-          field('主标题', 'bjxy_about_title', '关于北极雪屿'),
-          textareaField('描述', 'bjxy_about_desc', '北极雪屿室内滑雪成立于 2024 年...'),
-          field('数据 1 - 数字', 'bjxy_about_stat_1_num', '10+'),
-          field('数据 1 - 标签', 'bjxy_about_stat_1_label', '年教学经验'),
-          field('数据 2 - 数字', 'bjxy_about_stat_2_num', '50+'),
-          field('数据 2 - 标签', 'bjxy_about_stat_2_label', '专业教练'),
-          field('数据 3 - 数字', 'bjxy_about_stat_3_num', '1000+'),
-          field('数据 3 - 标签', 'bjxy_about_stat_3_label', '毕业学员'),
-        ]),
-      ]),
+  // Tab 2: 背景渐变 (浅深双版)
+  // v0.1.0m: 渐变背景 4 色
+  // v0.1.0z: 加 2 个背景图 fileField, 走 ziven-core COS 上传
+  //   有图 → background: url(...), 渐变不生效
+  //   没图 → 4 色渐变生效 (v0.1.0j+y 视差 fixed viewport)
+  renderBgSection() {
+    return (
+      <div className="bjxy-section glass-card">
+        {this.sectionHead('🎨', '背景渐变 (浅深双版)')}
+        <div className="bjxy-section-content">
+          {this.colorField('浅色模式 - 起始色', 'bjxy_bg_gradient_light_start', '#E0EBF8')}
+          {this.colorField('浅色模式 - 结束色', 'bjxy_bg_gradient_light_end', '#F7FAFC')}
+          {this.colorField('深色模式 - 起始色', 'bjxy_bg_gradient_dark_start', '#0F1419')}
+          {this.colorField('深色模式 - 结束色', 'bjxy_bg_gradient_dark_end', '#1A202C')}
+          {this.fileField('浅色模式 - 背景图', 'bjxy_bg_image_light_url', '1920×1080 推荐, 留空用渐变')}
+          {this.fileField('深色模式 - 背景图', 'bjxy_bg_image_dark_url', '1920×1080 推荐, 留空用渐变')}
+        </div>
+      </div>
+    );
+  }
 
-      // Section 4: 特色
-      // v0.1.0w 改: 删 "特色卡片" label, 改 class BjxyField-features 让 less 单独命名空间
-      m('div', { class: 'BjxySection' }, [
-        m('div', { class: 'BjxySection-head' }, '✨ 办学特色 (6 个卡片)'),
-        m('div', { class: 'BjxySection-body' }, [
-          m('div', { class: 'BjxyField-array BjxyField-features' }, [
-            this.features.map((f, i) => m('div', { class: 'BjxyField-array-row', key: 'f' + i }, [
+  // Tab 3: Hero 区域
+  renderHeroSection() {
+    return (
+      <div className="bjxy-section glass-card">
+        {this.sectionHead('🖼', 'Hero 区域')}
+        <div className="bjxy-section-content">
+          {this.field('主标题', 'bjxy_hero_title', '探索极致的滑雪体验。')}
+          {this.field('副标题', 'bjxy_hero_subtitle', '专注滑雪领域的全国连锁机构...')}
+          {this.fileField('浅色模式 banner', 'bjxy_hero_banner_light', '1920×600 推荐')}
+          {this.fileField('深色模式 banner', 'bjxy_hero_banner_dark', '1920×600 推荐')}
+          {this.field('CTA 文字', 'bjxy_hero_cta_text', '立即咨询')}
+          {this.field('CTA 链接', 'bjxy_hero_cta_link', '#contact')}
+        </div>
+      </div>
+    );
+  }
+
+  // Tab 4: 关于我们
+  renderAboutSection() {
+    return (
+      <div className="bjxy-section glass-card">
+        {this.sectionHead('📖', '关于我们')}
+        <div className="bjxy-section-content">
+          {this.field('小标题', 'bjxy_about_sub', 'ABOUT US')}
+          {this.field('主标题', 'bjxy_about_title', '关于北极雪屿')}
+          {this.textareaField('描述', 'bjxy_about_desc', '北极雪屿室内滑雪成立于 2024 年...')}
+          {this.field('数据 1 - 数字', 'bjxy_about_stat_1_num', '10+')}
+          {this.field('数据 1 - 标签', 'bjxy_about_stat_1_label', '年教学经验')}
+          {this.field('数据 2 - 数字', 'bjxy_about_stat_2_num', '50+')}
+          {this.field('数据 2 - 标签', 'bjxy_about_stat_2_label', '专业教练')}
+          {this.field('数据 3 - 数字', 'bjxy_about_stat_3_num', '1000+')}
+          {this.field('数据 3 - 标签', 'bjxy_about_stat_3_label', '毕业学员')}
+        </div>
+      </div>
+    );
+  }
+
+  // Tab 5: 办学特色 (6 个卡片)
+  // v0.1.0w 改: 删 "特色卡片" label, 改 class BjxyField-features
+  renderFeaturesSection() {
+    return (
+      <div className="bjxy-section glass-card">
+        {this.sectionHead('✨', '办学特色 (6 个卡片)')}
+        <div className="bjxy-section-content">
+          <div className="BjxyField-array BjxyField-features">
+            {this.features.map((f, i) => m('div', { class: 'BjxyField-array-row', key: 'f' + i }, [
               m('div', { class: 'ic-mini' }, f.icon || '★'),
               m('input', { value: f.title, oninput: (e) => { f.title = e.target.value; } }),
               m('input', { value: f.icon, oninput: (e) => { f.icon = e.target.value; } }),
               m('input', { value: f.desc, oninput: (e) => { f.desc = e.target.value; } }),
               m('button', { class: 'del', onclick: () => { this.features.splice(i, 1); m.redraw(); } }, '×'),
-            ])),
-            m('div', {
-              class: 'BjxyField-array-add',
-              onclick: () => { this.features.push({ icon: '★', title: '新特色', desc: '' }); m.redraw(); },
-            }, '+ 添加特色'),
-          ]),
-        ]),
-      ]),
+            ]))}
+            <div className="BjxyField-array-add" onclick={() => { this.features.push({ icon: '★', title: '新特色', desc: '' }); m.redraw(); }}>
+              + 添加特色
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
-      // Section 5: 教学体系
-      // v0.1.0s 改: 教学体系类型任意多 (boards array), 之前 fixed 单板/双板
-      //   - 每个 board 是 {name, levels: [...]}, 用户可增删 board 本身 (雪橇/冰球/自由式等)
-      //   - 每个 board 内 levels 可增删改 (v0.1.0r 实现)
-      //   - level 字段 select 三选一 (PRIMARY/INTERMEDIATE/ADVANCED)
-      m('div', { class: 'BjxySection' }, [
-        m('div', { class: 'BjxySection-head' }, '📚 教学体系 (' + this.boards.length + ' 种类型 / 共 ' + this.boards.reduce((s, b) => s + b.levels.length, 0) + ' 级)'),
-        m('div', { class: 'BjxySection-body' }, [
-          this.boards.map((board, bi) => m('div', { class: 'BjxyField-board', key: 'board' + bi }, [
+  // Tab 6: 教学体系
+  // v0.1.0s 改: 教学体系类型任意多 (boards array)
+  //   - 每个 board 是 {name, levels: [...]}, 用户可增删 board
+  //   - 每个 board 内 levels 可增删改 (v0.1.0r 实现)
+  renderCurriculumSection() {
+    return (
+      <div className="bjxy-section glass-card">
+        {this.sectionHead('📚', '教学体系 (' + this.boards.length + ' 种类型 / 共 ' + this.boards.reduce((s, b) => s + b.levels.length, 0) + ' 级)')}
+        <div className="bjxy-section-content">
+          {this.boards.map((board, bi) => m('div', { class: 'BjxyField-board', key: 'board' + bi }, [
             m('div', { class: 'BjxyField-board-head' }, [
               m('input', {
                 class: 'BjxyField-board-name',
@@ -251,7 +341,6 @@ export default class BjxySettings extends ExtensionPage {
             m('div', { class: 'BjxyField-array' }, [
               board.levels.map((l, i) => m('div', { class: 'BjxyField-array-row', key: 'b' + bi + 'l' + i }, [
                 m('div', { class: 'ic-mini' }, i + 1),
-                // v0.1.0x 改: level 改 input 让用户自行输入 (之前是 select, 限制 3 种值)
                 m('input', {
                   class: 'BjxyField-level-input',
                   value: l.level,
@@ -267,22 +356,25 @@ export default class BjxySettings extends ExtensionPage {
                 onclick: () => { board.levels.push({ level: '初级', name: '新等级', desc: '' }); m.redraw(); },
               }, '+ 添加等级'),
             ]),
-          ])),
-          m('div', {
-            class: 'BjxyField-board-add',
-            onclick: () => { this.boards.push({ name: '新类型', levels: [{ level: 'PRIMARY', name: '新等级', desc: '' }] }); m.redraw(); },
-          }, '+ 添加类型 (雪橇 / 冰球 / 自由式...)'),
-        ]),
-      ]),
+          ]))}
+          <div className="BjxyField-board-add" onclick={() => { this.boards.push({ name: '新类型', levels: [{ level: 'PRIMARY', name: '新等级', desc: '' }] }); m.redraw(); }}>
+            + 添加类型 (雪橇 / 冰球 / 自由式...)
+          </div>
+        </div>
+      </div>
+    );
+  }
 
-      // Section 6: 教练
-      m('div', { class: 'BjxySection' }, [
-        m('div', { class: 'BjxySection-head' }, '👥 教练展示'),
-        m('div', { class: 'BjxySection-body' }, [
-          m('div', { class: 'BjxyField-label' }, '选择用户组 (多选)'),
-          m('div', { class: 'BjxyField-group-select' }, [
-            this.allGroups.length === 0 ? m('div', { class: 'BjxyField-hint' }, '加载中...') : null,
-            this.allGroups.map(g => {
+  // Tab 7: 教练展示
+  renderCoachSection() {
+    return (
+      <div className="bjxy-section glass-card">
+        {this.sectionHead('👥', '教练展示')}
+        <div className="bjxy-section-content">
+          <div className="BjxyField-label">选择用户组 (多选)</div>
+          <div className="BjxyField-group-select">
+            {this.allGroups.length === 0 ? <div className="BjxyField-hint">加载中...</div> : null}
+            {this.allGroups.map(g => {
               const on = this.coachGroupIds.indexOf(g.id) >= 0;
               return m('div', {
                 class: 'opt' + (on ? ' on' : ''),
@@ -291,29 +383,32 @@ export default class BjxySettings extends ExtensionPage {
                 m('span', { class: 'ck' }, on ? '✓' : ''),
                 g.nameSingular + ' (' + (g.userCount || 0) + ' 人)',
               ]);
-            }),
-            // v0.1.3 改: 弹 modal 选用户组 按钮条件显示 — 只在选了 ≥1 个 group 时才出现
-            //   辉哥反馈 "用户只有选了至少一个用户组后, 才会展示那个弹modal的按钮"
-            //   之前无条件显示, 用户没选 group 时点击会弹 "没有可用的用户组" 提示, 体验不好
-            // v0.1.5 改: 按钮文案加 "(v0.1.5 详情)", 因为现在 modal 不只选 user, 还填详情
-            this.coachGroupIds.length > 0 ? m('div', { class: 'BjxyField-group-pick', onclick: () => this.openGroupModal() }, '🎯 弹 modal 选用户 + 编辑详情 (v0.1.5)') : null,
-            // v0.1.4 加: 已选 user 数量提示
-            // v0.1.5 改: 提示加详情数量
-            this.coachUserIds.length > 0 ? m('div', { class: 'BjxyField-hint' }, '✅ 已选 ' + this.coachUserIds.length + ' 个用户作为教练 (前台展示用). 拖拽排序顺序. 已填详情: ' + Object.keys(this.coachDetails).filter(uid => this.coachDetails[uid] && (this.coachDetails[uid].bio || this.coachDetails[uid].achievements || this.coachDetails[uid].specialties || this.coachDetails[uid].photoUrl)).length + ' / ' + this.coachUserIds.length) : m('div', { class: 'BjxyField-hint' }, '💡 选中用户组 + 弹 modal 选用户 (拖拽排序) + 编辑详情 后, 这些用户将作为教练展示.'),
-          ]),
-        ]),
-      ]),
+            })}
+            {this.coachGroupIds.length > 0
+              ? m('div', { class: 'BjxyField-group-pick', onclick: () => this.openGroupModal() }, '🎯 弹 modal 选用户 + 编辑详情 (v0.1.5)')
+              : null}
+            {this.coachUserIds.length > 0
+              ? m('div', { class: 'BjxyField-hint' }, '✅ 已选 ' + this.coachUserIds.length + ' 个用户作为教练 (前台展示用). 拖拽排序顺序. 已填详情: ' + Object.keys(this.coachDetails).filter(uid => this.coachDetails[uid] && (this.coachDetails[uid].bio || this.coachDetails[uid].achievements || this.coachDetails[uid].specialties || this.coachDetails[uid].photoUrl)).length + ' / ' + this.coachUserIds.length)
+              : m('div', { class: 'BjxyField-hint' }, '💡 选中用户组 + 弹 modal 选用户 (拖拽排序) + 编辑详情 后, 这些用户将作为教练展示.')}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
-      // v0.1.6 + v0.1.6a: Section 7 学员评价 (结构化 JSON, 大众点评风格多图)
-      m('div', { class: 'BjxySection' }, [
-        m('div', { class: 'BjxySection-head' }, '💬 学员评价 (结构化 JSON, 多图)'),
-        m('div', { class: 'BjxySection-body' }, [
-          m('div', {
-            class: 'BjxyField-array BjxyField-array-wide BjxyField-sortable',
-            oncreate: (vnode) => this.initSortable(vnode, 'reviews'),
-            onremove: () => this.destroySortable('reviews'),
-          }, [
-            this.reviews.map((r, i) => m('div', { class: 'BjxyField-array-card', key: 'r' + i }, [
+  // Tab 8: 学员评价 (结构化 JSON, 多图)
+  // v0.1.6 + v0.1.6a
+  renderReviewsSection() {
+    return (
+      <div className="bjxy-section glass-card">
+        {this.sectionHead('💬', '学员评价 (结构化 JSON, 多图)')}
+        <div className="bjxy-section-content">
+          <div
+            className="BjxyField-array BjxyField-array-wide BjxyField-sortable"
+            oncreate={(vnode) => this.initSortable(vnode, 'reviews')}
+            onremove={() => this.destroySortable('reviews')}
+          >
+            {this.reviews.map((r, i) => m('div', { class: 'BjxyField-array-card', key: 'r' + i }, [
               m('div', { class: 'BjxyField-array-card-head' }, [
                 m('span', { class: 'BjxyField-array-card-num' }, '评价 #' + (i + 1)),
                 m('button', {
@@ -378,44 +473,44 @@ export default class BjxySettings extends ExtensionPage {
                   ]),
                 ]),
               ]),
-            ])),
-            m('div', {
-              class: 'BjxyField-array-add',
-              onclick: () => {
-                this.reviews.push({ author: '', rating: 5, text: '', date: '', photos: [] });
-                m.redraw();
-              },
-            }, '+ 添加评价'),
-          ]),
-        ]),
-      ]),
+            ]))}
+            <div className="BjxyField-array-add" onclick={() => { this.reviews.push({ author: '', rating: 5, text: '', date: '', photos: [] }); m.redraw(); }}>
+              + 添加评价
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
-      // v0.1.6 + v0.1.6a: Section 8 活动展示 (原"学员展示"改名, swiper 轮播)
-      m('div', { class: 'BjxySection' }, [
-        m('div', { class: 'BjxySection-head' }, '🎯 活动展示 (原"学员展示", swiper 轮播多图)'),
-        m('div', { class: 'BjxySection-body' }, [
-          // v0.1.6g: 活动 swiper 自动轮播间隔设置 (毫秒, 默认 3000)
-          //   前台 swiper.autoplay.delay 用, 范围 500-60000
-          m('div', { class: 'BjxyField-row' }, [
-            m('div', { class: 'BjxyField-label' }, '轮播间隔 (毫秒)'),
-            m('input', {
-              class: 'BjxyField-input',
-              type: 'number',
-              min: '500',
-              max: '60000',
-              step: '100',
-              value: this.eventsAutoplayMs,
-              placeholder: '3000',
-              oninput: (e) => { this.eventsAutoplayMs = parseInt(e.target.value, 10) || 3000; },
-            }),
-            m('div', { class: 'BjxyField-hint' }, '默认 3000, 范围 500-60000'),
-          ]),
-          m('div', {
-            class: 'BjxyField-array BjxyField-array-wide BjxyField-sortable',
-            oncreate: (vnode) => this.initSortable(vnode, 'students'),
-            onremove: () => this.destroySortable('students'),
-          }, [
-            this.students.map((s, i) => m('div', { class: 'BjxyField-array-card', key: 's' + i }, [
+  // Tab 9: 活动展示 (swiper 轮播)
+  // v0.1.6 + v0.1.6a + v0.1.6d (URL 字段) + v0.1.6g (autoplay 间隔)
+  renderEventsSection() {
+    return (
+      <div className="bjxy-section glass-card">
+        {this.sectionHead('🎯', '活动展示 (swiper 轮播多图)')}
+        <div className="bjxy-section-content">
+          {/* v0.1.6g: 活动 swiper 自动轮播间隔设置 */}
+          <div className="BjxyField-row">
+            <div className="BjxyField-label">轮播间隔 (毫秒)</div>
+            <input
+              className="BjxyField-input"
+              type="number"
+              min="500"
+              max="60000"
+              step="100"
+              value={this.eventsAutoplayMs}
+              placeholder="3000"
+              oninput={(e) => { this.eventsAutoplayMs = parseInt(e.target.value, 10) || 3000; }}
+            />
+            <div className="BjxyField-hint">默认 3000, 范围 500-60000</div>
+          </div>
+          <div
+            className="BjxyField-array BjxyField-array-wide BjxyField-sortable"
+            oncreate={(vnode) => this.initSortable(vnode, 'students')}
+            onremove={() => this.destroySortable('students')}
+          >
+            {this.students.map((s, i) => m('div', { class: 'BjxyField-array-card', key: 's' + i }, [
               m('div', { class: 'BjxyField-array-card-head' }, [
                 m('span', { class: 'BjxyField-array-card-num' }, '活动 #' + (i + 1)),
                 m('button', {
@@ -452,10 +547,7 @@ export default class BjxySettings extends ExtensionPage {
                     oninput: (e) => { s.achievement = e.target.value; },
                   }),
                 ]),
-                // v0.1.6d 改: 加 URL 输入框 — 填写后点击活动内容跳转
-                //   Flarum 内部链接 (以 / 开头, 例如 /dressUp) 走 m.route
-                //   外部链接 (http:// / https://) 新窗口打开
-                //   留空 = 不跳转 (跟之前一样点开 fancybox)
+                // v0.1.6d: URL 字段
                 m('div', { class: 'BjxyField-row' }, [
                   m('div', { class: 'BjxyField-label' }, '跳转 URL (可选)'),
                   m('input', {
@@ -465,7 +557,7 @@ export default class BjxySettings extends ExtensionPage {
                     oninput: (e) => { s.url = e.target.value; },
                   }),
                 ]),
-                // v0.1.6a: 活动多图 (前台 swiper 轮播, 点击看 fancybox)
+                // v0.1.6a: 活动多图
                 m('div', { class: 'BjxyField-row' }, [
                   m('div', { class: 'BjxyField-label' }, '活动图片 (多图)'),
                   m('div', null, [
@@ -482,53 +574,104 @@ export default class BjxySettings extends ExtensionPage {
                   ]),
                 ]),
               ]),
-            ])),
-            m('div', {
-              class: 'BjxyField-array-add',
-              onclick: () => {
-                // v0.1.6d: 新建活动带 url: '' 字段
-                this.students.push({ name: '', level: '', achievement: '', photos: [], url: '' });
-                m.redraw();
-              },
-            }, '+ 添加活动'),
-          ]),
-        ]),
-      ]),
-
-      // Section 9: 联系
-      m('div', { class: 'BjxySection' }, [
-        m('div', { class: 'BjxySection-head' }, '📞 联系我们'),
-        m('div', { class: 'BjxySection-body' }, [
-          field('地址', 'bjxy_contact_address', '北京市朝阳区滑雪场路 88 号'),
-          field('电话', 'bjxy_contact_phone', '400-888-8888'),
-          field('微信', 'bjxy_contact_wechat', 'bjxy_ski'),
-          field('邮箱', 'bjxy_contact_email', 'hi@bjxy.com'),
-        ]),
-      ]),
-
-      // v0.1.0ab: Section 10 页脚 / 备案号
-      //   之前 footer 备案号 hard-coded '2026xxxxxx', 辉哥要求后台可设置
-      // v0.1.2 改: 加 公安备案号 + 网安链接 (国家规定中国大陆站点 footer 必须有)
-      m('div', { class: 'BjxySection' }, [
-        m('div', { class: 'BjxySection-head' }, '🦶 页脚 / 备案号'),
-        m('div', { class: 'BjxySection-body' }, [
-          field('ICP 备案号', 'bjxy_icp_number', '2026xxxxxx'),
-          field('公安备案号', 'bjxy_police_number', '11010102000000'),
-          field('网安链接', 'bjxy_police_link', 'http://www.beian.gov.cn/portal/registerSystemInfo'),
-        ]),
-      ]),
-
-      m('div', { class: 'BjxySavebar' }, [
-        m('button', { class: 'btn-secondary', onclick: () => m.redraw() }, '取消'),
-        m('button', {
-          class: 'btn-primary',
-          onclick: () => this.save(),
-          disabled: this.saving,
-        }, this.saving ? '保存中...' : '保存全部'),
-      ]),
-    ]);
+            ]))}
+            <div className="BjxyField-array-add" onclick={() => { this.students.push({ name: '', level: '', achievement: '', photos: [], url: '' }); m.redraw(); }}>
+              + 添加活动
+            </div>
+          </div>
+        </div>
+      </div>
+    );
   }
 
+  // Tab 10: 联系我们
+  renderContactSection() {
+    return (
+      <div className="bjxy-section glass-card">
+        {this.sectionHead('📞', '联系我们')}
+        <div className="bjxy-section-content">
+          {this.field('地址', 'bjxy_contact_address', '北京市朝阳区滑雪场路 88 号')}
+          {this.field('电话', 'bjxy_contact_phone', '400-888-8888')}
+          {this.field('微信', 'bjxy_contact_wechat', 'bjxy_ski')}
+          {this.field('邮箱', 'bjxy_contact_email', 'hi@bjxy.com')}
+        </div>
+      </div>
+    );
+  }
+
+  // Tab 11: 页脚 / 备案号
+  // v0.1.0ab: footer 备案号改后台可设置
+  // v0.1.2: 加公安备案号 + 网安链接
+  renderFooterSection() {
+    return (
+      <div className="bjxy-section glass-card">
+        {this.sectionHead('🦶', '页脚 / 备案号')}
+        <div className="bjxy-section-content">
+          {this.field('ICP 备案号', 'bjxy_icp_number', '2026xxxxxx')}
+          {this.field('公安备案号', 'bjxy_police_number', '11010102000000')}
+          {this.field('网安链接', 'bjxy_police_link', 'http://www.beian.gov.cn/portal/registerSystemInfo')}
+        </div>
+      </div>
+    );
+  }
+
+  // v0.1.8 active tab → 对应 render method 映射
+  renderActiveSection() {
+    switch (this.activeTab) {
+      case 'brand':      return this.renderBrandSection();
+      case 'bg':         return this.renderBgSection();
+      case 'hero':       return this.renderHeroSection();
+      case 'about':      return this.renderAboutSection();
+      case 'features':   return this.renderFeaturesSection();
+      case 'curriculum': return this.renderCurriculumSection();
+      case 'coach':      return this.renderCoachSection();
+      case 'reviews':    return this.renderReviewsSection();
+      case 'events':     return this.renderEventsSection();
+      case 'contact':    return this.renderContactSection();
+      case 'footer':     return this.renderFooterSection();
+      default:           return this.renderBrandSection();
+    }
+  }
+
+  // Flarum 2.0 ExtensionPage content() — 走 vendor sections().toArray() 框架
+  // v0.1.8 重构: 从 8 section 全堆 改成 11 tab 切换, 走 ziven-core 同款结构
+  content() {
+    if (this.loading) {
+      return m('div', { class: 'bjxy-settings' }, m('p', null, '加载中...'));
+    }
+
+    return (
+      <div className="ExtensionPage bjxy-settings">
+        <div className="container">
+          {/* 顶部标题 + tab bar */}
+          <div className="bjxy-settings-intro">
+            <h2><i className="fas fa-snowflake"></i> 北极雪屿官网配置</h2>
+            <p className="desc">配置 /bjxy 页面所有内容 (11 个 tab + 后台上传走 ziven-core COS)</p>
+          </div>
+          {this.renderTabBar()}
+
+          {/* 当前 tab 对应的 section */}
+          <div className="bjxy-section-container">
+            {this.renderActiveSection()}
+          </div>
+
+          {/* 保存栏 — sticky bottom */}
+          <div className="BjxySavebar">
+            <button className="btn-secondary" onclick={() => m.redraw()}>取消</button>
+            <button
+              className="btn-primary"
+              onclick={() => this.save()}
+              disabled={this.saving}
+            >
+              {this.saving ? '保存中...' : '保存全部'}
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ================== 拖拽排序 (v0.1.7 评价/活动) ==================
   // v0.1.7: 评价 / 活动 拖拽排序 (复用 v0.1.4 GroupPickerModal sortablejs 模式)
   //   which: 'reviews' 或 'students', 排序哪个 array
   //   Sortable.create() 创建, onEnd 互换 splice 顺序, m.redraw() 重渲
@@ -558,6 +701,7 @@ export default class BjxySettings extends ExtensionPage {
     }
   }
 
+  // ================== 数据加载 ==================
   async loadSettings() {
     try {
       const data = await app.request({
@@ -568,7 +712,6 @@ export default class BjxySettings extends ExtensionPage {
       if (this.data.bjxy_features_json) {
         try { this.features = JSON.parse(this.data.bjxy_features_json); } catch (e) {}
       }
-      // v0.1.0s 改: 优先读 bjxy_curriculum_boards_json (新格式), 兼容旧 single/double
       if (this.data.bjxy_curriculum_boards_json) {
         try {
           const parsed = JSON.parse(this.data.bjxy_curriculum_boards_json);
@@ -584,11 +727,9 @@ export default class BjxySettings extends ExtensionPage {
       if (this.data.bjxy_coach_group_ids) {
         try { this.coachGroupIds = JSON.parse(this.data.bjxy_coach_group_ids); } catch (e) {}
       }
-      // v0.1.4: 加载 coach user ids (modal 选 user 后保存到 bjxy_coach_user_ids)
       if (this.data.bjxy_coach_user_ids) {
         try { this.coachUserIds = JSON.parse(this.data.bjxy_coach_user_ids); } catch (e) {}
       }
-      // v0.1.5: 加载 coach details (modal 填的 4 字段)
       if (this.data.bjxy_coach_details) {
         try {
           const arr = JSON.parse(this.data.bjxy_coach_details);
@@ -607,7 +748,6 @@ export default class BjxySettings extends ExtensionPage {
           }
         } catch (e) {}
       }
-      // v0.1.6: 加载 reviews (结构化 JSON, 替代老的 bjxy_reviews_html)
       if (this.data.bjxy_reviews) {
         try {
           const arr = JSON.parse(this.data.bjxy_reviews);
@@ -617,14 +757,11 @@ export default class BjxySettings extends ExtensionPage {
               rating: r.rating || 5,
               text: r.text || '',
               date: r.date || '',
-              // v0.1.6a: 改 photoUrl (string) → photos (array), 老数据 fallback 兼容
               photos: Array.isArray(r.photos) ? r.photos : (r.photoUrl ? [r.photoUrl] : []),
             }));
           }
         } catch (e) {}
       }
-      // v0.1.6: 加载 students (升级老的 bjxy_students_json 简单 JSON)
-      // v0.1.6a: 学员 → 活动, photoUrl → photos
       if (this.data.bjxy_students) {
         try {
           const arr = JSON.parse(this.data.bjxy_students);
@@ -634,13 +771,11 @@ export default class BjxySettings extends ExtensionPage {
               level: s.level || '',
               achievement: s.achievement || '',
               photos: Array.isArray(s.photos) ? s.photos : (s.photoUrl ? [s.photoUrl] : []),
-              // v0.1.6d: URL 字段 (可选, 留空不跳转)
               url: s.url || '',
             }));
           }
         } catch (e) {}
       }
-      // v0.1.6g: 加载活动 swiper 自动轮播间隔 (默认 3000ms)
       if (this.data.bjxy_events_autoplay_ms) {
         const n = parseInt(this.data.bjxy_events_autoplay_ms, 10);
         if (!isNaN(n) && n >= 500 && n <= 60000) this.eventsAutoplayMs = n;
@@ -662,6 +797,7 @@ export default class BjxySettings extends ExtensionPage {
     m.redraw();
   }
 
+  // ================== 教练 user / group ==================
   toggleGroup(id) {
     const idx = this.coachGroupIds.indexOf(id);
     if (idx >= 0) this.coachGroupIds.splice(idx, 1);
@@ -670,14 +806,9 @@ export default class BjxySettings extends ExtensionPage {
   }
 
   // v0.1.3 改: 弹真正的 mithril Modal (GroupPickerModal) 替代 v0.1.0f 留的 alert 占位
-  //   Flarum 2.0 ModalManager.show(modalClass, attrs) 传 Component class, 不要传 plain object
-  //   选中后回调 onSelect(ids) 更新 this.coachUserIds
-  // v0.1.3a 修: 弹 modal 前保存 scrollY, modal 关闭后恢复 (修 Flarum 2.0 ModalManager
-  //   副作用: 弹 modal 时会自动重置页面滚动位置, 用户在 admin 页面滚到教练 section
-  //   点按钮 → modal 弹 → 页面 scroll 变 0 (跳到顶部). 修法: 弹之前记 scrollY, 关 modal 后恢复
-  // v0.1.4 改: modal 展示的是所选 group 内的 user (不是 group), 后台选 group 还在后台页面做
-  //   modal 调 /api/bjxy/group-users 拿 user 列表, admin 多选 + 拖拽排序 → 保存到 bjxy_coach_user_ids
-  // v0.1.5 改: 回调 onSelect 接收 {userIds, details}, 一起更新 this.coachUserIds + this.coachDetails
+  // v0.1.3a 修: 弹 modal 前保存 scrollY, modal 关闭后恢复
+  // v0.1.4 改: modal 展示的是所选 group 内的 user (不是 group)
+  // v0.1.5 改: 回调 onSelect 接收 {userIds, details}, 一起更新
   openGroupModal() {
     const scrollY = window.scrollY || document.documentElement.scrollTop || 0;
     app.modal.show(GroupPickerModal, {
@@ -685,7 +816,6 @@ export default class BjxySettings extends ExtensionPage {
       selectedUserIds: this.coachUserIds,
       details: this.coachDetails,
       onSelect: (result) => {
-        // v0.1.5: 兼容 v0.1.4 的 onSelect(ids) 旧形式
         if (Array.isArray(result)) {
           this.coachUserIds = result;
         } else if (result && Array.isArray(result.userIds)) {
@@ -695,7 +825,6 @@ export default class BjxySettings extends ExtensionPage {
         m.redraw();
       },
       onhide: () => {
-        // modal 关闭后恢复 scrollY (避免跳到顶部)
         requestAnimationFrame(() => {
           window.scrollTo(0, scrollY);
         });
@@ -703,6 +832,10 @@ export default class BjxySettings extends ExtensionPage {
     });
   }
 
+  // ================== 上传 (v0.1.7 错误处理修复) ==================
+  // v0.1.7 修 (重要, 辉哥 11:00 反馈): 之前 `err.message` 是 undefined
+  //   vendor RequestError 没 message 属性, 只有 status / responseText / response
+  //   修法: 从 err.responseText 解析 server error 字段
   async uploadFile(e, key) {
     e.preventDefault();
     const fileInput = document.createElement('input');
@@ -718,7 +851,7 @@ export default class BjxySettings extends ExtensionPage {
         // v0.1.0g 修: 删 `headers: { 'Content-Type': null }` (Flarum 2.0 mithril request
         // 把 null 转字符串 "null" 而不是移除 header, server 拿到 Content-Type: null
         // 不会自动转 multipart/form-data, 然后拿不到 form fields → "missing key" 400.
-        // 正确做法: 完全不传 headers, 让 app.request 默认行为 (浏览器自动 set multipart + boundary)
+        // 正确做法: 完全不传 headers, 让 app.request 默认行为
         const r = await app.request({
           method: 'POST',
           url: app.forum.attribute('apiUrl') + '/bjxy/upload',
@@ -732,11 +865,6 @@ export default class BjxySettings extends ExtensionPage {
           app.alerts.show({ type: 'error' }, r.error || '上传失败');
         }
       } catch (err) {
-        // v0.1.7 修 (重要, 辉哥 11:00 反馈): 之前 `err.message` 是 undefined
-        //   vendor RequestError 没 message 属性, 只有 status / responseText / response
-        //   上传大文件 (超 upload_max_filesize) 时 server 返 400 + {error: '文件超过 ...'}
-        //   之前 catch 显示 "上传异常: undefined", 用户看不到具体错
-        //   修法: 从 err.responseText 解析 server error 字段, 显示具体错误信息
         let errMsg = '上传异常';
         if (err && err.responseText) {
           try {
@@ -759,7 +887,6 @@ export default class BjxySettings extends ExtensionPage {
   }
 
   // v0.1.6: 给 array 元素上传文件 (评价 photoUrl / 学员 photoUrl)
-  //   跟 uploadFile 区别: 写入的是 this.reviews[i].photoUrl 不是 this.data[key]
   async uploadFileForArray(e, arr, i, field) {
     e.preventDefault();
     const fileInput = document.createElement('input');
@@ -785,7 +912,6 @@ export default class BjxySettings extends ExtensionPage {
           app.alerts.show({ type: 'error' }, r.error || '上传失败');
         }
       } catch (err) {
-        // v0.1.7 修: 跟 uploadFile 一样从 err.responseText 拿具体错误
         let errMsg = '上传异常';
         if (err && err.responseText) {
           try {
@@ -805,7 +931,6 @@ export default class BjxySettings extends ExtensionPage {
   }
 
   // v0.1.6a: 给 array 元素的 photos 数组追加图片 (评价/活动 多图上传)
-  //   写入 arr[i].photos.push(url), 跟 v0.1.6 uploadFileForArray 区别: 累加不覆盖
   async uploadPhotoToArray(e, arr, i) {
     e.preventDefault();
     const fileInput = document.createElement('input');
@@ -833,7 +958,6 @@ export default class BjxySettings extends ExtensionPage {
           app.alerts.show({ type: 'error' }, r.error || '上传失败');
         }
       } catch (err) {
-        // v0.1.7 修: 跟 uploadFile 一样从 err.responseText 拿具体错误
         let errMsg = '上传异常';
         if (err && err.responseText) {
           try {
@@ -852,24 +976,17 @@ export default class BjxySettings extends ExtensionPage {
     fileInput.click();
   }
 
+  // ================== 保存 ==================
   async save() {
     this.saving = true;
     m.redraw();
     const payload = Object.assign({}, this.data);
-    // v0.1.6e 改: 过滤空 title/desc 的特色项, 避免 6+1 布局不平衡
-    //   辉哥 14:04 反馈: 后台添加特色没填就保存, 移动端 2 列布局变 3+3+1 孤零零
-    //   修法: save() payload 过滤 title/desc 都不全的非空项
     payload.bjxy_features_json = JSON.stringify(
       this.features.filter(f => f && f.title && f.title.trim() && f.desc && f.desc.trim())
     );
-    // v0.1.0s 改: boards array 写到 bjxy_curriculum_boards_json 新字段
     payload.bjxy_curriculum_boards_json = JSON.stringify(this.boards);
     payload.bjxy_coach_group_ids = JSON.stringify(this.coachGroupIds);
-    // v0.1.4: 教练 user id 数组 (modal 选 user 后保存, 前台优先用)
     payload.bjxy_coach_user_ids = JSON.stringify(this.coachUserIds);
-    // v0.1.5: 教练详情 (modal 填的 bio/achievements/specialties/photoUrl)
-    //   存成 JSON array: [{userId, bio, achievements, specialties, photoUrl}, ...]
-    //   只保存有任意字段填了的 user (避免空对象污染 DB)
     payload.bjxy_coach_details = JSON.stringify(
       this.coachUserIds
         .filter(uid => this.coachDetails[uid] && (this.coachDetails[uid].bio || this.coachDetails[uid].achievements || this.coachDetails[uid].specialties || this.coachDetails[uid].photoUrl))
@@ -881,24 +998,14 @@ export default class BjxySettings extends ExtensionPage {
           photoUrl: this.coachDetails[uid].photoUrl,
         }))
     );
-    // v0.1.6: 评价 (结构化 array 替代 bjxy_reviews_html 自由区)
-    // v0.1.6a: photos 数组 (替代 photoUrl string), 兼容老的 photoUrl 字段
-    //   只保存有任意字段填了的 review (避免空对象污染 DB)
     payload.bjxy_reviews = JSON.stringify(
       this.reviews.filter(r => r.author || r.text || (r.photos && r.photos.length > 0))
         .map(r => ({ author: r.author, rating: r.rating, text: r.text, date: r.date, photos: r.photos || [] }))
     );
-    // v0.1.6 + v0.1.6a: 活动展示 (升级 bjxy_students_json 简单 JSON → bjxy_students 完整 array)
-    //   v0.1.6a: photos 数组 (替代 photoUrl string), 兼容老的 photoUrl 字段
-    //   只保存有任意字段填了的活动
     payload.bjxy_students = JSON.stringify(
-      // v0.1.6d 改: url 字段保留 (空字符串保留, 前台不跳转)
-      //   保留条件: 至少有 name 或 photos 才保存 (空对象不保存)
       this.students.filter(s => s.name || (s.photos && s.photos.length > 0))
         .map(s => ({ name: s.name, level: s.level, achievement: s.achievement, photos: s.photos || [], url: s.url || '' }))
     );
-    // v0.1.6g: 活动 swiper 自动轮播间隔 (毫秒, 默认 3000, 范围 500-60000)
-    //   save 时也 clamp 一次, 防止 input 边界越界
     const ms = parseInt(this.eventsAutoplayMs, 10);
     payload.bjxy_events_autoplay_ms = (!isNaN(ms) && ms >= 500 && ms <= 60000) ? String(ms) : '3000';
     try {
