@@ -451,8 +451,8 @@ export default class BjxySettings extends ExtensionPage {
               ? m('div', { class: 'BjxyField-group-pick', onclick: () => this.openGroupModal() }, '🎯 弹 modal 选用户 + 编辑详情 (v0.1.5)')
               : null}
             {this.coachUserIds.length > 0
-              ? m('div', { class: 'BjxyField-hint' }, '✅ 已选 ' + this.coachUserIds.length + ' 个用户作为教练 (前台展示用). 拖拽排序顺序. 已填详情: ' + Object.keys(this.coachDetails).filter(uid => this.coachDetails[uid] && (this.coachDetails[uid].bio || this.coachDetails[uid].achievements || this.coachDetails[uid].specialties || this.coachDetails[uid].photoUrl)).length + ' / ' + this.coachUserIds.length)
-              : m('div', { class: 'BjxyField-hint' }, '💡 选中用户组 + 弹 modal 选用户 (拖拽排序) + 编辑详情 后, 这些用户将作为教练展示.')}
+              ? m('div', { class: 'BjxyField-hint' }, '✅ 已选 ' + this.coachUserIds.length + ' 个用户作为教练 (前台展示用). 拖拽排序顺序. 已填详情: ' + Object.keys(this.coachDetails).filter(uid => this.coachDetails[uid] && (this.coachDetails[uid].bio || this.coachDetails[uid].achievements || this.coachDetails[uid].specialties)).length + ' / ' + this.coachUserIds.length + ' (头像自动用用户自己的)')
+              : m('div', { class: 'BjxyField-hint' }, '💡 选中用户组 + 弹 modal 选用户 (拖拽排序) + 编辑简介 后, 这些用户将作为教练展示. 头像自动用用户自己的系统头像.')}
           </div>
         </div>
       </div>
@@ -813,11 +813,11 @@ export default class BjxySettings extends ExtensionPage {
             this.coachDetails = {};
             arr.forEach(d => {
               if (d && d.userId) {
+                // v0.1.10 改: 忽略 photoUrl 字段 (辉哥 15:22 拍板, 教练头像统一用用户自己的)
                 this.coachDetails[d.userId] = {
                   bio: d.bio || '',
                   achievements: d.achievements || '',
                   specialties: d.specialties || '',
-                  photoUrl: d.photoUrl || '',
                 };
               }
             });
@@ -1066,14 +1066,14 @@ export default class BjxySettings extends ExtensionPage {
     payload.bjxy_coach_group_ids = JSON.stringify(this.coachGroupIds);
     payload.bjxy_coach_user_ids = JSON.stringify(this.coachUserIds);
     payload.bjxy_coach_details = JSON.stringify(
+      // v0.1.10 改: 删 photoUrl 字段, 只存 bio/achievements/specialties
       this.coachUserIds
-        .filter(uid => this.coachDetails[uid] && (this.coachDetails[uid].bio || this.coachDetails[uid].achievements || this.coachDetails[uid].specialties || this.coachDetails[uid].photoUrl))
+        .filter(uid => this.coachDetails[uid] && (this.coachDetails[uid].bio || this.coachDetails[uid].achievements || this.coachDetails[uid].specialties))
         .map(uid => ({
           userId: uid,
           bio: this.coachDetails[uid].bio,
           achievements: this.coachDetails[uid].achievements,
           specialties: this.coachDetails[uid].specialties,
-          photoUrl: this.coachDetails[uid].photoUrl,
         }))
     );
     payload.bjxy_reviews = JSON.stringify(

@@ -3,11 +3,11 @@
 namespace Ziiven\BjxyWebsite\Api\Controllers;
 
 use Flarum\Http\RequestUtil;
+use Flarum\User\User;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\RequestHandlerInterface;
 use Laminas\Diactoros\Response\JsonResponse;
-use Illuminate\Database\Capsule\Manager as DB;
 
 /**
  * GET /api/bjxy/group-users?ids=1,2,3
@@ -16,6 +16,10 @@ use Illuminate\Database\Capsule\Manager as DB;
  *
  * v0.1.4 用: GroupPickerModal 弹 modal 时调这个 API 拿所选 group 的 user 列表
  *   之前是弹 modal 选 group, 现在是弹 modal 选 group 内的 user
+ *
+ * v0.1.10 改: 用 User::query() 走 model (走 avatarUrl accessor 拼 URL)
+ *   跟 CoachesController v0.1.10 修法一致
+ *   之前 raw DB::table() 拼出的 URL 少 /assets/avatars/ 路径 (跟 CoachesController 同样 bug)
  */
 class GroupUsersController implements RequestHandlerInterface
 {
@@ -33,31 +37,26 @@ class GroupUsersController implements RequestHandlerInterface
             return new JsonResponse(['users' => []]);
         }
 
-        $rows = DB::table('group_user')
-            ->join('users', 'group_user.user_id', '=', 'users.id')
-            ->whereIn('group_user.group_id', $ids)
-            ->select('users.id', 'users.username', 'users.nickname', 'users.avatar_url', 'users.is_email_confirmed')
+        $userModels = User::query()
+            ->whereIn('id', function ($query) use ($ids) {
+                $query->select('user_id')
+                    ->from('group_user')
+                    ->whereIn('group_id', $ids);
+            })
             // v0.1.4: 排除未激活邮箱的用户 (admin 误创建的废账号)
-            ->where('users.is_email_confirmed', 1)
+            ->where('is_email_confirmed', 1)
             ->distinct()
-            ->orderBy('users.id')
+            ->orderBy('id')
             ->get();
 
-        // v0.1.4 修: 用 flarum.config['url'] 拿 base URL, 跟 CoachesController 保持一致
-        $apiUrl = app('flarum.config')['url'] ?? '';
-        $users = $rows->map(function ($r) use ($apiUrl) {
-            $displayName = $r->nickname ?: $r->username;
-            $avatarUrl = null;
-            if ($r->avatar_url) {
-                $avatarUrl = preg_match('/^https?:/i', $r->avatar_url)
-                    ? $r->avatar_url
-                    : rtrim($apiUrl, '/') . str_replace('\\', '/', $r->avatar_url);
-            }
+        // v0.1.10: 直接读 $user->avatar_url 走 vendor User::getAvatarUrlAttribute() accessor
+        //   自动调 disk('flarum-avatars')->url($filename) 拼 https://geek.ski/assets/avatars/<filename>
+        $users = $userModels->map(function ($user) {
             return [
-                'id' => (int) $r->id,
-                'username' => $r->username,
-                'displayName' => $displayName,
-                'avatarUrl' => $avatarUrl,
+                'id' => (int) $user->id,
+                'username' => $user->username,
+                'displayName' => $user->display_name ?: $user->username,
+                'avatarUrl' => $user->avatar_url,
             ];
         })->values()->all();
 
