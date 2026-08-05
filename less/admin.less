@@ -160,6 +160,26 @@
 }
 .bjxy-tab-btn:active { cursor: grabbing; }
 
+// v0.1.13: 静态 tab (bg 全局设置) — 不可拖, 永远第 1 位, 视觉上跟可拖 tab 区分
+//   跟 .bjxy-tab-btn 共享大部分样式, 但 cursor: default, 没有 grabbing 状态, 加左侧分隔线视觉
+.bjxy-tab-btn-static {
+    cursor: default !important;
+    background: rgba(255, 255, 255, 0.04);  // 略灰底, 跟透明可拖 tab 区分
+    color: var(--bjxy-text-primary);
+    border: 1px solid rgba(251, 188, 4, 0.25);  // 黄边, 提示这是 "全局设置" 类
+    margin-right: 8px;  // 跟可拖 tab 分组, 留个视觉分隔
+    position: relative;
+}
+.bjxy-tab-btn-static:hover {
+    background: rgba(255, 255, 255, 0.08);
+}
+.bjxy-tab-btn-static.active {
+    background: linear-gradient(135deg, #fbbc04 0%, #f59e0b 100%);
+    color: #1a1a2e;
+    box-shadow: 0 4px 12px rgba(251, 188, 4, 0.3);
+}
+.bjxy-tab-btn-static:active { cursor: default !important; }  // 覆盖默认 grabbing
+
 .bjxy-tab-btn:hover {
     color: var(--bjxy-text-primary);
     background: rgba(255, 255, 255, 0.04);

@@ -70,13 +70,15 @@ const DEFAULT_BOARDS = [
 // v0.1.9 改: tab 顺序改成可拖拽 (sortablejs), this.tabOrder 持久化到 bjxy_section_order_json
 //   前台 BjxyPage.jsx 读这个 settings, 按顺序渲染 8 主体 section (过滤 brand/footer)
 //
-// v0.1.12 改: 删 'bg' 项 (11 → 10 个可拖 tab)
-//   辉哥 15:32 拍板: "'背景渐变'不属于一个前端的section，所以这个tab单拿出来放在一个独立区域中，这个区域也不需要有拖拽排序功能"
-//   bg 是全局设置, 不属于前台任何 section (前台 BjxyPage.jsx getSectionOrder() 已经 filter 掉 bg)
-//   现在 bg 单独在后台主页面顶部独立区域 (always-visible, 跟 ziven-core 顶部 card 同款风格),
-//   10 个可拖 tab: brand + 8 主体 + footer
-//   bjxy_section_order_json 持久化 10 个 key (旧 11 个 setting 自动 fallback 默认)
+// v0.1.13 改: bg 改回 tab 形式 (从 v0.1.12 的独立 section 改回 tab 按钮)
+//   辉哥 16:08 拍板: "把单拉出来的背景渐变也做成一个tab吧，因为将来可能会有其他设置放到这里面"
+//   bg 用 static: true 标记 (不可拖, 永远第 1 位), sortablejs filter 排除
+//   视觉上: bg 走 .bjxy-tab-btn-static 样式 (cursor: default, 略灰), 跟 10 个可拖 tab 分开
+//   renderBgSection() 容器可以容纳其他全局设置 (未来扩展, 比如 footer 全局 / SEO / theme 等)
+//   this.tabOrder 仍然只存 10 个可拖 key (bg 不参与排序, 不存 settings)
+//   renderActiveSection() 加 'bg' case 调 renderBgSection() 渲染 bg 全局设置
 const BJXY_TABS = [
+  { key: 'bg',         icon: '🎨',  label: '背景渐变', static: true },
   { key: 'brand',      icon: '🏔',  label: '品牌信息' },
   { key: 'hero',       icon: '🖼',   label: 'Hero 区域' },
   { key: 'about',      icon: '📖',  label: '关于我们' },
@@ -90,7 +92,7 @@ const BJXY_TABS = [
 ];
 
 // v0.1.9: 默认 tab 顺序 (跟 v0.1.6b 沉淀一致: hero/about/events 在前, contact 在后, footer 永远最底)
-//   v0.1.12 改: 删 'bg', 现在 10 个 (前台 BjxyPage.jsx getSectionOrder() 仍然 filter 掉 brand/footer, 渲染 8 主体)
+//   v0.1.13 改: 不含 'bg' (10 个可拖), bg 永远在 BJXY_TABS[0] 位置, 不参与排序
 const DEFAULT_TAB_ORDER = [
   'brand', 'hero', 'about', 'events', 'features', 'curriculum', 'coach', 'reviews', 'contact', 'footer'
 ];
@@ -135,11 +137,18 @@ export default class BjxySettings extends ExtensionPage {
   // v0.1.9: 顶部 tab bar — 按 this.tabOrder 排序遍历 BJXY_TABS 生成 .bjxy-tab-btn
   //   加 sortablejs 拖拽, 整个 tab bar 可拖, onEnd 改 this.tabOrder + m.redraw()
   //   注: 拖拽时不能切 tab (避免误点), 切 tab 用 click; sortable handle 是 .bjxy-tab-handle (右侧拖拽图标)
+  //
+  // v0.1.13 改: bg 永远在 tab bar 第 1 位 (静态不可拖)
+  //   渲染顺序: [bg (static, 第 1)] + 10 个可拖 tab (按 this.tabOrder)
+  //   bg 用 .bjxy-tab-btn-static class 走 css 区分 (cursor: default, 略灰)
+  //   sortablejs initTabBarSortable() 配 filter: '.bjxy-tab-btn-static' 排除 bg
   renderTabBar() {
-    // 按 this.tabOrder 排序生成 tabs
+    // 按 this.tabOrder 排序生成可拖 tabs
     const tabMap = {};
     BJXY_TABS.forEach(t => { tabMap[t.key] = t; });
-    const orderedTabs = this.tabOrder.map(k => tabMap[k]).filter(Boolean);
+    const orderedDraggableTabs = this.tabOrder.map(k => tabMap[k]).filter(Boolean);
+    // v0.1.13: bg 永远是第 1 个静态 tab (不参与排序, 不存 tabOrder)
+    const bgTab = tabMap['bg'];
 
     return (
       <div className="bjxy-tab-bar-wrapper">
@@ -152,10 +161,12 @@ export default class BjxySettings extends ExtensionPage {
           oncreate={(vnode) => this.initTabBarSortable(vnode)}
           onremove={() => this.destroyTabBarSortable()}
         >
-          {orderedTabs.map(t => (
+          {/* v0.1.13: bg 静态 tab + 10 个可拖 tab 用同一 array 渲染, 避免 mithril fragments key 不一致
+              bg 在数组第 0 位 (永远第 1), 用 static class 区分 */}
+          {[bgTab, ...orderedDraggableTabs].filter(Boolean).map(t => (
             <button
               type="button"
-              className={`bjxy-tab-btn ${this.activeTab === t.key ? 'active' : ''}`}
+              className={`bjxy-tab-btn${t.static ? ' bjxy-tab-btn-static' : ''} ${this.activeTab === t.key ? 'active' : ''}`}
               onclick={() => this.switchTab(t.key)}
               key={t.key}
               data-tab-key={t.key}
@@ -178,11 +189,21 @@ export default class BjxySettings extends ExtensionPage {
       animation: 150,
       // v0.1.9: 拖拽手柄 = 整个 tab button (整条可拖, 跟 zct 评价卡片同款)
       //   不用指定 handle, 整个 .bjxy-tab-btn 可拖
+      // v0.1.13 改: filter 排除 .bjxy-tab-btn-static (bg 静态 tab 不可拖)
+      //   防止 sortablejs 把 bg 拖到可拖 tab 区域, 保持 bg 永远在第 1 位
+      filter: '.bjxy-tab-btn-static',
+      preventOnFilter: true,  // 防止 click 事件被 sortable 吞掉 (bg 需要 onclick 切换 active)
       ghostClass: 'bjxy-tab-sortable-ghost',
       chosenClass: 'bjxy-tab-sortable-chosen',
       dragClass: 'bjxy-tab-sortable-drag',
       onEnd: (e) => {
         if (e.oldIndex === e.newIndex) return;
+        // v0.1.13 改: onEnd 时判断 moved 元素是不是 static, 是的话不修改 tabOrder
+        //   (filter 已排除拖拽, 这里双保险)
+        if (e.item && e.item.classList && e.item.classList.contains('bjxy-tab-btn-static')) {
+          m.redraw();  // sortablejs 视觉变化立即还原
+          return;
+        }
         // 改 this.tabOrder 顺序
         const moved = this.tabOrder.splice(e.oldIndex, 1)[0];
         this.tabOrder.splice(e.newIndex, 0, moved);
@@ -685,8 +706,11 @@ export default class BjxySettings extends ExtensionPage {
 
   // v0.1.8 active tab → 对应 render method 映射
   // v0.1.12 改: 删 'bg' case (bg 拿到独立区域, 永远在主页面顶部显示)
+  // v0.1.13 改: 加回 'bg' case (bg 改回 tab 形式, 第 1 位静态不可拖)
+  //   renderBgSection() 容器未来可以容纳其他全局设置 (footer 全局 / SEO / theme 等)
   renderActiveSection() {
     switch (this.activeTab) {
+      case 'bg':         return this.renderBgSection();
       case 'brand':      return this.renderBrandSection();
       case 'hero':       return this.renderHeroSection();
       case 'about':      return this.renderAboutSection();
@@ -714,12 +738,10 @@ export default class BjxySettings extends ExtensionPage {
           {/* 顶部标题 + tab bar */}
           <div className="bjxy-settings-intro">
             <h2><i className="fas fa-snowflake"></i> 北极雪屿官网配置</h2>
-            <p className="desc">配置 /bjxy 页面所有内容 (10 个可拖 tab + 1 个独立背景渐变区 + 后台上传走 ziven-core COS)</p>
+            <p className="desc">配置 /bjxy 页面所有内容 (1 个静态全局 tab + 10 个可拖 tab + 后台上传走 ziven-core COS)</p>
           </div>
 
-          {/* v0.1.12: 独立背景渐变区 (顶部永远显示, 不参与 tab 拖拽, 不属于前台 section)
-              辉哥 15:32 拍板: "'背景渐变'不属于一个前端的section, 所以这个tab单拿出来放在一个独立区域中" */}
-          {this.renderBgSection()}
+          {/* v0.1.12 删: 独立背景渐变区 (v0.1.13 改回 tab 形式, 永远在 tab bar 第 1 位) */}
 
           {this.renderTabBar()}
 
