@@ -4,7 +4,7 @@ namespace Ziiven\BjxyWebsite\Api\Controllers;
 
 use Flarum\Http\RequestUtil;
 use Flarum\Settings\SettingsRepositoryInterface;
-use Illuminate\Database\Capsule\Manager as DB;
+use Flarum\User\User;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\RequestHandlerInterface;
@@ -21,6 +21,13 @@ use Laminas\Diactoros\Response\JsonResponse;
  *   前台每条 coach 拼上 bio/achievements/specialties/photoUrl
  *   photoUrl 优先, 没设 fallback 用 user.avatar_url
  *   没 details 的 user 用空字段 (兼容旧部署)
+ *
+ * v0.1.10 改: 用 User model 走 avatarUrl accessor (vendor UserResource 行为一致),
+ *   之前用 DB::table() 拿裸 avatar_url 字段, 拼成 https://geek.skiE1Xet7eoZjqSVWpF.webp
+ *   (域名后没 /assets/avatars/ 路径, 404)
+ *   现在用 User::query()->whereIn() 拿 model, 走 User::getAvatarUrlAttribute() accessor
+ *   (resolve(Factory::class)->disk('flarum-avatars')->url($value)) 自动拼完整 URL
+ *   顺手也拿 srcset (2x/3x) 让 Retina 屏幕显示更清晰
  */
 class CoachesController implements RequestHandlerInterface
 {
@@ -33,10 +40,6 @@ class CoachesController implements RequestHandlerInterface
         $userIds = json_decode($userIdsRaw, true);
         if (!is_array($userIds)) $userIds = [];
 
-        // v0.1.4 修: 用 flarum.config['url'] 拿 base URL, 之前用 resolve('flarum.api_url')
-        //   错误 (flarum.api_url 不是 container binding, 会抛 BindingResolutionException)
-        $apiUrl = app('flarum.config')['url'] ?? '';
-
         // v0.1.5 读 details (key=userId), 前台拼到 coach
         $detailsRaw = $this->settings->get('bjxy_coach_details') ?: '[]';
         $detailsArr = json_decode($detailsRaw, true);
@@ -47,37 +50,30 @@ class CoachesController implements RequestHandlerInterface
         }
 
         if (!empty($userIds)) {
-            // 直接按 user id 查 (admin 拖拽排序后保存的就是这个顺序)
-            $rows = DB::table('users')
-                ->whereIn('users.id', $userIds)
-                ->where('users.is_email_confirmed', 1)
-                ->select('users.id', 'users.username', 'users.nickname', 'users.avatar_url')
-                ->get();
+            // v0.1.10 改: 用 User::query() 走 model (走 avatarUrl/avatarSrcset accessor),
+            //   之前用 DB::table() 拿裸 avatar_url 拼错 URL (https://geek.ski<filename> 不是 https://geek.ski/assets/avatars/<filename>)
+            $userModels = User::query()
+                ->whereIn('id', $userIds)
+                ->where('is_email_confirmed', 1)
+                ->get()
+                ->keyBy('id');
 
             // 按 userIds 顺序排 (sortablejs 拖拽后的顺序)
-            $byId = [];
-            foreach ($rows as $r) $byId[(int) $r->id] = $r;
             $ordered = [];
             foreach ($userIds as $id) {
-                if (isset($byId[(int) $id])) $ordered[] = $byId[(int) $id];
+                if (isset($userModels[(int) $id])) $ordered[] = $userModels[(int) $id];
             }
 
-            $coaches = array_map(function ($r) use ($apiUrl, $detailsById) {
-                $displayName = $r->nickname ?: $r->username;
-                $defaultAvatarUrl = null;
-                if ($r->avatar_url) {
-                    $defaultAvatarUrl = preg_match('/^https?:/i', $r->avatar_url)
-                        ? $r->avatar_url
-                        : rtrim($apiUrl, '/') . str_replace('\\', '/', $r->avatar_url);
-                }
-                // v0.1.5 拼 details
-                $d = $detailsById[(int) $r->id] ?? [];
+            $coaches = array_map(function ($user) use ($detailsById) {
+                $d = $detailsById[(int) $user->id] ?? [];
                 return [
-                    'id' => (int) $r->id,
-                    'username' => $r->username,
-                    'displayName' => $displayName,
-                    // v0.1.5: 优先用 details.photoUrl, 没设 fallback 到 user.avatar_url
-                    'avatarUrl' => (!empty($d['photoUrl'])) ? $d['photoUrl'] : $defaultAvatarUrl,
+                    'id' => (int) $user->id,
+                    'username' => $user->username,
+                    'displayName' => $user->display_name ?: $user->username,
+                    // v0.1.10 改: 优先 details.photoUrl (后台上传教练照), 没设 fallback 到 user.avatar_url (用户自己的系统头像)
+                    //   user->avatar_url 走 vendor User::getAvatarUrlAttribute() accessor, 自动拼 https://geek.ski/assets/avatars/<filename>
+                    'avatarUrl' => (!empty($d['photoUrl'])) ? $d['photoUrl'] : $user->avatar_url,
+                    'avatarSrcset' => $user->avatar_srcset,
                     'bio' => $d['bio'] ?? '',
                     'achievements' => $d['achievements'] ?? '',
                     'specialties' => $d['specialties'] ?? '',
@@ -94,29 +90,25 @@ class CoachesController implements RequestHandlerInterface
             return new JsonResponse(['coaches' => []]);
         }
 
-        $rows = DB::table('group_user')
-            ->join('users', 'group_user.user_id', '=', 'users.id')
-            ->whereIn('group_user.group_id', $ids)
-            ->where('users.is_email_confirmed', 1)
-            ->select('users.id', 'users.username', 'users.nickname', 'users.avatar_url')
-            ->distinct()
-            ->orderBy('users.id')
+        // v0.1.10 改: 同样用 User::query() 走 model
+        $userModels = User::query()
+            ->whereIn('id', function ($query) use ($ids) {
+                $query->select('user_id')
+                    ->from('group_user')
+                    ->whereIn('group_id', $ids);
+            })
+            ->where('is_email_confirmed', 1)
+            ->orderBy('id')
             ->get();
 
-        $coaches = $rows->map(function ($r) use ($apiUrl, $detailsById) {
-            $displayName = $r->nickname ?: $r->username;
-            $defaultAvatarUrl = null;
-            if ($r->avatar_url) {
-                $defaultAvatarUrl = preg_match('/^https?:/i', $r->avatar_url)
-                    ? $r->avatar_url
-                    : rtrim($apiUrl, '/') . str_replace('\\', '/', $r->avatar_url);
-            }
-            $d = $detailsById[(int) $r->id] ?? [];
+        $coaches = $userModels->map(function ($user) use ($detailsById) {
+            $d = $detailsById[(int) $user->id] ?? [];
             return [
-                'id' => (int) $r->id,
-                'username' => $r->username,
-                'displayName' => $displayName,
-                'avatarUrl' => (!empty($d['photoUrl'])) ? $d['photoUrl'] : $defaultAvatarUrl,
+                'id' => (int) $user->id,
+                'username' => $user->username,
+                'displayName' => $user->display_name ?: $user->username,
+                'avatarUrl' => (!empty($d['photoUrl'])) ? $d['photoUrl'] : $user->avatar_url,
+                'avatarSrcset' => $user->avatar_srcset,
                 'bio' => $d['bio'] ?? '',
                 'achievements' => $d['achievements'] ?? '',
                 'specialties' => $d['specialties'] ?? '',

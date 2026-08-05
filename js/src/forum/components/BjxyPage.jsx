@@ -499,7 +499,11 @@ export default class BjxyPage extends Component {
               const hasDetail = c.bio || c.achievements || c.specialties;
               return m('div', { class: 'bjxy-coach' + (hasDetail ? ' bjxy-coach-detailed' : ''), key: 'c' + i }, [
                 m('div', { class: 'bjxy-coach-avatar' }, [
-                  c.avatarUrl ? m('img', { src: c.avatarUrl, alt: c.displayName }) : (c.displayName || '?').charAt(0),
+                  // v0.1.10 改: 用用户自己的系统头像 (user.avatar_url 走 vendor User::getAvatarUrlAttribute() accessor 拼 URL)
+                  //   + srcset 走 2x/3x 让 Retina 屏幕清晰
+                  c.avatarUrl
+                    ? m('img', { src: c.avatarUrl, srcset: c.avatarSrcset || null, alt: c.displayName, loading: 'lazy' })
+                    : (c.displayName || '?').charAt(0),
                 ]),
                 m('div', { class: 'bjxy-coach-info' }, [
                   m('div', { class: 'bjxy-coach-name' }, c.displayName || ''),
