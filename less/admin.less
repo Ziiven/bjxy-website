@@ -85,17 +85,56 @@
 }
 
 // --------- Tab Bar (顶部 11 tab 切换) ---------
+// v0.1.9: 加 bjxy-tab-bar-wrapper 包装 (含 hint 提示 + tab-bar 容器)
+//   拖拽 hint 文字引导用户可拖, 跟 ziven-dress-up 评价卡片排序同款
+.bjxy-tab-bar-wrapper {
+    margin-bottom: 24px;
+}
+
+.bjxy-tab-bar-hint {
+    font-size: 11px;
+    color: var(--bjxy-text-muted);
+    margin-bottom: 6px;
+    padding: 0 4px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+.bjxy-tab-bar-hint i {
+    color: var(--bjxy-accent, #fbbc04);
+    font-style: normal;
+}
+
 .bjxy-tab-bar {
     display: flex;
     flex-wrap: wrap;
     gap: 4px;
-    margin-bottom: 24px;
     padding: 4px;
     background: rgba(255, 255, 255, 0.05);
     border: 1px solid var(--bjxy-glass-border);
     border-radius: var(--bjxy-radius-pill);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
+}
+
+// v0.1.9: sortablejs 拖拽视觉反馈 (跟 ziven-dress-up 评价卡片同款)
+//   ghost: 拖拽时原位置的占位元素 (半透明 + 黄渐变虚线)
+//   chosen: 被选中待拖的元素 (cursor grabbing)
+//   drag: 正在拖拽的元素 (阴影 + 略透明)
+.bjxy-tab-sortable-ghost {
+    opacity: 0.4;
+    background: var(--bjxy-accent, #fbbc04) !important;
+    color: #1a1a2e !important;
+    border: 1px dashed #1a1a2e !important;
+    box-shadow: none !important;
+}
+.bjxy-tab-sortable-chosen {
+    cursor: grabbing !important;
+}
+.bjxy-tab-sortable-drag {
+    box-shadow: 0 8px 24px rgba(251, 188, 4, 0.4) !important;
+    opacity: 0.9;
+    transform: scale(1.05);
 }
 
 .bjxy-tab-btn {
@@ -107,7 +146,7 @@
     color: var(--bjxy-text-secondary);
     font-size: 13px;
     font-weight: 600;
-    cursor: pointer;
+    cursor: grab;
     border-radius: var(--bjxy-radius-pill);
     transition: background 0.18s ease, color 0.18s ease;
     display: inline-flex;
@@ -115,7 +154,11 @@
     justify-content: center;
     gap: 6px;
     white-space: nowrap;
+    // v0.1.9: 拖拽时禁用 text selection (避免点拖时选中文字)
+    user-select: none;
+    -webkit-user-select: none;
 }
+.bjxy-tab-btn:active { cursor: grabbing; }
 
 .bjxy-tab-btn:hover {
     color: var(--bjxy-text-primary);

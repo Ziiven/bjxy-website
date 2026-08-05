@@ -67,6 +67,8 @@ const DEFAULT_BOARDS = [
 
 // v0.1.8 11 tab 配置 — 跟 ziven-core 同款 [{key, icon, label}] 列表
 //   渲染时遍历生成 .bjxy-tab-btn, switchTab(key) 改 this.activeTab + m.redraw()
+// v0.1.9 改: tab 顺序改成可拖拽 (sortablejs), this.tabOrder 持久化到 bjxy_section_order_json
+//   前台 BjxyPage.jsx 读这个 settings, 按顺序渲染 8 主体 section (过滤 brand/bg/footer)
 const BJXY_TABS = [
   { key: 'brand',      icon: '🏔',  label: '品牌信息' },
   { key: 'bg',         icon: '🎨',  label: '背景渐变' },
@@ -79,6 +81,13 @@ const BJXY_TABS = [
   { key: 'events',     icon: '🎯',  label: '活动展示' },
   { key: 'contact',    icon: '📞',  label: '联系我们' },
   { key: 'footer',     icon: '🦶',  label: '页脚 / 备案' },
+];
+
+// v0.1.9: 默认 tab 顺序 (跟 v0.1.6b 沉淀一致: hero/abouts/events 在前, contact 在后, footer 永远最底)
+//   注: v0.1.6b 顺序: hero → about → events → features → curriculum → coaches → reviews → contact + footer
+//   这里把 brand/bg 也包进 11 tab 数组, 因为后台管理需要 11 个, 前台只取 8 主体
+const DEFAULT_TAB_ORDER = [
+  'brand', 'bg', 'hero', 'about', 'events', 'features', 'curriculum', 'coach', 'reviews', 'contact', 'footer'
 ];
 
 export default class BjxySettings extends ExtensionPage {
@@ -103,6 +112,10 @@ export default class BjxySettings extends ExtensionPage {
     this.studentsSortable = null;
     // v0.1.8 tab 状态: 跟 ziven-core 1:1 模式, oninit 给初始值, switchTab() 改 + m.redraw()
     this.activeTab = 'brand';
+    // v0.1.9: tab 顺序 (可拖拽, 持久化到 bjxy_section_order_json)
+    //   oninit 给默认顺序, loadSettings() 读 settings 覆盖
+    this.tabOrder = DEFAULT_TAB_ORDER.slice();
+    this.tabBarSortable = null;
     this.loadSettings();
   }
 
@@ -114,23 +127,73 @@ export default class BjxySettings extends ExtensionPage {
     }
   }
 
-  // v0.1.8 顶部 tab bar — 遍历 BJXY_TABS 生成 11 个 .bjxy-tab-btn
+  // v0.1.9: 顶部 tab bar — 按 this.tabOrder 排序遍历 BJXY_TABS 生成 .bjxy-tab-btn
+  //   加 sortablejs 拖拽, 整个 tab bar 可拖, onEnd 改 this.tabOrder + m.redraw()
+  //   注: 拖拽时不能切 tab (避免误点), 切 tab 用 click; sortable handle 是 .bjxy-tab-handle (右侧拖拽图标)
   renderTabBar() {
+    // 按 this.tabOrder 排序生成 tabs
+    const tabMap = {};
+    BJXY_TABS.forEach(t => { tabMap[t.key] = t; });
+    const orderedTabs = this.tabOrder.map(k => tabMap[k]).filter(Boolean);
+
     return (
-      <div className="bjxy-tab-bar">
-        {BJXY_TABS.map(t => (
-          <button
-            type="button"
-            className={`bjxy-tab-btn ${this.activeTab === t.key ? 'active' : ''}`}
-            onclick={() => this.switchTab(t.key)}
-            key={t.key}
-          >
-            <i>{t.icon}</i>
-            {t.label}
-          </button>
-        ))}
+      <div className="bjxy-tab-bar-wrapper">
+        <div className="bjxy-tab-bar-hint">
+          <i className="fas fa-arrows-alt"></i>
+          拖动 tab 可调整顺序 (前台 /bjxy 页面会跟着这个顺序展示)
+        </div>
+        <div
+          className="bjxy-tab-bar"
+          oncreate={(vnode) => this.initTabBarSortable(vnode)}
+          onremove={() => this.destroyTabBarSortable()}
+        >
+          {orderedTabs.map(t => (
+            <button
+              type="button"
+              className={`bjxy-tab-btn ${this.activeTab === t.key ? 'active' : ''}`}
+              onclick={() => this.switchTab(t.key)}
+              key={t.key}
+              data-tab-key={t.key}
+            >
+              <i>{t.icon}</i>
+              {t.label}
+            </button>
+          ))}
+        </div>
       </div>
     );
+  }
+
+  // v0.1.9: 初始化 tab bar sortablejs (复用 v0.1.4 GroupPickerModal / v0.1.7 reviews 拖拽模式)
+  //   animation 150 + ghost/chosen/drag class
+  //   onEnd 改 this.tabOrder + m.redraw() 立即重渲
+  initTabBarSortable(vnode) {
+    if (this.tabBarSortable) this.tabBarSortable.destroy();
+    this.tabBarSortable = Sortable.create(vnode.dom, {
+      animation: 150,
+      // v0.1.9: 拖拽手柄 = 整个 tab button (整条可拖, 跟 zct 评价卡片同款)
+      //   不用指定 handle, 整个 .bjxy-tab-btn 可拖
+      ghostClass: 'bjxy-tab-sortable-ghost',
+      chosenClass: 'bjxy-tab-sortable-chosen',
+      dragClass: 'bjxy-tab-sortable-drag',
+      onEnd: (e) => {
+        if (e.oldIndex === e.newIndex) return;
+        // 改 this.tabOrder 顺序
+        const moved = this.tabOrder.splice(e.oldIndex, 1)[0];
+        this.tabOrder.splice(e.newIndex, 0, moved);
+        // m.redraw() 立即重渲, 同步 this.activeTab 对应的 active class
+        m.redraw();
+        console.log('[bjxy] tab order changed:', this.tabOrder.join(' → '));
+      },
+    });
+  }
+
+  // 销毁 tab bar sortable 实例
+  destroyTabBarSortable() {
+    if (this.tabBarSortable) {
+      this.tabBarSortable.destroy();
+      this.tabBarSortable = null;
+    }
   }
 
   // ================== 工具函数 (跟 ziven-core buildSettingComponent 同思路, 走 this.data) ==================
@@ -709,6 +772,19 @@ export default class BjxySettings extends ExtensionPage {
         url: app.forum.attribute('apiUrl') + '/bjxy/settings',
       });
       this.data = data.settings || {};
+      // v0.1.9: 读 bjxy_section_order_json 同步 tab 顺序
+      //   防御: 解析失败 / 不是数组 / 数组里 key 跟 BJXY_TABS 不匹配时 fallback 到默认
+      if (this.data.bjxy_section_order_json) {
+        try {
+          const parsed = JSON.parse(this.data.bjxy_section_order_json);
+          if (Array.isArray(parsed) && parsed.length === DEFAULT_TAB_ORDER.length) {
+            // 验证每个 key 都在 BJXY_TABS 里
+            const validKeys = BJXY_TABS.map(t => t.key);
+            const allValid = parsed.every(k => validKeys.indexOf(k) >= 0);
+            if (allValid) this.tabOrder = parsed;
+          }
+        } catch (e) {}
+      }
       if (this.data.bjxy_features_json) {
         try { this.features = JSON.parse(this.data.bjxy_features_json); } catch (e) {}
       }
@@ -981,6 +1057,8 @@ export default class BjxySettings extends ExtensionPage {
     this.saving = true;
     m.redraw();
     const payload = Object.assign({}, this.data);
+    // v0.1.9: tab 顺序持久化 (前台 BjxyPage.jsx 读这个 settings 渲染 8 主体 section 顺序)
+    payload.bjxy_section_order_json = JSON.stringify(this.tabOrder);
     payload.bjxy_features_json = JSON.stringify(
       this.features.filter(f => f && f.title && f.title.trim() && f.desc && f.desc.trim())
     );

@@ -229,6 +229,8 @@ export default class BjxyPage extends Component {
       ]),
 
       // ===== 导航 =====
+      // v0.1.9: 导航链接顺序也跟着 bjxy_section_order_json 走 (过滤掉 brand/bg/footer)
+      //   跟 v0.1.8 之前 hard-coded 顺序 (关于/活动/特色/教学/教练/评价/联系) 保持 fallback 兼容
       m('nav', { class: 'bjxy-nav' }, [
         m('div', { class: 'bjxy-logo' }, [
           s('bjxy_brand_logo_url')
@@ -239,292 +241,26 @@ export default class BjxyPage extends Component {
             m('small', null, s('bjxy_brand_slogan', DEFAULT_SLOGAN)),
           ]),
         ]),
-        m('div', { class: 'bjxy-nav-links' }, [
-          m('a', { href: '#about' }, '关于'),
-          // v0.1.6b 改: nav 顺序跟着 section 顺序调 — 活动移到关于下
-          m('a', { href: '#events' }, '活动'),
-          m('a', { href: '#features' }, '特色'),
-          m('a', { href: '#curriculum' }, '教学'),
-          m('a', { href: '#coaches' }, '教练'),
-          m('a', { href: '#reviews' }, '评价'),
-          m('a', { href: '#contact' }, '联系'),
-        ]),
+        m('div', { class: 'bjxy-nav-links' },
+          this.getSectionOrder().map(k => {
+            // nav link 跟 section id 一一对应 (复用现有 8 section anchor)
+            const navMap = { about: '关于', events: '活动', features: '特色', curriculum: '教学', coach: '教练', reviews: '评价', contact: '联系' };
+            return navMap[k] ? m('a', { href: '#' + k, key: 'nav-' + k }, navMap[k]) : null;
+          }).filter(Boolean)
+        ),
         m('div', { class: 'bjxy-nav-right' }, [
           m('a', { href: '#contact', class: 'bjxy-btn bjxy-btn-primary' }, s('bjxy_hero_cta_text', '立即咨询')),
         ]),
       ]),
 
-      // ===== Hero =====
-      m('section', { class: 'bjxy-hero', id: 'hero' }, [
-        m('div', { class: 'bjxy-hero-text' }, [
-          m('h1', null, [
-            s('bjxy_hero_title', '探索极致的滑雪体验。'),
-          ]),
-          m('p', null, s('bjxy_hero_subtitle', '专注滑雪领域的全国连锁机构, 17 级渐进教学体系 + 认证教练 + 全国品牌机构。')),
-          m('div', { class: 'bjxy-hero-cta-row' }, [
-            m('a', { href: s('bjxy_hero_cta_link', '#contact'), class: 'bjxy-btn bjxy-btn-primary' }, s('bjxy_hero_cta_text', '立即咨询')),
-          ]),
-          m('div', { class: 'bjxy-hero-features' }, [
-            m('div', { class: 'bjxy-hero-feature' }, [m('span', { class: 'check' }, '✓'), m('strong', null, s('bjxy_about_stat_1_num', '10+')), ' ' + s('bjxy_about_stat_1_label', '年教学经验')]),
-            m('div', { class: 'bjxy-hero-feature' }, [m('span', { class: 'check' }, '✓'), m('strong', null, s('bjxy_about_stat_2_num', '50+')), ' ' + s('bjxy_about_stat_2_label', '专业教练')]),
-            m('div', { class: 'bjxy-hero-feature' }, [m('span', { class: 'check' }, '✓'), m('strong', null, s('bjxy_about_stat_3_num', '1000+')), ' ' + s('bjxy_about_stat_3_label', '毕业学员')]),
-          ]),
-        ]),
-        m('div', { class: 'bjxy-hero-banner' }, [
-          s('bjxy_hero_banner_light') ? m('img', { class: 'bjxy-hero-banner-light', src: s('bjxy_hero_banner_light'), alt: 'Hero' }) : null,
-          s('bjxy_hero_banner_dark') ? m('img', { class: 'bjxy-hero-banner-dark', src: s('bjxy_hero_banner_dark'), alt: 'Hero Dark' }) : null,
-          // v0.1.1 改: banner light + dark 都空时, 显示 fallback 渐变 + 品牌名 + slogan
-          //   复用 less 里的 .bjxy-hero-banner-fallback 样式 (v0.1.0 留的 dead code)
-          //   浅色: 浅蓝→店照蓝渐变; 深色: 深蓝→蓝黑渐变
-          (!s('bjxy_hero_banner_light') && !s('bjxy_hero_banner_dark')) ? m('div', { class: 'bjxy-hero-banner-fallback' }, [
-            m('div', { class: 'bjxy-hero-banner-fallback-name' }, s('bjxy_brand_name', DEFAULT_BRAND)),
-            m('div', { class: 'bjxy-hero-banner-fallback-slogan' }, s('bjxy_brand_slogan', DEFAULT_SLOGAN)),
-          ]) : null,
-        ]),
-      ]),
+      // ===== 8 主体 section (顺序由 bjxy_section_order_json 决定) =====
+      // v0.1.9: 重构成 renderXxxSection() 函数 + 按 order 遍历
+      //   之前 v0.1.6b 沉淀: hero → about → events → features → curriculum → coach → reviews → contact
+      //   现在从 bjxy_section_order_json 读顺序 (后台可拖拽调整)
+      //   brand/bg 是全局设置不渲染独立 section, footer 永远最底
+      this.getSectionOrder().map(k => this.renderSectionByKey(k, { s, events, reviews, visibleFeatures, curriculum })),
 
-      // ===== 关于 =====
-      m('section', { class: 'bjxy-section', id: 'about' }, [
-        m('div', { class: 'bjxy-sub' }, s('bjxy_about_sub', 'ABOUT US')),
-        m('h2', null, s('bjxy_about_title', '关于北极雪屿')),
-        m('p', null, s('bjxy_about_desc', '北极雪屿室内滑雪成立于 2024 年, 专注滑雪领域的全国连锁机构...')),
-        m('div', { class: 'bjxy-stats' }, [
-          m('div', { class: 'bjxy-stat' }, [m('div', { class: 'bjxy-stat-num' }, s('bjxy_about_stat_1_num', '10+')), m('div', { class: 'bjxy-stat-label' }, s('bjxy_about_stat_1_label', '年教学经验'))]),
-          m('div', { class: 'bjxy-stat' }, [m('div', { class: 'bjxy-stat-num' }, s('bjxy_about_stat_2_num', '50+')), m('div', { class: 'bjxy-stat-label' }, s('bjxy_about_stat_2_label', '专业教练'))]),
-          m('div', { class: 'bjxy-stat' }, [m('div', { class: 'bjxy-stat-num' }, s('bjxy_about_stat_3_num', '1000+')), m('div', { class: 'bjxy-stat-label' }, s('bjxy_about_stat_3_label', '毕业学员'))]),
-        ]),
-      ]),
-
-      // ===== 活动展示 (v0.1.6b: 从尾部移到关于下方) =====
-      //   辉哥 12:22 反馈: 活动展示是亮点 (春节冬令营/周末进阶班 实物图), 应该紧跟关于介绍之后,
-      //   之前放在最后显得不重要. 同步调整 nav 顺序.
-      //   swiper 11 CSS 完整 base 样式 (button/pagination/scrollbar) 在 v0.1.6b 补全
-      // v0.1.6d 改: 活动展示支持点击跳转 URL (辉哥 13:08 需求)
-      //   - 后台每个活动可填 url 字段 (留空 = 不跳转, 跟之前一样点开 fancybox)
-      //   - 内部链接 (以 / 开头, 例如 /dressUp, /t/123-slug) 走 m.route 软路由
-      //   - 外部链接 (http:// / https://) target=_blank 新窗口打开
-      //   - 软路由 link 标签加 bjxy-event-link class (less 加 cursor: pointer + hover 高亮)
-      //   - 跳转 link 包活动 info 整个 (名字 + 副标题 + 介绍 + N 张)
-      m('section', { class: 'bjxy-section bjxy-section-alt', id: 'events' }, [
-        m('div', { class: 'bjxy-sub' }, 'EVENTS'),
-        m('h2', null, '活动展示'),
-        events.length > 0
-          ? m('div', { class: 'bjxy-event-swiper swiper', oncreate: (vnode) => this.initSwiper(vnode) }, [
-              m('div', { class: 'swiper-wrapper' },
-                events.map((ev, i) => {
-                  const photos = Array.isArray(ev.photos) ? ev.photos : (ev.photoUrl ? [ev.photoUrl] : []);
-                  const firstPhoto = photos[0];
-                  // v0.1.6d: 判断 url 是不是 Flarum 内部 (以 / 开头, 不带 protocol)
-                  const url = (ev.url || '').trim();
-                  const isInternal = url.startsWith('/') && !url.startsWith('//');
-                  const hasUrl = url.length > 0;
-                  return m('div', { class: 'swiper-slide bjxy-event-slide', key: 'ev' + i }, [
-                    // v0.1.6d: 活动主图包不包 a 标签, 看 url 类型
-                    //   - 有 url 内部 → 包 a + onclick m.route 跳转 (阻止默认)
-                    //   - 有 url 外部 → 包 a + href + target=_blank (新窗口)
-                    //   - 无 url → 包 a + onclick 触发 fancybox gallery (跟之前一样)
-                    firstPhoto
-                      ? (hasUrl
-                          ? (isInternal
-                              ? m('a', {
-                                  class: 'bjxy-event-photo',
-                                  style: { backgroundImage: 'url(' + firstPhoto + ')' },
-                                  href: url,
-                                  // v0.1.6d 修: mithril 软路由 API 是 m.route.set(path), 不是 m.route(path)
-                                  //   (之前 v0.1.6d 写错 m.route(url) → 抛 "Cannot convert undefined" 错误)
-                                  //   m.route.set 是 ziven-dress-up 用的同款 (SeedreamHistoryPage.js / EquipmentPage.js)
-                                  onclick: (e) => { e.preventDefault(); m.route.set(url); },
-                                })
-                              : m('a', {
-                                  class: 'bjxy-event-photo',
-                                  style: { backgroundImage: 'url(' + firstPhoto + ')' },
-                                  href: url,
-                                  target: '_blank',
-                                  rel: 'noopener noreferrer',
-                                })
-                            )
-                          : m('a', {
-                              class: 'bjxy-event-photo',
-                              style: { backgroundImage: 'url(' + firstPhoto + ')' },
-                              onclick: (e) => { e.preventDefault(); this.openFancyboxGallery(photos, 0); },
-                            })
-                        )
-                      : m('div', { class: 'bjxy-event-photo bjxy-event-photo-empty' }),
-                    // v0.1.6d: 活动 info card 也包 link (如果填了 url)
-                    //   让用户点 info 也能跳转 (不仅是主图)
-                    hasUrl
-                      ? (isInternal
-                          ? m('a', {
-                              class: 'bjxy-event-info bjxy-event-link',
-                              href: url,
-                              // v0.1.6d 修: mithril 软路由用 m.route.set (同 ziven-dress-up)
-                              onclick: (e) => { e.preventDefault(); m.route.set(url); },
-                            }, [
-                              m('div', { class: 'bjxy-event-name' }, ev.name || '活动 #' + (i + 1)),
-                              ev.level ? m('div', { class: 'bjxy-event-level' }, ev.level) : null,
-                              ev.achievement ? m('div', { class: 'bjxy-event-desc' }, ev.achievement) : null,
-                              photos.length > 1 ? m('div', { class: 'bjxy-event-photo-count' }, '📷 ' + photos.length + ' 张, 点击查看全部') : null,
-                            ])
-                          : m('a', {
-                              class: 'bjxy-event-info bjxy-event-link',
-                              href: url,
-                              target: '_blank',
-                              rel: 'noopener noreferrer',
-                            }, [
-                              m('div', { class: 'bjxy-event-name' }, ev.name || '活动 #' + (i + 1)),
-                              ev.level ? m('div', { class: 'bjxy-event-level' }, ev.level) : null,
-                              ev.achievement ? m('div', { class: 'bjxy-event-desc' }, ev.achievement) : null,
-                              photos.length > 1 ? m('div', { class: 'bjxy-event-photo-count' }, '📷 ' + photos.length + ' 张, 点击查看全部') : null,
-                            ])
-                        )
-                      : m('div', { class: 'bjxy-event-info' }, [
-                          m('div', { class: 'bjxy-event-name' }, ev.name || '活动 #' + (i + 1)),
-                          ev.level ? m('div', { class: 'bjxy-event-level' }, ev.level) : null,
-                          ev.achievement ? m('div', { class: 'bjxy-event-desc' }, ev.achievement) : null,
-                          photos.length > 1 ? m('div', { class: 'bjxy-event-photo-count' }, '📷 ' + photos.length + ' 张, 点击查看全部') : null,
-                        ]),
-                  ]);
-                })
-              ),
-              m('div', { class: 'swiper-button-prev' }),
-              m('div', { class: 'swiper-button-next' }),
-              m('div', { class: 'swiper-pagination' }),
-            ])
-          : studentsHtml
-            ? m('div', { class: 'bjxy-student-grid', oncreate: ({ dom }) => { dom.innerHTML = studentsHtml; } })
-            : m('p', null, '（暂无活动展示, 请在后台添加）'),
-      ]),
-
-      // ===== 特色 =====
-      // v0.1.6h: 改玻璃拟态 (辉哥 16:06 选 A 方案)
-      //   - section 顶部 + 底部加渐变光斑 (蓝/紫)
-      //   - 头部居中: eyebrow badge + 渐变大标题 + 浅色副标题
-      //   - 卡片: backdrop-filter blur + 右上角 01-06 编号 + icon 渐变光晕背景
-      m('section', { class: 'bjxy-section bjxy-section-alt bjxy-features-glass', id: 'features' }, [
-        m('div', { class: 'bjxy-section-head' }, [
-          m('div', { class: 'bjxy-features-eyebrow' }, 'Why Choose Us'),
-          m('h2', null, '为什么选择北极雪屿'),
-          m('p', { class: 'bjxy-features-sub' }, '从环境到教练, 从课程到装备, 每一个细节都为你精心准备'),
-        ]),
-        m('div', { class: 'bjxy-feature-grid' }, visibleFeatures.map((f, i) => m('div', { class: 'bjxy-feature', key: 'f' + i }, [
-          m('span', { class: 'bjxy-feature-num' }, String(i + 1).padStart(2, '0')),
-          m('div', { class: 'bjxy-feature-icon' }, f.icon || '★'),
-          m('h3', null, f.title || ''),
-          m('p', null, f.desc || ''),
-        ]))),
-      ]),
-
-      // ===== 教学体系 =====
-      // v0.1.0s 改: 教学体系类型任意多 (boards 数组), tabs 从 boards 动态渲染
-      //   之前 hard-coded 单板/双板, 现在可以是雪橇/冰球/自由式等任意类型
-      //   兼容旧 {single, double} data (没 boards 字段时自动转 2 个 board)
-      // v0.1.6b 改: curriculum 从 normal → alt (因为活动移走后 顺序变了, 保持 alt/normal 交替)
-      m('section', { class: 'bjxy-section bjxy-section-alt', id: 'curriculum' }, [
-        m('div', { class: 'bjxy-sub' }, 'CURRICULUM'),
-        m('h2', null, curriculum.boards.reduce((sum, b) => sum + b.levels.length, 0) + ' 级教学体系'),
-        m('div', { class: 'bjxy-curri-tabs' }, [
-          curriculum.boards.map((b, i) => m('div', {
-            class: 'bjxy-curri-tab' + (this.activeBoard === i ? ' active' : ''),
-            onclick: () => { this.activeBoard = i; },
-            key: 'tab' + i,
-          }, b.name + ' (' + b.levels.length + ' 级)')),
-        ]),
-        m('div', { class: 'bjxy-curri-list' },
-          (curriculum.boards[this.activeBoard] ? curriculum.boards[this.activeBoard].levels : []).map((l, i) => m('div', { class: 'bjxy-level-card', key: 'c' + i }, [
-            m('div', { class: 'bjxy-level-num' }, i + 1),
-            m('div', { class: 'bjxy-level-lvl' }, l.level || ''),
-            m('div', { class: 'bjxy-level-name' }, l.name || ''),
-            m('div', { class: 'bjxy-level-desc' }, l.desc || ''),
-          ]))
-        ),
-      ]),
-
-      // ===== 教练 =====
-      // v0.1.5 改: 教练卡片加 bio + achievements + specialties + photoUrl (从 /api/bjxy/coaches 返回)
-      //   之前只显示头像 + 名字, 现在展示完整信息
-      // v0.1.6b 改: coaches 从 alt → normal (curriculum 占了 alt)
-      m('section', { class: 'bjxy-section', id: 'coaches' }, [
-        m('div', { class: 'bjxy-sub' }, 'COACHES'),
-        m('h2', null, '专业教练'),
-        this.loadingCoaches
-          ? m('p', null, '加载中...')
-          : this.coaches.length === 0
-            ? m('p', null, '（暂无教练, 请在后台选择用户组）')
-            : m('div', { class: 'bjxy-coach-grid' }, this.coaches.map((c, i) => {
-                const hasDetail = c.bio || c.achievements || c.specialties;
-                return m('div', { class: 'bjxy-coach' + (hasDetail ? ' bjxy-coach-detailed' : ''), key: 'c' + i }, [
-                  m('div', { class: 'bjxy-coach-avatar' }, [
-                    c.avatarUrl ? m('img', { src: c.avatarUrl, alt: c.displayName }) : (c.displayName || '?').charAt(0),
-                  ]),
-                  m('div', { class: 'bjxy-coach-info' }, [
-                    m('div', { class: 'bjxy-coach-name' }, c.displayName || ''),
-                    c.username ? m('div', { class: 'bjxy-coach-username' }, '@' + c.username) : null,
-                    // v0.1.5 详情: bio / achievements / specialties
-                    c.specialties ? m('div', { class: 'bjxy-coach-specialties' }, [
-                      m('span', { class: 'bjxy-coach-label' }, '🏂 专长'),
-                      m('span', { class: 'bjxy-coach-text' }, c.specialties),
-                    ]) : null,
-                    c.achievements ? m('div', { class: 'bjxy-coach-achievements' }, [
-                      m('span', { class: 'bjxy-coach-label' }, '🏆 成就'),
-                      m('span', { class: 'bjxy-coach-text' }, c.achievements),
-                    ]) : null,
-                    c.bio ? m('div', { class: 'bjxy-coach-bio' }, c.bio) : null,
-                  ]),
-                ]);
-              })),
-      ]),
-
-      // ===== 评价 (v0.1.6a: 大众点评风格 评价+图片) =====
-      // 优先级: 新 bjxy_reviews (array, 带 photos 多图) > 老 bjxy_reviews_html (fallback 兼容旧部署)
-      // v0.1.6b 改: 评价 section 从 normal → alt (因为活动移走后 顺序变了, 保持 alt/normal 交替)
-      m('section', { class: 'bjxy-section bjxy-section-alt', id: 'reviews' }, [
-        m('div', { class: 'bjxy-sub' }, 'REVIEWS'),
-        m('h2', null, '学员评价'),
-        reviews.length > 0
-          ? m('div', { class: 'bjxy-review-grid' }, reviews.map((r, i) => {
-              // v0.1.6a: photos 数组 (兼容老的 photoUrl 字符串)
-              const photos = Array.isArray(r.photos) ? r.photos : (r.photoUrl ? [r.photoUrl] : []);
-              return m('div', { class: 'bjxy-review', key: 'r' + i }, [
-                m('div', { class: 'bjxy-review-stars' }, this.renderStars(r.rating || 5)),
-                m('div', { class: 'bjxy-review-quote' }, r.text || ''),
-                m('div', { class: 'bjxy-review-author' }, [
-                  m('span', { class: 'bjxy-review-author-av' }, (r.author || '?').charAt(0)),
-                  m('span', null, r.author || '匿名'),
-                  r.date ? m('span', { class: 'bjxy-review-date' }, ' · ' + r.date) : null,
-                ]),
-                // v0.1.6a: 大众点评风格 缩略图墙 (4 列 grid, click → fancybox gallery)
-                photos.length > 0 ? m('div', { class: 'bjxy-review-photos' },
-                  photos.map((url, pi) => m('a', {
-                    key: 'rp' + i + 'p' + pi,
-                    class: 'bjxy-review-photo',
-                    style: { backgroundImage: 'url(' + url + ')' },
-                    onclick: (e) => { e.preventDefault(); this.openFancyboxGallery(photos, pi); },
-                  }))
-                ) : null,
-              ]);
-            }))
-          : reviewsHtml
-            ? m('div', { class: 'bjxy-reviews-html', oncreate: ({ dom }) => { dom.innerHTML = reviewsHtml; } })
-            : m('p', null, '（暂无评价, 请在后台添加）'),
-      ]),
-
-      // v0.1.6b 改: 活动展示 section 已移到关于下方 (上面), 这里删了
-      //   老的活动 section 渲染逻辑 (swiper 容器 + 4 slide + prev/next + pagination) 完整保留
-      //   在 about 之后的位置, 方便后续调整时复用
-
-      // ===== 联系 =====
-      m('section', { class: 'bjxy-section', id: 'contact' }, [
-        m('div', { class: 'bjxy-sub' }, 'CONTACT'),
-        m('h2', null, '联系我们'),
-        m('div', { class: 'bjxy-contact-grid' }, [
-          m('div', { class: 'bjxy-contact-item' }, [m('div', { class: 'bjxy-contact-label' }, '📍 地址'), m('div', { class: 'bjxy-contact-value' }, s('bjxy_contact_address', '北京市朝阳区滑雪场路 88 号'))]),
-          m('div', { class: 'bjxy-contact-item' }, [m('div', { class: 'bjxy-contact-label' }, '📞 电话'), m('div', { class: 'bjxy-contact-value' }, s('bjxy_contact_phone', '400-888-8888'))]),
-          m('div', { class: 'bjxy-contact-item' }, [m('div', { class: 'bjxy-contact-label' }, '💬 微信'), m('div', { class: 'bjxy-contact-value' }, s('bjxy_contact_wechat', 'bjxy_ski'))]),
-          m('div', { class: 'bjxy-contact-item' }, [m('div', { class: 'bjxy-contact-label' }, '✉ 邮箱'), m('div', { class: 'bjxy-contact-value' }, s('bjxy_contact_email', 'hi@bjxy.com'))]),
-        ]),
-      ]),
-
-      // ===== footer =====
+      // ===== footer (永远在最底, 不参与排序) =====
       // v0.1.0ab 改: 备案号从 bjxy_icp_number setting 读 (后台可设)
       //   留空时 fallback 到默认 '2026xxxxxx' (跟之前 hard-coded 一致, 兼容旧部署)
       // v0.1.2 改: 加 公安备案号 + 网安链接 (国家规定中国大陆站点 footer 必须有)
@@ -539,6 +275,293 @@ export default class BjxyPage extends Component {
       ]),
       ]),
     ];
+  }
+
+  // v0.1.9: 读 bjxy_section_order_json 解析成数组, 过滤掉 brand/bg/footer
+  //   防御: 解析失败 / 不是数组 / 数组里 key 不对时 fallback 到默认顺序
+  getSectionOrder() {
+    const DEFAULT_SECTION_ORDER = ['hero', 'about', 'events', 'features', 'curriculum', 'coach', 'reviews', 'contact'];
+    const raw = app.forum.attribute('bjxy_section_order_json');
+    if (!raw) return DEFAULT_SECTION_ORDER;
+    try {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) {
+        // 过滤掉 brand / bg / footer (这 3 个不渲染独立 section)
+        const mainSections = parsed.filter(k => k !== 'brand' && k !== 'bg' && k !== 'footer');
+        // 验证 8 个主体 section key 都有
+        if (mainSections.length === DEFAULT_SECTION_ORDER.length) {
+          const validKeys = DEFAULT_SECTION_ORDER;
+          const allValid = mainSections.every(k => validKeys.indexOf(k) >= 0);
+          if (allValid) return mainSections;
+        }
+      }
+    } catch (e) {}
+    return DEFAULT_SECTION_ORDER;
+  }
+
+  // v0.1.9: 按 key 调用对应 renderXxxSection 方法
+  //   跟 v0.1.6b 沉淀的 section class 一致: hero/约/features/curriculum 走 alt, 其他走 normal
+  //   保留 v0.1.6b section 顺序: about(events 移走) → events 跟 alt 交替
+  //   hero 是 page 顶部特殊 section (跟其他 section 视觉差异大), 不走 bjxy-section/bjxy-section-alt
+  renderSectionByKey(key, ctx) {
+    const { s, events, reviews, visibleFeatures, curriculum } = ctx;
+    switch (key) {
+      case 'hero':       return this.renderHeroSection(s);
+      case 'about':      return this.renderAboutSection(s);
+      case 'events':     return this.renderEventsSection(events, s);
+      case 'features':   return this.renderFeaturesSection(visibleFeatures);
+      case 'curriculum': return this.renderCurriculumSection(curriculum);
+      case 'coach':      return this.renderCoachSection(s);
+      case 'reviews':    return this.renderReviewsSection(reviews);
+      case 'contact':    return this.renderContactSection(s);
+      default: return null;
+    }
+  }
+
+  // v0.1.9: 8 主体 section 渲染方法 (从 view() 提取)
+  //   每个方法返回 1 个 m() 节点, 跟 v0.1.6b 沉淀的 HTML 结构 1:1 一致
+
+  // Hero
+  renderHeroSection(s) {
+    return m('section', { class: 'bjxy-hero', id: 'hero', key: 'sec-hero' }, [
+      m('div', { class: 'bjxy-hero-text' }, [
+        m('h1', null, [s('bjxy_hero_title', '探索极致的滑雪体验。')]),
+        m('p', null, s('bjxy_hero_subtitle', '专注滑雪领域的全国连锁机构, 17 级渐进教学体系 + 认证教练 + 全国品牌机构。')),
+        m('div', { class: 'bjxy-hero-cta-row' }, [
+          m('a', { href: s('bjxy_hero_cta_link', '#contact'), class: 'bjxy-btn bjxy-btn-primary' }, s('bjxy_hero_cta_text', '立即咨询')),
+        ]),
+        m('div', { class: 'bjxy-hero-features' }, [
+          m('div', { class: 'bjxy-hero-feature' }, [m('span', { class: 'check' }, '✓'), m('strong', null, s('bjxy_about_stat_1_num', '10+')), ' ' + s('bjxy_about_stat_1_label', '年教学经验')]),
+          m('div', { class: 'bjxy-hero-feature' }, [m('span', { class: 'check' }, '✓'), m('strong', null, s('bjxy_about_stat_2_num', '50+')), ' ' + s('bjxy_about_stat_2_label', '专业教练')]),
+          m('div', { class: 'bjxy-hero-feature' }, [m('span', { class: 'check' }, '✓'), m('strong', null, s('bjxy_about_stat_3_num', '1000+')), ' ' + s('bjxy_about_stat_3_label', '毕业学员')]),
+        ]),
+      ]),
+      m('div', { class: 'bjxy-hero-banner' }, [
+        s('bjxy_hero_banner_light') ? m('img', { class: 'bjxy-hero-banner-light', src: s('bjxy_hero_banner_light'), alt: 'Hero' }) : null,
+        s('bjxy_hero_banner_dark') ? m('img', { class: 'bjxy-hero-banner-dark', src: s('bjxy_hero_banner_dark'), alt: 'Hero Dark' }) : null,
+        (!s('bjxy_hero_banner_light') && !s('bjxy_hero_banner_dark')) ? m('div', { class: 'bjxy-hero-banner-fallback' }, [
+          m('div', { class: 'bjxy-hero-banner-fallback-name' }, s('bjxy_brand_name', DEFAULT_BRAND)),
+          m('div', { class: 'bjxy-hero-banner-fallback-slogan' }, s('bjxy_brand_slogan', DEFAULT_SLOGAN)),
+        ]) : null,
+      ]),
+    ]);
+  }
+
+  // 关于
+  renderAboutSection(s) {
+    return m('section', { class: 'bjxy-section', id: 'about', key: 'sec-about' }, [
+      m('div', { class: 'bjxy-sub' }, s('bjxy_about_sub', 'ABOUT US')),
+      m('h2', null, s('bjxy_about_title', '关于北极雪屿')),
+      m('p', null, s('bjxy_about_desc', '北极雪屿室内滑雪成立于 2024 年, 专注滑雪领域的全国连锁机构...')),
+      m('div', { class: 'bjxy-stats' }, [
+        m('div', { class: 'bjxy-stat' }, [m('div', { class: 'bjxy-stat-num' }, s('bjxy_about_stat_1_num', '10+')), m('div', { class: 'bjxy-stat-label' }, s('bjxy_about_stat_1_label', '年教学经验'))]),
+        m('div', { class: 'bjxy-stat' }, [m('div', { class: 'bjxy-stat-num' }, s('bjxy_about_stat_2_num', '50+')), m('div', { class: 'bjxy-stat-label' }, s('bjxy_about_stat_2_label', '专业教练'))]),
+        m('div', { class: 'bjxy-stat' }, [m('div', { class: 'bjxy-stat-num' }, s('bjxy_about_stat_3_num', '1000+')), m('div', { class: 'bjxy-stat-label' }, s('bjxy_about_stat_3_label', '毕业学员'))]),
+      ]),
+    ]);
+  }
+
+  // 活动展示
+  // v0.1.6b 改: 从尾部移到关于下方 (v0.1.9 现在按 order 决定位置)
+  // v0.1.6d: 活动展示支持点击跳转 URL
+  renderEventsSection(events, s) {
+    return m('section', { class: 'bjxy-section bjxy-section-alt', id: 'events', key: 'sec-events' }, [
+      m('div', { class: 'bjxy-sub' }, 'EVENTS'),
+      m('h2', null, '活动展示'),
+      events.length > 0
+        ? m('div', { class: 'bjxy-event-swiper swiper', oncreate: (vnode) => this.initSwiper(vnode) }, [
+            m('div', { class: 'swiper-wrapper' },
+              events.map((ev, i) => {
+                const photos = Array.isArray(ev.photos) ? ev.photos : (ev.photoUrl ? [ev.photoUrl] : []);
+                const firstPhoto = photos[0];
+                const url = (ev.url || '').trim();
+                const isInternal = url.startsWith('/') && !url.startsWith('//');
+                const hasUrl = url.length > 0;
+                return m('div', { class: 'swiper-slide bjxy-event-slide', key: 'ev' + i }, [
+                  firstPhoto
+                    ? (hasUrl
+                        ? (isInternal
+                            ? m('a', {
+                                class: 'bjxy-event-photo',
+                                style: { backgroundImage: 'url(' + firstPhoto + ')' },
+                                href: url,
+                                onclick: (e) => { e.preventDefault(); m.route.set(url); },
+                              })
+                            : m('a', {
+                                class: 'bjxy-event-photo',
+                                style: { backgroundImage: 'url(' + firstPhoto + ')' },
+                                href: url,
+                                target: '_blank',
+                                rel: 'noopener noreferrer',
+                              })
+                          )
+                        : m('a', {
+                            class: 'bjxy-event-photo',
+                            style: { backgroundImage: 'url(' + firstPhoto + ')' },
+                            onclick: (e) => { e.preventDefault(); this.openFancyboxGallery(photos, 0); },
+                          })
+                      )
+                    : m('div', { class: 'bjxy-event-photo bjxy-event-photo-empty' }),
+                  hasUrl
+                    ? (isInternal
+                        ? m('a', {
+                            class: 'bjxy-event-info bjxy-event-link',
+                            href: url,
+                            onclick: (e) => { e.preventDefault(); m.route.set(url); },
+                          }, [
+                            m('div', { class: 'bjxy-event-name' }, ev.name || '活动 #' + (i + 1)),
+                            ev.level ? m('div', { class: 'bjxy-event-level' }, ev.level) : null,
+                            ev.achievement ? m('div', { class: 'bjxy-event-desc' }, ev.achievement) : null,
+                            photos.length > 1 ? m('div', { class: 'bjxy-event-photo-count' }, '📷 ' + photos.length + ' 张, 点击查看全部') : null,
+                          ])
+                        : m('a', {
+                            class: 'bjxy-event-info bjxy-event-link',
+                            href: url,
+                            target: '_blank',
+                            rel: 'noopener noreferrer',
+                          }, [
+                            m('div', { class: 'bjxy-event-name' }, ev.name || '活动 #' + (i + 1)),
+                            ev.level ? m('div', { class: 'bjxy-event-level' }, ev.level) : null,
+                            ev.achievement ? m('div', { class: 'bjxy-event-desc' }, ev.achievement) : null,
+                            photos.length > 1 ? m('div', { class: 'bjxy-event-photo-count' }, '📷 ' + photos.length + ' 张, 点击查看全部') : null,
+                          ])
+                      )
+                    : m('div', { class: 'bjxy-event-info' }, [
+                        m('div', { class: 'bjxy-event-name' }, ev.name || '活动 #' + (i + 1)),
+                        ev.level ? m('div', { class: 'bjxy-event-level' }, ev.level) : null,
+                        ev.achievement ? m('div', { class: 'bjxy-event-desc' }, ev.achievement) : null,
+                        photos.length > 1 ? m('div', { class: 'bjxy-event-photo-count' }, '📷 ' + photos.length + ' 张, 点击查看全部') : null,
+                      ]),
+                ]);
+              })
+            ),
+            m('div', { class: 'swiper-button-prev' }),
+            m('div', { class: 'swiper-button-next' }),
+            m('div', { class: 'swiper-pagination' }),
+          ])
+        : m('p', null, '（暂无活动展示, 请在后台添加）'),
+    ]);
+  }
+
+  // 特色
+  // v0.1.6h: 改玻璃拟态 (辉哥 16:06 选 A 方案)
+  renderFeaturesSection(visibleFeatures) {
+    return m('section', { class: 'bjxy-section bjxy-section-alt bjxy-features-glass', id: 'features', key: 'sec-features' }, [
+      m('div', { class: 'bjxy-section-head' }, [
+        m('div', { class: 'bjxy-features-eyebrow' }, 'Why Choose Us'),
+        m('h2', null, '为什么选择北极雪屿'),
+        m('p', { class: 'bjxy-features-sub' }, '从环境到教练, 从课程到装备, 每一个细节都为你精心准备'),
+      ]),
+      m('div', { class: 'bjxy-feature-grid' }, visibleFeatures.map((f, i) => m('div', { class: 'bjxy-feature', key: 'f' + i }, [
+        m('span', { class: 'bjxy-feature-num' }, String(i + 1).padStart(2, '0')),
+        m('div', { class: 'bjxy-feature-icon' }, f.icon || '★'),
+        m('h3', null, f.title || ''),
+        m('p', null, f.desc || ''),
+      ]))),
+    ]);
+  }
+
+  // 教学体系
+  // v0.1.0s 改: boards 数组任意多类型
+  renderCurriculumSection(curriculum) {
+    return m('section', { class: 'bjxy-section bjxy-section-alt', id: 'curriculum', key: 'sec-curriculum' }, [
+      m('div', { class: 'bjxy-sub' }, 'CURRICULUM'),
+      m('h2', null, curriculum.boards.reduce((sum, b) => sum + b.levels.length, 0) + ' 级教学体系'),
+      m('div', { class: 'bjxy-curri-tabs' }, [
+        curriculum.boards.map((b, i) => m('div', {
+          class: 'bjxy-curri-tab' + (this.activeBoard === i ? ' active' : ''),
+          onclick: () => { this.activeBoard = i; },
+          key: 'tab' + i,
+        }, b.name + ' (' + b.levels.length + ' 级)')),
+      ]),
+      m('div', { class: 'bjxy-curri-list' },
+        (curriculum.boards[this.activeBoard] ? curriculum.boards[this.activeBoard].levels : []).map((l, i) => m('div', { class: 'bjxy-level-card', key: 'c' + i }, [
+          m('div', { class: 'bjxy-level-num' }, i + 1),
+          m('div', { class: 'bjxy-level-lvl' }, l.level || ''),
+          m('div', { class: 'bjxy-level-name' }, l.name || ''),
+          m('div', { class: 'bjxy-level-desc' }, l.desc || ''),
+        ]))
+      ),
+    ]);
+  }
+
+  // 教练
+  // v0.1.5: 加 bio + achievements + specialties + photoUrl
+  renderCoachSection(s) {
+    return m('section', { class: 'bjxy-section', id: 'coach', key: 'sec-coach' }, [
+      m('div', { class: 'bjxy-sub' }, 'COACHES'),
+      m('h2', null, '专业教练'),
+      this.loadingCoaches
+        ? m('p', null, '加载中...')
+        : this.coaches.length === 0
+          ? m('p', null, '（暂无教练, 请在后台选择用户组）')
+          : m('div', { class: 'bjxy-coach-grid' }, this.coaches.map((c, i) => {
+              const hasDetail = c.bio || c.achievements || c.specialties;
+              return m('div', { class: 'bjxy-coach' + (hasDetail ? ' bjxy-coach-detailed' : ''), key: 'c' + i }, [
+                m('div', { class: 'bjxy-coach-avatar' }, [
+                  c.avatarUrl ? m('img', { src: c.avatarUrl, alt: c.displayName }) : (c.displayName || '?').charAt(0),
+                ]),
+                m('div', { class: 'bjxy-coach-info' }, [
+                  m('div', { class: 'bjxy-coach-name' }, c.displayName || ''),
+                  c.username ? m('div', { class: 'bjxy-coach-username' }, '@' + c.username) : null,
+                  c.specialties ? m('div', { class: 'bjxy-coach-specialties' }, [
+                    m('span', { class: 'bjxy-coach-label' }, '🏂 专长'),
+                    m('span', { class: 'bjxy-coach-text' }, c.specialties),
+                  ]) : null,
+                  c.achievements ? m('div', { class: 'bjxy-coach-achievements' }, [
+                    m('span', { class: 'bjxy-coach-label' }, '🏆 成就'),
+                    m('span', { class: 'bjxy-coach-text' }, c.achievements),
+                  ]) : null,
+                  c.bio ? m('div', { class: 'bjxy-coach-bio' }, c.bio) : null,
+                ]),
+              ]);
+            })),
+    ]);
+  }
+
+  // 评价
+  // v0.1.6a: 大众点评风格 评价+图片
+  renderReviewsSection(reviews) {
+    return m('section', { class: 'bjxy-section bjxy-section-alt', id: 'reviews', key: 'sec-reviews' }, [
+      m('div', { class: 'bjxy-sub' }, 'REVIEWS'),
+      m('h2', null, '学员评价'),
+      reviews.length > 0
+        ? m('div', { class: 'bjxy-review-grid' }, reviews.map((r, i) => {
+            const photos = Array.isArray(r.photos) ? r.photos : (r.photoUrl ? [r.photoUrl] : []);
+            return m('div', { class: 'bjxy-review', key: 'r' + i }, [
+              m('div', { class: 'bjxy-review-stars' }, this.renderStars(r.rating || 5)),
+              m('div', { class: 'bjxy-review-quote' }, r.text || ''),
+              m('div', { class: 'bjxy-review-author' }, [
+                m('span', { class: 'bjxy-review-author-av' }, (r.author || '?').charAt(0)),
+                m('span', null, r.author || '匿名'),
+                r.date ? m('span', { class: 'bjxy-review-date' }, ' · ' + r.date) : null,
+              ]),
+              photos.length > 0 ? m('div', { class: 'bjxy-review-photos' },
+                photos.map((url, pi) => m('a', {
+                  key: 'rp' + i + 'p' + pi,
+                  class: 'bjxy-review-photo',
+                  style: { backgroundImage: 'url(' + url + ')' },
+                  onclick: (e) => { e.preventDefault(); this.openFancyboxGallery(photos, pi); },
+                }))
+              ) : null,
+            ]);
+          }))
+        : m('p', null, '（暂无评价, 请在后台添加）'),
+    ]);
+  }
+
+  // 联系
+  renderContactSection(s) {
+    return m('section', { class: 'bjxy-section', id: 'contact', key: 'sec-contact' }, [
+      m('div', { class: 'bjxy-sub' }, 'CONTACT'),
+      m('h2', null, '联系我们'),
+      m('div', { class: 'bjxy-contact-grid' }, [
+        m('div', { class: 'bjxy-contact-item' }, [m('div', { class: 'bjxy-contact-label' }, '📍 地址'), m('div', { class: 'bjxy-contact-value' }, s('bjxy_contact_address', '北京市朝阳区滑雪场路 88 号'))]),
+        m('div', { class: 'bjxy-contact-item' }, [m('div', { class: 'bjxy-contact-label' }, '📞 电话'), m('div', { class: 'bjxy-contact-value' }, s('bjxy_contact_phone', '400-888-8888'))]),
+        m('div', { class: 'bjxy-contact-item' }, [m('div', { class: 'bjxy-contact-label' }, '💬 微信'), m('div', { class: 'bjxy-contact-value' }, s('bjxy_contact_wechat', 'bjxy_ski'))]),
+        m('div', { class: 'bjxy-contact-item' }, [m('div', { class: 'bjxy-contact-label' }, '✉ 邮箱'), m('div', { class: 'bjxy-contact-value' }, s('bjxy_contact_email', 'hi@bjxy.com'))]),
+      ]),
+    ]);
   }
 
   oncreate(vnode) {

@@ -118,7 +118,12 @@ return [
         ->serializeToForum('bjxy_bg_gradient_dark_end', 'bjxy_bg_gradient_dark_end')
         // v0.1.0z: 背景图 URL (走 ziven-core COS 上传, 设置了图就不显示渐变)
         ->serializeToForum('bjxy_bg_image_light_url', 'bjxy_bg_image_light_url')
-        ->serializeToForum('bjxy_bg_image_dark_url', 'bjxy_bg_image_dark_url'),
+        ->serializeToForum('bjxy_bg_image_dark_url', 'bjxy_bg_image_dark_url')
+        // v0.1.9 (辉哥 13:06 反馈): 后台 11 tab 拖拽排序, 前台 8 主体 section 按这个顺序渲染
+        //   存 JSON 数组 ['brand','bg','hero','about','features','curriculum','coach','reviews','events','contact','footer']
+        //   前台 BjxyPage.jsx 读这个 settings, 过滤掉 brand/bg/footer 渲染 8 主体 section
+        //   后台 BjxySettings.jsx sortablejs 拖拽 onEnd 改 this.tabOrder + save() 持久化
+        ->serializeToForum('bjxy_section_order_json', 'bjxy_section_order_json'),
 
     (new Extend\Frontend('admin'))
         ->js(__DIR__ . '/js/dist/admin.js')
