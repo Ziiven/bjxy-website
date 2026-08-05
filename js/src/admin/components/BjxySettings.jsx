@@ -139,8 +139,8 @@ export default class BjxySettings extends ExtensionPage {
     this.eventsAutoplayMs = 3000;
     // v0.1.15: 10 个 section 可见性状态 (默认全部 true 开启)
     //   辉哥 18:19 拍板: "给每个section的tab里加上一个开关，默认是开启状态，只有在开启时前端对应的section才展示"
-    //   10 个 key: brand/hero/about/events/features/curriculum/coach/reviews/contact/footer
-    //   sectionHead 渲染 toggle 开关, 关闭时前台对应 section 不展示
+    //   v0.1.16 改: 9 个 key (删 bg, 辉哥 19:37 拍板 "独立全局设置区里的不用加开关")
+    //   bg 走 .bjxy-global-section 独立全局区, 不参与 9 个 section 的可见性控制
     this.sectionVisible = {
       brand: true, hero: true, about: true, events: true, features: true,
       curriculum: true, coach: true, reviews: true, contact: true, footer: true,
@@ -434,10 +434,13 @@ export default class BjxySettings extends ExtensionPage {
   // v0.1.0z: 加 2 个背景图 fileField, 走 ziven-core COS 上传
   //   有图 → background: url(...), 渐变不生效
   //   没图 → 4 色渐变生效 (v0.1.0j+y 视差 fixed viewport)
+  // v0.1.16 改: bg 不传 sectionKey (辉哥 19:37 拍板 "独立全局设置区里的不用加开关")
+  //   bg 走 .bjxy-global-section 独立全局区, 不参与 9 个 section 的可见性控制
+  //   独立全局设置区未来加 footer 全局 / SEO / theme 等也都不参与 section 可见性
   renderBgSection() {
     return (
       <div className="bjxy-section glass-card">
-        {this.sectionHead('🎨', '背景渐变 (浅深双版)', null, 'bg')}
+        {this.sectionHead('🎨', '背景渐变 (浅深双版)')}
         <div className="bjxy-section-content">
           {this.colorField('浅色模式 - 起始色', 'bjxy_bg_gradient_light_start', '#E0EBF8')}
           {this.colorField('浅色模式 - 结束色', 'bjxy_bg_gradient_light_end', '#F7FAFC')}
