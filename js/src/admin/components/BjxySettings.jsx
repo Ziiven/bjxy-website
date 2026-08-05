@@ -137,6 +137,14 @@ export default class BjxySettings extends ExtensionPage {
     this.reviews = [];
     this.students = [];
     this.eventsAutoplayMs = 3000;
+    // v0.1.15: 10 个 section 可见性状态 (默认全部 true 开启)
+    //   辉哥 18:19 拍板: "给每个section的tab里加上一个开关，默认是开启状态，只有在开启时前端对应的section才展示"
+    //   10 个 key: brand/hero/about/events/features/curriculum/coach/reviews/contact/footer
+    //   sectionHead 渲染 toggle 开关, 关闭时前台对应 section 不展示
+    this.sectionVisible = {
+      brand: true, hero: true, about: true, events: true, features: true,
+      curriculum: true, coach: true, reviews: true, contact: true, footer: true,
+    };
     this.reviewsSortable = null;
     this.studentsSortable = null;
     // v0.1.8 tab 状态: 跟 ziven-core 1:1 模式, oninit 给初始值, switchTab() 改 + m.redraw()
@@ -355,15 +363,49 @@ export default class BjxySettings extends ExtensionPage {
   }
 
   // v0.1.8 section header 包装 — 跟 ziven-core .ziven-core-section-header 1:1 风格
-  // icon + title + 右侧 hint (可选)
-  sectionHead(icon, title, hint) {
+  // icon + title + 右侧 hint (可选) + 右侧 toggle 开关 (可选, v0.1.15 加)
+  // v0.1.15 改: 加 sectionKey 参数, 如果传了就在 header 右侧渲染 toggle 开关
+  //   关闭时 this.sectionVisible[key] = false, 前台对应 section 不展示
+  //   10 个 section tab 都用, bg 全局设置没有 key (不参与可见性控制)
+  sectionHead(icon, title, hint, sectionKey) {
     return (
       <div className="bjxy-section-header">
-        <i>{icon}</i>
-        {title}
-        {hint ? <span className="bjxy-section-hint">{hint}</span> : null}
+        <div className="bjxy-section-header-main">
+          <i>{icon}</i>
+          {title}
+          {hint ? <span className="bjxy-section-hint">{hint}</span> : null}
+        </div>
+        {sectionKey ? this.renderVisibilityToggle(sectionKey) : null}
       </div>
     );
+  }
+
+  // v0.1.15: 渲染 section 可见性 toggle 开关 (右上角)
+  //   走 vendor Switch 组件 (flarum/admin/components/Switch) 视觉一致
+  //   onchange 改 this.sectionVisible[key] + m.redraw() (实时反映, save() 时持久化)
+  //   关闭时 toggle 显示 OFF, 前台对应 section 不展示
+  renderVisibilityToggle(sectionKey) {
+    const on = this.sectionVisible[sectionKey] !== false;  // 默认 true
+    return (
+      <label className={`bjxy-visibility-toggle ${on ? 'on' : 'off'}`} title={on ? '已开启 (前端展示)' : '已关闭 (前端隐藏)'}>
+        <span className="bjxy-visibility-toggle-label">{on ? '已开启' : '已关闭'}</span>
+        <button
+          type="button"
+          className="bjxy-visibility-toggle-btn"
+          onclick={(e) => { e.preventDefault(); this.toggleSectionVisibility(sectionKey); }}
+          aria-pressed={on}
+        >
+          <span className="bjxy-visibility-toggle-knob" />
+        </button>
+      </label>
+    );
+  }
+
+  // v0.1.15: 切换 section 可见性 (走 this.sectionVisible 状态)
+  toggleSectionVisibility(sectionKey) {
+    const cur = this.sectionVisible[sectionKey] !== false;
+    this.sectionVisible[sectionKey] = !cur;
+    m.redraw();
   }
 
   // ================== 11 个 section 渲染方法 ==================
@@ -377,7 +419,7 @@ export default class BjxySettings extends ExtensionPage {
   renderBrandSection() {
     return (
       <div className="bjxy-section glass-card">
-        {this.sectionHead('🏔', '品牌信息 (全局)')}
+        {this.sectionHead('🏔', '品牌信息 (全局)', null, 'brand')}
         <div className="bjxy-section-content">
           {this.field('品牌名', 'bjxy_brand_name', '北极雪屿')}
           {this.field('品牌副标', 'bjxy_brand_slogan', '室内滑雪 · 全国连锁')}
@@ -395,7 +437,7 @@ export default class BjxySettings extends ExtensionPage {
   renderBgSection() {
     return (
       <div className="bjxy-section glass-card">
-        {this.sectionHead('🎨', '背景渐变 (浅深双版)')}
+        {this.sectionHead('🎨', '背景渐变 (浅深双版)', null, 'bg')}
         <div className="bjxy-section-content">
           {this.colorField('浅色模式 - 起始色', 'bjxy_bg_gradient_light_start', '#E0EBF8')}
           {this.colorField('浅色模式 - 结束色', 'bjxy_bg_gradient_light_end', '#F7FAFC')}
@@ -412,7 +454,7 @@ export default class BjxySettings extends ExtensionPage {
   renderHeroSection() {
     return (
       <div className="bjxy-section glass-card">
-        {this.sectionHead('🖼', 'Hero 区域')}
+        {this.sectionHead('🖼', 'Hero 区域', null, 'hero')}
         <div className="bjxy-section-content">
           {this.field('主标题', 'bjxy_hero_title', '探索极致的滑雪体验。')}
           {this.field('副标题', 'bjxy_hero_subtitle', '专注滑雪领域的全国连锁机构...')}
@@ -429,7 +471,7 @@ export default class BjxySettings extends ExtensionPage {
   renderAboutSection() {
     return (
       <div className="bjxy-section glass-card">
-        {this.sectionHead('📖', '关于我们')}
+        {this.sectionHead('📖', '关于我们', null, 'about')}
         <div className="bjxy-section-content">
           {this.field('小标题', 'bjxy_about_sub', 'ABOUT US')}
           {this.field('主标题', 'bjxy_about_title', '关于北极雪屿')}
@@ -450,7 +492,7 @@ export default class BjxySettings extends ExtensionPage {
   renderFeaturesSection() {
     return (
       <div className="bjxy-section glass-card">
-        {this.sectionHead('✨', '办学特色 (6 个卡片)')}
+        {this.sectionHead('✨', '办学特色 (6 个卡片)', null, 'features')}
         <div className="bjxy-section-content">
           <div className="BjxyField-array BjxyField-features">
             {this.features.map((f, i) => m('div', { class: 'BjxyField-array-row', key: 'f' + i }, [
@@ -476,7 +518,7 @@ export default class BjxySettings extends ExtensionPage {
   renderCurriculumSection() {
     return (
       <div className="bjxy-section glass-card">
-        {this.sectionHead('📚', '教学体系 (' + this.boards.length + ' 种类型 / 共 ' + this.boards.reduce((s, b) => s + b.levels.length, 0) + ' 级)')}
+        {this.sectionHead('📚', '教学体系 (' + this.boards.length + ' 种类型 / 共 ' + this.boards.reduce((s, b) => s + b.levels.length, 0) + ' 级)', null, 'curriculum')}
         <div className="bjxy-section-content">
           {this.boards.map((board, bi) => m('div', { class: 'BjxyField-board', key: 'board' + bi }, [
             m('div', { class: 'BjxyField-board-head' }, [
@@ -523,7 +565,7 @@ export default class BjxySettings extends ExtensionPage {
   renderCoachSection() {
     return (
       <div className="bjxy-section glass-card">
-        {this.sectionHead('👥', '教练展示')}
+        {this.sectionHead('👥', '教练展示', null, 'coach')}
         <div className="bjxy-section-content">
           <div className="BjxyField-label">选择用户组 (多选)</div>
           <div className="BjxyField-group-select">
@@ -555,7 +597,7 @@ export default class BjxySettings extends ExtensionPage {
   renderReviewsSection() {
     return (
       <div className="bjxy-section glass-card">
-        {this.sectionHead('💬', '学员评价 (结构化 JSON, 多图)')}
+        {this.sectionHead('💬', '学员评价 (结构化 JSON, 多图)', null, 'reviews')}
         <div className="bjxy-section-content">
           <div
             className="BjxyField-array BjxyField-array-wide BjxyField-sortable"
@@ -642,7 +684,7 @@ export default class BjxySettings extends ExtensionPage {
   renderEventsSection() {
     return (
       <div className="bjxy-section glass-card">
-        {this.sectionHead('🎯', '活动展示 (swiper 轮播多图)')}
+        {this.sectionHead('🎯', '活动展示 (swiper 轮播多图)', null, 'events')}
         <div className="bjxy-section-content">
           {/* v0.1.6g: 活动 swiper 自动轮播间隔设置 */}
           <div className="BjxyField-row">
@@ -742,7 +784,7 @@ export default class BjxySettings extends ExtensionPage {
   renderContactSection() {
     return (
       <div className="bjxy-section glass-card">
-        {this.sectionHead('📞', '联系我们')}
+        {this.sectionHead('📞', '联系我们', null, 'contact')}
         <div className="bjxy-section-content">
           {this.field('地址', 'bjxy_contact_address', '北京市朝阳区滑雪场路 88 号')}
           {this.field('电话', 'bjxy_contact_phone', '400-888-8888')}
@@ -759,7 +801,7 @@ export default class BjxySettings extends ExtensionPage {
   renderFooterSection() {
     return (
       <div className="bjxy-section glass-card">
-        {this.sectionHead('🦶', '页脚 / 备案号')}
+        {this.sectionHead('🦶', '页脚 / 备案号', null, 'footer')}
         <div className="bjxy-section-content">
           {this.field('ICP 备案号', 'bjxy_icp_number', '2026xxxxxx')}
           {this.field('公安备案号', 'bjxy_police_number', '11010102000000')}
@@ -875,6 +917,14 @@ export default class BjxySettings extends ExtensionPage {
         url: app.forum.attribute('apiUrl') + '/bjxy/settings',
       });
       this.data = data.settings || {};
+      // v0.1.15: 读 10 个 section 可见性 setting (bjxy_section_visible_<key>)
+      //   旧部署缺这些 setting 时, 默认全部 true (跟 oninit 默认一致, 自动兼容)
+      const sectionKeys = ['brand', 'hero', 'about', 'events', 'features', 'curriculum', 'coach', 'reviews', 'contact', 'footer'];
+      sectionKeys.forEach(k => {
+        const v = this.data['bjxy_section_visible_' + k];
+        // '1' / 'true' / true 都算可见; 缺省 / '0' / 'false' 算隐藏
+        this.sectionVisible[k] = (v === undefined || v === '' || v === '1' || v === 'true' || v === true);
+      });
       // v0.1.9: 读 bjxy_section_order_json 同步 tab 顺序
       //   防御: 解析失败 / 不是数组 / 数组里 key 跟 BJXY_TABS 不匹配时 fallback 到默认
       // v0.1.12 改: 兼容旧 11 个 key 数组 (含 'bg'), filter 掉 'bg' 后用剩下 10 个
@@ -1169,6 +1219,12 @@ export default class BjxySettings extends ExtensionPage {
     const payload = Object.assign({}, this.data);
     // v0.1.9: tab 顺序持久化 (前台 BjxyPage.jsx 读这个 settings 渲染 8 主体 section 顺序)
     payload.bjxy_section_order_json = JSON.stringify(this.tabOrder);
+    // v0.1.15: 10 个 section 可见性持久化 (前台 BjxyPage.jsx 读这些 settings 过滤掉 visible=false 的)
+    //   '1' = 展示, '0' = 隐藏, 前台 getSectionOrder() 过滤 + footer 单独判断
+    const sectionKeys = ['brand', 'hero', 'about', 'events', 'features', 'curriculum', 'coach', 'reviews', 'contact', 'footer'];
+    sectionKeys.forEach(k => {
+      payload['bjxy_section_visible_' + k] = this.sectionVisible[k] !== false ? '1' : '0';
+    });
     payload.bjxy_features_json = JSON.stringify(
       this.features.filter(f => f && f.title && f.title.trim() && f.desc && f.desc.trim())
     );

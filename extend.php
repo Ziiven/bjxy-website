@@ -123,7 +123,23 @@ return [
         //   存 JSON 数组 ['brand','bg','hero','about','features','curriculum','coach','reviews','events','contact','footer']
         //   前台 BjxyPage.jsx 读这个 settings, 过滤掉 brand/bg/footer 渲染 8 主体 section
         //   后台 BjxySettings.jsx sortablejs 拖拽 onEnd 改 this.tabOrder + save() 持久化
-        ->serializeToForum('bjxy_section_order_json', 'bjxy_section_order_json'),
+        // v0.1.15: 10 个 section 可见性开关 (默认全部 '1' 开启)
+        //   辉哥 18:19 拍板: "给每个section的tab里加上一个开关，默认是开启状态，只有在开启时前端对应的section才展示"
+        //   10 个 key: bjxy_section_visible_<key> (key = brand/hero/about/features/curriculum/coach/reviews/events/contact/footer)
+        //   存 '1' = 展示, '0' = 隐藏; 前台 BjxyPage.jsx getSectionOrder() 过滤掉 visible=0 的
+        //   footer 单独控制 (永远渲染在底部, 关闭时整个 footer 不渲染)
+        //   旧部署缺这些 setting 时, 前台 fallback 默认 visible (跟开关默认开启一致)
+        ->serializeToForum('bjxy_section_order_json', 'bjxy_section_order_json')
+        ->serializeToForum('bjxy_section_visible_brand', 'bjxy_section_visible_brand')
+        ->serializeToForum('bjxy_section_visible_hero', 'bjxy_section_visible_hero')
+        ->serializeToForum('bjxy_section_visible_about', 'bjxy_section_visible_about')
+        ->serializeToForum('bjxy_section_visible_events', 'bjxy_section_visible_events')
+        ->serializeToForum('bjxy_section_visible_features', 'bjxy_section_visible_features')
+        ->serializeToForum('bjxy_section_visible_curriculum', 'bjxy_section_visible_curriculum')
+        ->serializeToForum('bjxy_section_visible_coach', 'bjxy_section_visible_coach')
+        ->serializeToForum('bjxy_section_visible_reviews', 'bjxy_section_visible_reviews')
+        ->serializeToForum('bjxy_section_visible_contact', 'bjxy_section_visible_contact')
+        ->serializeToForum('bjxy_section_visible_footer', 'bjxy_section_visible_footer'),
 
     (new Extend\Frontend('admin'))
         ->js(__DIR__ . '/js/dist/admin.js')

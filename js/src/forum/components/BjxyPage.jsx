@@ -265,38 +265,53 @@ export default class BjxyPage extends Component {
       //   留空时 fallback 到默认 '2026xxxxxx' (跟之前 hard-coded 一致, 兼容旧部署)
       // v0.1.2 改: 加 公安备案号 + 网安链接 (国家规定中国大陆站点 footer 必须有)
       //   留空时不渲染公安备案行 (避免显示空链接)
-      m('footer', { class: 'bjxy-footer' }, [
+      // v0.1.15 改: 走 isSectionVisible('footer') 判断, 关闭时不渲染整个 footer
+      this.isSectionVisible('footer') ? m('footer', { class: 'bjxy-footer' }, [
         m('div', { class: 'bjxy-footer-line' }, '© ' + new Date().getFullYear() + ' ' + s('bjxy_brand_name', DEFAULT_BRAND) + ' · ICP 备 ' + (s('bjxy_icp_number', '2026xxxxxx') || '2026xxxxxx') + ' 号'),
         s('bjxy_police_number') ? m('div', { class: 'bjxy-footer-line' }, [
           m('img', { class: 'bjxy-footer-police-icon', src: 'data:image/svg+xml;utf8,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" width="14" height="14"><path fill="#fff" d="M10 1l8 3v6c0 5-3.5 8.5-8 9-4.5-.5-8-4-8-9V4l8-3zm0 2.2L4 5.4V10c0 4 2.7 6.8 6 7.3 3.3-.5 6-3.3 6-7.3V5.4l-6-2.2zM7 8h6v1H7V8zm0 2h6v1H7v-1zm0 2h4v1H7v-1z"/></svg>'), alt: '公安备案' }),
           ' ',
           m('a', { href: s('bjxy_police_link', 'http://www.beian.gov.cn/portal/registerSystemInfo') || 'http://www.beian.gov.cn/portal/registerSystemInfo', target: '_blank', rel: 'noopener noreferrer', class: 'bjxy-footer-link' }, '京公网安备 ' + s('bjxy_police_number', '') + ' 号'),
         ]) : null,
-      ]),
+      ]) : null,
       ]),
     ];
   }
 
   // v0.1.9: 读 bjxy_section_order_json 解析成数组, 过滤掉 brand/bg/footer
   //   防御: 解析失败 / 不是数组 / 数组里 key 不对时 fallback 到默认顺序
+  // v0.1.15 改: 额外过滤掉 visible=false 的 section (走 bjxy_section_visible_<key> setting)
+  //   辉哥 18:19 拍板: "只有在开启时前端对应的section才展示"
+  //   footer 单独判断 (走 isSectionVisible('footer') 控制, 不参与主 section 列表)
   getSectionOrder() {
     const DEFAULT_SECTION_ORDER = ['hero', 'about', 'events', 'features', 'curriculum', 'coach', 'reviews', 'contact'];
     const raw = app.forum.attribute('bjxy_section_order_json');
-    if (!raw) return DEFAULT_SECTION_ORDER;
+    if (!raw) return DEFAULT_SECTION_ORDER.filter(k => this.isSectionVisible(k));
     try {
       const parsed = JSON.parse(raw);
       if (Array.isArray(parsed)) {
-        // 过滤掉 brand / bg / footer (这 3 个不渲染独立 section)
-        const mainSections = parsed.filter(k => k !== 'brand' && k !== 'bg' && k !== 'footer');
-        // 验证 8 个主体 section key 都有
-        if (mainSections.length === DEFAULT_SECTION_ORDER.length) {
+        // 过滤掉 brand / bg / footer (这 3 个不渲染独立 section) + visible=false 的
+        const mainSections = parsed
+          .filter(k => k !== 'brand' && k !== 'bg' && k !== 'footer')
+          .filter(k => this.isSectionVisible(k));
+        // 验证剩下 8 个主体 section key 都有
+        if (mainSections.length === DEFAULT_SECTION_ORDER.filter(k => this.isSectionVisible(k)).length) {
           const validKeys = DEFAULT_SECTION_ORDER;
           const allValid = mainSections.every(k => validKeys.indexOf(k) >= 0);
           if (allValid) return mainSections;
         }
       }
     } catch (e) {}
-    return DEFAULT_SECTION_ORDER;
+    return DEFAULT_SECTION_ORDER.filter(k => this.isSectionVisible(k));
+  }
+
+  // v0.1.15: 判断 section 是否可见 (读 bjxy_section_visible_<key> setting)
+  //   默认 true (旧部署缺 setting 时全部展示, 跟开关默认开启一致)
+  //   '1' / 'true' / true 算可见; 其他 (含 '0' / 'false' / 缺省) 算可见 (默认)
+  isSectionVisible(key) {
+    const v = app.forum.attribute('bjxy_section_visible_' + key);
+    if (v === '0' || v === 'false' || v === false) return false;
+    return true;  // 默认可见 (跟 oninit 默认一致, 兼容旧部署)
   }
 
   // v0.1.9: 按 key 调用对应 renderXxxSection 方法
