@@ -160,6 +160,8 @@ return [
         ->get('/bjxy/settings', 'bjxy.settings.get', \Ziiven\BjxyWebsite\Api\Controllers\SettingsController::class)
         ->post('/bjxy/settings', 'bjxy.settings.post', \Ziiven\BjxyWebsite\Api\Controllers\SettingsController::class)
         ->post('/bjxy/upload', 'bjxy.upload', \Ziiven\BjxyWebsite\Api\Controllers\UploadController::class)
+        // v0.1.21: fileField 删除/移除按钮配套, 清空 setting + 删 COS 文件
+        ->delete('/bjxy/upload', 'bjxy.upload.delete', \Ziiven\BjxyWebsite\Api\Controllers\UploadController::class)
         ->get('/bjxy/coaches', 'bjxy.coaches', \Ziiven\BjxyWebsite\Api\Controllers\CoachesController::class)
         ->get('/bjxy/coach/{id}', 'bjxy.coach.show', \Ziiven\BjxyWebsite\Api\Controllers\CoachShowController::class)
         // v0.1.4: GroupPickerModal 调这个 API 拿所选 group 的 user 列表

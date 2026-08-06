@@ -438,6 +438,14 @@ export default class BjxySettings extends ExtensionPage {
       m('div', null, [
         m('div', { class: 'BjxyField-file', onclick: (e) => this.uploadFile(e, key) }, '📷 点击上传 (' + hint + ')'),
         url ? m('div', { class: 'BjxyField-file-preview' }, [
+          // v0.1.21: 移除按钮 (辉哥 15:07 反馈: 背景渐变+hero banner 都没移除按钮)
+          //   右上角 × 圈, 跟 .BjxyField-photo-del 风格 1:1
+          m('button', {
+            class: 'BjxyField-file-remove',
+            type: 'button',
+            title: '移除已上传的图片',
+            onclick: (e) => { e.stopPropagation(); this.removeFile(key); },
+          }, '×'),
           m('div', null, '✓ 已上传: ' + url),
           (key.indexOf('banner') >= 0 || key.indexOf('logo') >= 0 || key.indexOf('image') >= 0)
             ? m('div', null, m('img', { src: url, alt: '' }))
@@ -1213,6 +1221,44 @@ export default class BjxySettings extends ExtensionPage {
       }
     };
     fileInput.click();
+  }
+
+  // v0.1.21: 移除已上传的图片 (辉哥 15:07 反馈: 背景渐变+hero banner 都没移除按钮)
+  //   调 DELETE /api/bjxy/upload, server 清空 setting + 删 COS 文件
+  //   错误处理跟 uploadFile 1:1 风格 (vendor RequestError 没 message, 从 responseText 解析)
+  async removeFile(key) {
+    if (!confirm('确定要删除已上传的图片吗? 设置将被清空, COS 文件也会删除')) return;
+    try {
+      const r = await app.request({
+        method: 'DELETE',
+        url: app.forum.attribute('apiUrl') + '/bjxy/upload',
+        body: { key },
+      });
+      if (r && r.ok) {
+        this.data[key] = '';
+        app.alerts.show({ type: 'success' }, '已移除');
+        m.redraw();
+      } else {
+        app.alerts.show({ type: 'error' }, (r && r.error) || '移除失败');
+      }
+    } catch (err) {
+      let errMsg = '移除异常';
+      if (err && err.responseText) {
+        try {
+          const parsed = JSON.parse(err.responseText);
+          if (parsed && parsed.error) {
+            errMsg = parsed.error;
+          } else {
+            errMsg = err.responseText;
+          }
+        } catch (e) {
+          errMsg = err.responseText;
+        }
+      } else if (err && err.status) {
+        errMsg = `HTTP ${err.status} 错误`;
+      }
+      app.alerts.show({ type: 'error' }, errMsg);
+    }
   }
 
   // v0.1.6: 给 array 元素上传文件 (评价 photoUrl / 学员 photoUrl)

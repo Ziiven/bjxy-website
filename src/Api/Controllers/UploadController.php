@@ -13,8 +13,8 @@ use Ziven\Community\Core\Services\TencentCOSService;
 
 /**
  * 接收后台图片上传, 调 ziven-core TencentCOSService 上传到 COS, 返回 CDN URL, 存到 settings
- * POST /api/bjxy/upload
- * multipart: file=@logo.png, key=bjxy_brand_logo_url
+ * POST /api/bjxy/upload  multipart: file=@logo.png, key=bjxy_brand_logo_url
+ * DELETE /api/bjxy/upload  body: key=bjxy_xxx_url   清空 setting + 删 COS 文件 (v0.1.21)
  */
 class UploadController implements RequestHandlerInterface
 {
@@ -26,6 +26,11 @@ class UploadController implements RequestHandlerInterface
     {
         $actor = RequestUtil::getActor($request);
         $actor->assertAdmin();
+
+        // v0.1.21: DELETE 分支 (清空 setting + 删 COS 文件), 跟 POST 上传独立逻辑
+        if ($request->getMethod() === 'DELETE') {
+            return $this->handleDelete($request);
+        }
 
         $body = $request->getParsedBody();
         $key = $body['key'] ?? null;
@@ -121,5 +126,65 @@ class UploadController implements RequestHandlerInterface
                 'error' => 'upload exception: ' . $e->getMessage(),
             ], 500);
         }
+    }
+
+    // v0.1.21: DELETE 处理 (辉哥 15:07 反馈: 背景渐变 + hero banner 等单图都没移除按钮)
+    //   清空对应 setting + 尝试删 COS 文件 (找不到 key 就当没删, 不报错)
+    //   评价/活动 array 多图走 client-side splice, 不调这个 API
+    protected function handleDelete(ServerRequestInterface $request): ResponseInterface
+    {
+        $body = $request->getParsedBody();
+        $key = $body['key'] ?? null;
+
+        if (!$key || !preg_match('/^bjxy_[a-z0-9_]+$/', $key)) {
+            return new JsonResponse(['error' => 'invalid key (must be bjxy_*)'], 400);
+        }
+
+        $url = $this->settings->get($key);
+        if (!$url) {
+            // setting 本来就是空, 算成功
+            return new JsonResponse(['ok' => true, 'key' => $key, 'url' => '']);
+        }
+
+        try {
+            // 从完整 URL 提取 cosKey, 例如:
+            //   https://fusionimage-1300180713.cos.ap-beijing.myqcloud.com/bjxy/xxx.png
+            //   → bjxy/xxx.png
+            $cosKey = $this->extractCosKeyFromUrl($url);
+            if ($cosKey) {
+                $cos = new TencentCOSService($this->settings);
+                if ($cos->isEnabled()) {
+                    // deleteFile 失败不阻塞清空 setting (旧文件可能已被外部删, 不应阻塞 UI 操作)
+                    $cos->deleteFile($cosKey);
+                }
+            }
+        } catch (\Throwable $e) {
+            // COS 删失败也继续, 至少清空 setting (避免用户重复操作)
+        }
+
+        $this->settings->set($key, '');
+
+        return new JsonResponse(['ok' => true, 'key' => $key, 'url' => '']);
+    }
+
+    // v0.1.21: 从 CDN URL 提取 cosKey (path 部分)
+    //   例如 https://bucket-123.cos.ap-beijing.myqcloud.com/bjxy/foo.png → bjxy/foo.png
+    //   非 COS URL (e.g. 用户手填外链) 返回 null, 跳过 COS 删除
+    protected function extractCosKeyFromUrl(string $url): ?string
+    {
+        $parsed = parse_url($url);
+        if (empty($parsed['host']) || empty($parsed['path'])) {
+            return null;
+        }
+        $path = ltrim($parsed['path'], '/');
+        if ($path === '') {
+            return null;
+        }
+        // 只处理 COS URL (.cos.*.myqcloud.com / .tencentcos.cn)
+        $host = strtolower($parsed['host']);
+        if (strpos($host, '.cos.') === false && strpos($host, '.tencentcos.') === false) {
+            return null;
+        }
+        return $path;
     }
 }

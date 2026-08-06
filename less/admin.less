@@ -347,9 +347,13 @@
 }
 .BjxyField-file-preview {
     margin-top: 6px;
+    padding: 6px 8px;
+    background: rgba(255, 255, 255, 0.04);
+    border-radius: 4px;
     font-size: 11px;
     color: var(--bjxy-text-muted);
     word-break: break-all;
+    position: relative;  /* v0.1.21: 让 .BjxyField-file-remove 绝对定位 */
 }
 .BjxyField-file-preview img {
     max-width: 200px;
@@ -447,6 +451,29 @@
     justify-content: center;
 }
 .BjxyField-photo-del:hover { background: var(--bjxy-danger); }
+
+// v0.1.21: fileField 移除按钮 (跟 .BjxyField-photo-del 1:1 风格, 右上角 × 圈)
+//   辉哥 15:07 反馈: 背景渐变+hero banner 都没移除按钮, 没法换图
+.BjxyField-file-remove {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    width: 22px;
+    height: 22px;
+    background: rgba(0, 0, 0, 0.7);
+    color: #fff;
+    border: none;
+    border-radius: 50%;
+    font-size: 14px;
+    line-height: 1;
+    cursor: pointer;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.15s ease;
+}
+.BjxyField-file-remove:hover { background: var(--bjxy-danger); }
 
 .BjxyField-array-row {
     display: grid;
