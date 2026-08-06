@@ -908,3 +908,126 @@
     line-height: 1.6;
     margin-top: 8px;
 }
+
+// ====================================================================
+// v0.1.20: GroupPickerModal 样式 (辉哥 12:16 反馈 "教练展示 section 打开 modal 选用户时样式是乱的")
+//   原因: v0.1.3 写的样式 v0.1.8 整页重写玻璃风时丢了, v0.1.20 从 v0.1.7 (6570c11) 1:1 恢复
+//   modal 走 vendor light theme (--control-bg 浅色变量), 跟 Flarum 2.0 admin 默认 modal 风格一致
+//   1:1 移植, 不改颜色 token, 兼容 --bjxy-primary 蓝 + --bjxy-blue-soft 浅蓝 fallback
+// ====================================================================
+// v0.1.3: GroupPickerModal 样式 (弹 modal 选用户组, 替代 v0.1.0f 留的 alert 占位)
+// v0.1.4 改: modal 展示 user (不是 group), 加 sortablejs 拖拽样式
+// v0.1.5 改: modal 加右栏 详情 form (bio/achievements/specialties/photo), 2 列布局
+.GroupPickerModal-body {
+    display: grid;
+    grid-template-columns: 1fr 1.2fr;
+    gap: 16px;
+    min-height: 400px;
+}
+.GroupPickerModal-list { display: flex; flex-direction: column; gap: 6px; max-height: 60vh; overflow-y: auto; }
+.GroupPickerModal-item {
+    display: grid;
+    grid-template-columns: 20px 24px 32px 1fr auto;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    border: 1px solid var(--control-bg);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s, box-shadow 0.15s;
+}
+.GroupPickerModal-item:hover { background: var(--control-bg); }
+.GroupPickerModal-item.on { background: var(--bjxy-blue-soft, #E0EBF8); border-color: var(--bjxy-primary, #2D7BE5); }
+.GroupPickerModal-item.active { box-shadow: 0 0 0 2px var(--bjxy-primary, #2D7BE5); }
+// sortablejs 拖拽中的样式
+.GroupPickerModal-item.sortable-ghost { opacity: 0.4; background: var(--bjxy-primary, #2D7BE5); }
+.GroupPickerModal-item.sortable-chosen { cursor: grabbing; }
+.GroupPickerModal-item.sortable-drag { box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+.GroupPickerModal-item-handle { color: var(--control-color-soft); user-select: none; cursor: grab; font-size: 12px; }
+.GroupPickerModal-item input[type="checkbox"] { margin: 0; cursor: pointer; }
+.GroupPickerModal-item-avatar {
+    width: 32px; height: 32px; border-radius: 50%; overflow: hidden;
+    background: var(--control-bg); display: flex; align-items: center; justify-content: center;
+    font-size: 13px; font-weight: 600; color: var(--control-color);
+    img { width: 100%; height: 100%; object-fit: cover; }
+}
+.GroupPickerModal-item-name { font-weight: 600; color: var(--control-color); }
+.GroupPickerModal-item-username { font-size: 12px; color: var(--control-color-soft); }
+.GroupPickerModal-empty { padding: 24px; text-align: center; color: var(--control-color-soft); }
+.GroupPickerModal-loading { padding: 24px; text-align: center; color: var(--control-color-soft); }
+.GroupPickerModal-hint { padding: 8px 12px; background: var(--control-bg); border-radius: 4px; font-size: 12px; color: var(--control-color-soft); margin-bottom: 12px; }
+.GroupPickerModal-footer { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--control-bg); }
+.GroupPickerModal-actions { display: flex; gap: 8px; }
+.GroupPickerModal-count { font-size: 12px; color: var(--control-color-soft); }
+
+// v0.1.5: 详情 form 样式
+.GroupPickerModal-details {
+    background: var(--control-bg);
+    border-radius: 6px;
+    padding: 16px;
+    max-height: 60vh;
+    overflow-y: auto;
+}
+.GroupPickerModal-details-empty {
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--control-color-soft);
+    font-size: 13px;
+    text-align: center;
+    padding: 32px 16px;
+}
+.GroupPickerModal-detail-form { display: flex; flex-direction: column; gap: 12px; }
+.GroupPickerModal-detail-head {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--control-color-soft);
+}
+.GroupPickerModal-detail-avatar {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: var(--bjxy-primary, #2D7BE5);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    font-weight: 700;
+    overflow: hidden;
+    flex-shrink: 0;
+    img { width: 100%; height: 100%; object-fit: cover; }
+}
+.GroupPickerModal-detail-name { font-size: 15px; font-weight: 700; color: var(--control-color); }
+.GroupPickerModal-detail-username { font-size: 12px; color: var(--control-color-soft); }
+.GroupPickerModal-field {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    label { font-size: 12px; font-weight: 600; color: var(--control-color); }
+}
+.GroupPickerModal-input, .GroupPickerModal-textarea {
+    width: 100%;
+    padding: 6px 10px;
+    border: 1px solid var(--control-color-soft);
+    border-radius: 4px;
+    font-size: 12px;
+    background: var(--control-bg);
+    color: var(--control-color);
+    font-family: inherit;
+}
+.GroupPickerModal-textarea { resize: vertical; min-height: 60px; }
+.GroupPickerModal-photo-row { display: flex; gap: 6px; align-items: center; }
+.GroupPickerModal-photo-row .GroupPickerModal-input { flex: 1; }
+.GroupPickerModal-photo-preview {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 6px;
+    font-size: 11px;
+    color: var(--control-color-soft);
+    img { width: 48px; height: 48px; object-fit: cover; border-radius: 4px; border: 1px solid var(--control-color-soft); }
+}
