@@ -3,6 +3,14 @@
 // ====================================================================
 // v0.1.6a 引入 swiper 11 CSS (直接 paste 到 forum.less 末尾, 不走 @import)
 //   wikimedia/less.php 的 @import (less) 和 (inline) 都不生效
+
+// v0.1.20 shim: 兼容 Flarum 1.x 时代的 less 变量 (v0.1.0 760101e 引入 L942 @media @phone 用了 @phone 但没 shim)
+//   v0.1.0 → v0.1.19 走 stale cache 没事, v0.1.20 cache:clear 触发 lazy compile 才暴露
+//   Wikimedia less.php 5.x 严格 throw → variable @phone is undefined → forum frontend 整个 500
+//   1:1 抄 ziven-core 跟 vendor Flarum 的标准 shim (3 个断点)
+@phone: ~"(max-width: 767px)";
+@tablet: ~"(min-width: 768px)";
+@desktop: ~"(min-width: 992px)";
 //   swiper.less 文件还是复制到 less/ 目录里, 但 less 不导入它 (保留做 source-of-truth)
 //   实际 swiper 样式: 搜索 swiper-CSS-START 标记之间
 // swiper-CSS-START
