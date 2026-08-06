@@ -22,6 +22,18 @@ const DEFAULT_BRAND = '北极雪屿';
 const DEFAULT_SLOGAN = '室内滑雪 · 全国连锁';
 
 export default class BjxyPage extends Component {
+  // v0.1.22: /bjxy 路径 title 改为品牌名 + 品牌副标 (辉哥 18:38 新需求)
+  //   override vendor Page.setTitle() 默认行为 (vendor Page L89-91 / IndexPage L89-92):
+  //     app.setTitle(extractText(app.translator.trans('core.forum.index.meta_title_text'))) + setTitleCount(0)
+  //   不调 vendor 默认 setTitle, 完全自定义. 走 bjxy_brand_name / bjxy_brand_slogan setting,
+  //   后台 '品牌信息' tab 配置 (BjxySettings.jsx L511-519), 留空时 fallback 到 '北极雪屿' + '室内滑雪 · 全国连锁'
+  setTitle() {
+    const brandName = app.forum.attribute('bjxy_brand_name') || DEFAULT_BRAND;
+    const brandSlogan = app.forum.attribute('bjxy_brand_slogan') || DEFAULT_SLOGAN;
+    app.setTitle(brandName + ' · ' + brandSlogan);
+    app.setTitleCount(0);
+  }
+
   oninit(vnode) {
     super.oninit(vnode);
     this.coaches = [];
@@ -584,6 +596,10 @@ export default class BjxyPage extends Component {
   }
 
   oncreate(vnode) {
+    // v0.1.22: /bjxy 路径 HTML <title> 改为品牌名 + 品牌副标
+    //   vendor Page setTitle 默认 setTitle(trans('core.forum.index.meta_title_text')) = '极客雪域'
+    //   override 后变成 '北极雪屿 · 室内滑雪 · 全国连锁' (跟后台 '品牌信息' tab 设置联动)
+    this.setTitle();
     this.loadCoaches();
     // v0.1.17: 通用设置 - '显示底部 Tab' 开关 (bjxy_show_mobile_tab = '1' 隐藏 mobile tab)
     //   辉哥 19:37+ 拍板: "开启状态时，会在bjxy的前端页面，把下方的mobile tab移除"

@@ -20,6 +20,17 @@ return [
         ->css(__DIR__ . '/less/forum.less')
         // Flarum 2.0 page extension: 注册 /bjxy 路由 (跟 ziven-dress-up /dressUp 同模式)
         ->route('/bjxy', 'bjxy.website', function (Document $document, ServerRequestInterface $request) {
+            // v0.1.22: /bjxy 路径 HTML <title> 改为品牌名 + 品牌副标 (辉哥 18:38 新需求)
+            //   server-side render 直接 set $document->title, Flarum Document L31 字段,
+            //   之后 makeTitle() (L210) 自动拼到 HTML <title> 标签. vendor route callback
+            //   只在 /bjxy 路径触发, 其他路由不污染
+            //   读 bjxy_brand_name / bjxy_brand_slogan setting (跟 '品牌信息' tab 配置联动),
+            //   留空时 fallback 到默认 '北极雪屿' + '室内滑雪 · 全国连锁' (跟 BjxyPage.jsx DEFAULT_BRAND 一致)
+            /** @var SettingsRepositoryInterface $settings */
+            $settings = app(SettingsRepositoryInterface::class);
+            $brandName = $settings->get('bjxy_brand_name') ?: '北极雪屿';
+            $brandSlogan = $settings->get('bjxy_brand_slogan') ?: '室内滑雪 · 全国连锁';
+            $document->title = $brandName . ' · ' . $brandSlogan;
             return $document;
         })
         // v0.1.0r 修: 教学体系 + 特色 从 settings 读用户配置, fallback 用 CurriculumData 默认
