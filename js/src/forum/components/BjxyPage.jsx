@@ -590,10 +590,14 @@ export default class BjxyPage extends Component {
     //   acpl-mobile-tab 扩展渲染 <nav className="MobileTab"> 元素
     //   默认 '0' (false) = 显示 mobile tab, '1' (true) = 隐藏
     //   CSS hide 不用改 mobile tab 扩展内部代码, 不动 DOM 避免 mobile tab JS 报错
+    // v0.1.18 改: 同步移除 .App.affix 的 padding-bottom: 50px (vendor Flarum core 给 .App.affix 加的
+    //   底部 padding 留给 mobile tab 高度, mobile tab 隐藏后这个 padding 仍存在 → 页面下方留白)
+    //   之前辉哥反馈: "开启后，mobile tab确实被移除了，但下方距离底部的间距还存在"
     if (app.forum.attribute('bjxy_show_mobile_tab') === '1') {
       const style = document.createElement('style');
       style.id = 'bjxy-hide-mobile-tab';
-      style.textContent = 'nav.MobileTab { display: none !important; }';
+      // 同时隐藏 mobile tab + 移除 .App.affix 底部 padding (50px 留给 mobile tab 的)
+      style.textContent = 'nav.MobileTab { display: none !important; } .App.affix { padding-bottom: 0 !important; }';
       document.head.appendChild(style);
     }
   }

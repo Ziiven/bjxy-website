@@ -823,6 +823,12 @@
 .bjxy-visibility-toggle.on .bjxy-visibility-toggle-btn {
     background: linear-gradient(135deg, #fbbc04 0%, #f59e0b 100%);  // on: 黄渐变
 }
+// v0.1.18 改: 加 .bjxy-general-toggle.on 同样规则
+//   通用设置区 toggle wrapper 不是 .bjxy-visibility-toggle, 是 .bjxy-general-toggle
+//   之前 CSS 只走 .bjxy-visibility-toggle.on 选择器, 通用 toggle ON 状态不变黄渐变, knob 不滑动
+.bjxy-general-toggle.on .bjxy-visibility-toggle-btn {
+    background: linear-gradient(135deg, #fbbc04 0%, #f59e0b 100%);  // on: 黄渐变
+}
 .bjxy-visibility-toggle-knob {
     position: absolute;
     top: 2px;
@@ -835,6 +841,10 @@
     transition: left 0.2s ease;
 }
 .bjxy-visibility-toggle.on .bjxy-visibility-toggle-knob {
+    left: 18px;  // 滑到右边
+}
+// v0.1.18 改: 通用 toggle knob 同样滑到右边
+.bjxy-general-toggle.on .bjxy-visibility-toggle-knob {
     left: 18px;  // 滑到右边
 }
 
