@@ -592,12 +592,15 @@ export default class BjxyPage extends Component {
     //   CSS hide 不用改 mobile tab 扩展内部代码, 不动 DOM 避免 mobile tab JS 报错
     // v0.1.18 改: 同步移除 .App.affix 的 padding-bottom: 50px (vendor Flarum core 给 .App.affix 加的
     //   底部 padding 留给 mobile tab 高度, mobile tab 隐藏后这个 padding 仍存在 → 页面下方留白)
-    //   之前辉哥反馈: "开启后，mobile tab确实被移除了，但下方距离底部的间距还存在"
+    // v0.1.19 改: 还需移除 .App-content 的 padding-bottom: 20px (vendor Flarum core
+    //   `#app .App-content { padding-bottom: 20px }` 加的, main/.App-content 底部留 20px 间距)
+    //   辉哥 09:12 反馈: "开启移除tab后，前端页面底部还是有间距"
     if (app.forum.attribute('bjxy_show_mobile_tab') === '1') {
       const style = document.createElement('style');
       style.id = 'bjxy-hide-mobile-tab';
-      // 同时隐藏 mobile tab + 移除 .App.affix 底部 padding (50px 留给 mobile tab 的)
-      style.textContent = 'nav.MobileTab { display: none !important; } .App.affix { padding-bottom: 0 !important; }';
+      // 同时隐藏 mobile tab + 移除 .App.affix 底部 padding (50px) + 移除 .App-content 底部 padding (20px)
+      // 一起干掉, mobile tab 隐藏后页面底部跟 viewport 底完全贴合, 0 间距
+      style.textContent = 'nav.MobileTab { display: none !important; } .App.affix { padding-bottom: 0 !important; } .App-content { padding-bottom: 0 !important; }';
       document.head.appendChild(style);
     }
   }
