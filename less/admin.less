@@ -837,3 +837,64 @@
 .bjxy-visibility-toggle.on .bjxy-visibility-toggle-knob {
     left: 18px;  // 滑到右边
 }
+
+// v0.1.17: 通用设置区样式 (全局设置区第 2 个 tab)
+//   显示 '显示底部 Tab' 开关, 走横向 flex 布局 (info 左, control 右)
+//   复用 .bjxy-visibility-toggle-btn / .bjxy-visibility-toggle-knob (跟 section toggle 视觉一致)
+.bjxy-general-content {
+    padding: 4px 0 0 0;
+}
+.bjxy-general-toggle {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 16px 20px;
+    background: rgba(255, 255, 255, 0.04);
+    border-radius: 12px;
+    border: 1px solid var(--bjxy-glass-border);
+    cursor: pointer;
+    user-select: none;
+    -webkit-user-select: none;
+}
+.bjxy-general-toggle-info {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+.bjxy-general-toggle-label {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--bjxy-text-primary);
+    margin-bottom: 4px;
+}
+.bjxy-general-toggle-hint {
+    font-size: 12px;
+    color: var(--bjxy-text-secondary);
+    line-height: 1.5;
+}
+.bjxy-general-toggle-control {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex: 0 0 auto;
+}
+.bjxy-general-toggle-state {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--bjxy-text-secondary);
+    min-width: 36px;
+    text-align: right;
+}
+.bjxy-general-toggle.on .bjxy-general-toggle-state { color: var(--bjxy-accent); }
+
+// v0.1.17: 通用设置区空状态 (mobile tab 扩展未安装时)
+.bjxy-general-empty {
+    padding: 24px 20px;
+    text-align: center;
+    color: var(--bjxy-text-secondary);
+}
+.bjxy-general-empty p { margin: 4px 0; }
+.bjxy-general-empty-hint {
+    font-size: 12px;
+    line-height: 1.6;
+    margin-top: 8px;
+}

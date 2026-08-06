@@ -139,7 +139,15 @@ return [
         ->serializeToForum('bjxy_section_visible_coach', 'bjxy_section_visible_coach')
         ->serializeToForum('bjxy_section_visible_reviews', 'bjxy_section_visible_reviews')
         ->serializeToForum('bjxy_section_visible_contact', 'bjxy_section_visible_contact')
-        ->serializeToForum('bjxy_section_visible_footer', 'bjxy_section_visible_footer'),
+        ->serializeToForum('bjxy_section_visible_footer', 'bjxy_section_visible_footer')
+        // v0.1.17: 通用设置 - 显示底部 mobile tab 开关 (默认 '0' 关闭)
+        //   辉哥 19:37+ 拍板: "在bjxy后台'全局设置'中新加一个tab，叫'通用设置'，里面加一个开关叫'显示底部Tab'，默认关闭"
+        //   "开启状态时，会在bjxy的前端页面，把下方的mobile tab移除"
+        //   '0' = 显示 mobile tab (默认, mobile tab 扩展已装时正常显示)
+        //   '1' = 隐藏 mobile tab (前台 bjxy 页面 CSS hide nav.MobileTab)
+        //   旧部署缺这 setting 时, 前台默认 '0' (显示 mobile tab, 跟默认一致)
+        //   是否渲染开关由 admin 检测 mobile tab 扩展是否安装决定 (custom-tab-items API 拿)
+        ->serializeToForum('bjxy_show_mobile_tab', 'bjxy_show_mobile_tab'),
 
     (new Extend\Frontend('admin'))
         ->js(__DIR__ . '/js/dist/admin.js')

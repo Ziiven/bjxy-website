@@ -115,8 +115,11 @@ const DEFAULT_TAB_ORDER = [
 //   跟 BJXY_TABS 1:1 结构 [{key, icon, label}], 未来可加 footer 全局 / SEO / theme 等
 //   全局 tab 不参与主 tab 排序, 不存 settings
 //   this.activeGlobalTab 状态机控制当前显示哪个全局 tab 的内容
+// v0.1.17 改: 加 'general' tab (辉哥 19:37+ 拍板: "在bjxy后台'全局设置'中新加一个tab，叫'通用设置'")
+//   通用设置里目前放 '显示底部 Tab' 开关, 只在 mobile tab 扩展安装时渲染
 const BJXY_GLOBAL_TABS = [
-  { key: 'bg', icon: '🎨', label: '背景渐变' },
+  { key: 'bg',      icon: '🎨', label: '背景渐变' },
+  { key: 'general', icon: '🔧', label: '通用设置' },
 ];
 
 export default class BjxySettings extends ExtensionPage {
@@ -145,12 +148,17 @@ export default class BjxySettings extends ExtensionPage {
       brand: true, hero: true, about: true, events: true, features: true,
       curriculum: true, coach: true, reviews: true, contact: true, footer: true,
     };
+    // v0.1.17: 通用设置 - '显示底部 Tab' 开关 (默认 false = 显示 mobile tab, 跟辉哥说的 '默认关闭' 一致)
+    //   辉哥 19:37+ 拍板: "里面加一个开关叫'显示底部Tab'，默认关闭，这个开关只有安装了mobile tab时才会展示出来，开启状态时，会在bjxy的前端页面，把下方的mobile tab移除"
+    //   state: false = 显示 mobile tab (默认), true = 隐藏 mobile tab
+    this.showMobileTab = false;
     this.reviewsSortable = null;
     this.studentsSortable = null;
     // v0.1.8 tab 状态: 跟 ziven-core 1:1 模式, oninit 给初始值, switchTab() 改 + m.redraw()
     this.activeTab = 'brand';
     // v0.1.14: 全局设置区 active tab 状态机 (独立于主 activeTab, 跟主 tab bar 完全分离)
     //   全局 tab 永远在独立 card 区域 (.bjxy-global-section), 跟主 10 个可拖 tab 不混
+    // v0.1.17 改: 加 'general' tab (辉哥 19:37+ 拍板: "在bjxy后台'全局设置'中新加一个tab，叫'通用设置'")
     this.activeGlobalTab = 'bg';
     // v0.1.9: tab 顺序 (可拖拽, 持久化到 bjxy_section_order_json)
     //   oninit 给默认顺序, loadSettings() 读 settings 覆盖
@@ -252,14 +260,91 @@ export default class BjxySettings extends ExtensionPage {
   // v0.1.14: 全局 tab → 对应 render method 映射
   //   跟 renderActiveSection() 同款结构, 但走独立全局 section
   //   未来加全局 tab: 加 case + 写新 renderXxxGlobalSection() 方法
+  // v0.1.17 改: 加 'general' case (通用设置 tab)
   renderActiveGlobalSection() {
     switch (this.activeGlobalTab) {
       case 'bg':         return this.renderBgSection();
+      case 'general':    return this.renderGeneralSection();
       // 未来: case 'footer':  return this.renderFooterGlobalSection();
       // 未来: case 'seo':     return this.renderSeoGlobalSection();
       // 未来: case 'theme':   return this.renderThemeGlobalSection();
       default:           return this.renderBgSection();
     }
+  }
+
+  // v0.1.17: 通用设置 section (全局设置区第 2 个 tab)
+  //   辉哥 19:37+ 拍板: "在bjxy后台'全局设置'中新加一个tab，叫'通用设置'，里面加一个开关叫'显示底部Tab'"
+  //   开关 '显示底部 Tab':
+  //     - 默认关闭 (开启后前端会隐藏 mobile tab)
+  //     - 只有 mobile tab 扩展 (acpl-mobile-tab) 装了才显示这个开关
+  //   检测 mobile tab 扩展是否安装:
+  //     - 走 /api (forum API) 拿 custom-tab-items, 长度 > 0 = 扩展装了
+  //     - 这是 acpl-mobile-tab 通过 RegisterForumTabItems 注册的
+  //     - 装上时 custom-tab-items API 至少 1 个 item (默认几个)
+  renderGeneralSection() {
+    // 检测 mobile tab 扩展是否安装 (走 custom-tab-items store)
+    // app.store 在 oninit 之前可能没初始化, try/catch 防止报错
+    let mobileTabInstalled = false;
+    let mobileTabCount = 0;
+    try {
+      // 走 app.store 直接查 custom-tab-items, 不需要调 API
+      const items = app.store && app.store.all ? app.store.all('custom-tab-items') : [];
+      mobileTabCount = items ? items.length : 0;
+      mobileTabInstalled = mobileTabCount > 0;
+    } catch (e) {
+      mobileTabInstalled = false;
+    }
+
+    if (!mobileTabInstalled) {
+      return (
+        <div className="bjxy-general-empty">
+          <p>🔧 通用设置</p>
+          <p className="bjxy-general-empty-hint">
+            通用开关会在安装 mobile tab 扩展 (acpl-mobile-tab) 后显示。
+            <br />
+            当前 server 未检测到 mobile tab 扩展 ({mobileTabCount} 个 custom-tab-items)。
+          </p>
+        </div>
+      );
+    }
+
+    const on = this.showMobileTab !== false;  // 默认 false (隐藏 mobile tab = 显示, 默认 on)
+    // 等等: 辉哥说"默认关闭" + "开启状态时...把下方的mobile tab移除"
+    //   开关 on = 移除 mobile tab (隐藏), off = 显示 mobile tab
+    //   this.showMobileTab = true = 隐藏 mobile tab (开关 ON)
+    //   this.showMobileTab = false = 显示 mobile tab (开关 OFF, 默认)
+    return (
+      <div className="bjxy-general-content">
+        <label className={`bjxy-general-toggle ${on ? 'on' : 'off'}`}>
+          <div className="bjxy-general-toggle-info">
+            <div className="bjxy-general-toggle-label">显示底部 Tab</div>
+            <div className="bjxy-general-toggle-hint">
+              开启后, bjxy 前端页面 (geek.ski/bjxy) 会把下方的 mobile tab 移除。
+              <br />
+              当前 server 检测到 <strong>{mobileTabCount}</strong> 个 mobile tab item。
+            </div>
+          </div>
+          <div className="bjxy-general-toggle-control">
+            <span className="bjxy-general-toggle-state">{on ? '已开启' : '已关闭'}</span>
+            <button
+              type="button"
+              className="bjxy-visibility-toggle-btn"
+              onclick={(e) => { e.preventDefault(); this.toggleShowMobileTab(); }}
+              aria-pressed={on}
+            >
+              <span className="bjxy-visibility-toggle-knob" />
+            </button>
+          </div>
+        </label>
+      </div>
+    );
+  }
+
+  // v0.1.17: 切换 showMobileTab state
+  toggleShowMobileTab() {
+    const cur = this.showMobileTab !== false;
+    this.showMobileTab = !cur;
+    m.redraw();
   }
 
   // v0.1.9: 初始化 tab bar sortablejs (复用 v0.1.4 GroupPickerModal / v0.1.7 reviews 拖拽模式)
@@ -928,6 +1013,11 @@ export default class BjxySettings extends ExtensionPage {
         // '1' / 'true' / true 都算可见; 缺省 / '0' / 'false' 算隐藏
         this.sectionVisible[k] = (v === undefined || v === '' || v === '1' || v === 'true' || v === true);
       });
+      // v0.1.17: 读 '显示底部 Tab' 开关 (bjxy_show_mobile_tab)
+      //   缺省 / '0' / 'false' = false (显示 mobile tab, 跟辉哥说的 '默认关闭' 一致)
+      //   '1' / 'true' = true (隐藏 mobile tab)
+      const mtabV = this.data['bjxy_show_mobile_tab'];
+      this.showMobileTab = (mtabV === '1' || mtabV === 'true' || mtabV === true);
       // v0.1.9: 读 bjxy_section_order_json 同步 tab 顺序
       //   防御: 解析失败 / 不是数组 / 数组里 key 跟 BJXY_TABS 不匹配时 fallback 到默认
       // v0.1.12 改: 兼容旧 11 个 key 数组 (含 'bg'), filter 掉 'bg' 后用剩下 10 个
@@ -1228,6 +1318,9 @@ export default class BjxySettings extends ExtensionPage {
     sectionKeys.forEach(k => {
       payload['bjxy_section_visible_' + k] = this.sectionVisible[k] !== false ? '1' : '0';
     });
+    // v0.1.17: '显示底部 Tab' 开关持久化 (前台 BjxyPage.jsx 读这个 setting 决定是否 hide nav.MobileTab)
+    //   '1' = 隐藏 mobile tab, '0' = 显示 mobile tab (默认, 跟辉哥说的 '默认关闭' 一致)
+    payload.bjxy_show_mobile_tab = this.showMobileTab ? '1' : '0';
     payload.bjxy_features_json = JSON.stringify(
       this.features.filter(f => f && f.title && f.title.trim() && f.desc && f.desc.trim())
     );

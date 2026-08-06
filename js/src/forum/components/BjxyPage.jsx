@@ -585,6 +585,17 @@ export default class BjxyPage extends Component {
 
   oncreate(vnode) {
     this.loadCoaches();
+    // v0.1.17: 通用设置 - '显示底部 Tab' 开关 (bjxy_show_mobile_tab = '1' 隐藏 mobile tab)
+    //   辉哥 19:37+ 拍板: "开启状态时，会在bjxy的前端页面，把下方的mobile tab移除"
+    //   acpl-mobile-tab 扩展渲染 <nav className="MobileTab"> 元素
+    //   默认 '0' (false) = 显示 mobile tab, '1' (true) = 隐藏
+    //   CSS hide 不用改 mobile tab 扩展内部代码, 不动 DOM 避免 mobile tab JS 报错
+    if (app.forum.attribute('bjxy_show_mobile_tab') === '1') {
+      const style = document.createElement('style');
+      style.id = 'bjxy-hide-mobile-tab';
+      style.textContent = 'nav.MobileTab { display: none !important; }';
+      document.head.appendChild(style);
+    }
   }
 
   loadCoaches() {
