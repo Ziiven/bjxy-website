@@ -808,3 +808,64 @@
 
 ### Commit
 - v0.1.4a: 本地 `d5d1076` / 服务器 `a1dfe95`
+
+---
+
+## v0.1.25 (2026-08-07) — 移除 bjxy 公告条 (辉哥反馈 11:50)
+
+**项目**: ziven-bjxy-website  
+**类型**: feat(forum) — 移除公告条 + 配套 less dead code 清理  
+**辉哥反馈**: 11:50 反馈公告条 ("室内滑雪 · 全国连锁 · 17 级教学体系 · 6 大特色") 区域不要了, 跟之前删 .bjxy-announce-badge (v0.1.0q) 同一思路
+
+### 改 2 个文件
+- **js/src/forum/components/BjxyPage.jsx**: L234-241 整段公告条 JSX 删除 (8 行)
+  - 删 `m('div', { class: 'bjxy-announce' }, [...])` 块
+  - 包含 span 拼装文案 (slogan + 级教学体系 + 大特色) + 链接 + arrow
+  - 页面结构保持: `m('div', { class: 'bjxy-page-bg' })` 仍带 comma 直接接 nav
+- **less/forum.less**: L146-159 公告条 CSS 整段删除 (14 行)
+  - 删 `.bjxy-announce { display: flex; ... }` 主样式
+  - 删 `.bjxy-announce-link` 蓝色链接样式
+  - 删 `.bjxy-announce-arrow` 自动靠右样式
+  - 注释 `// ===== 公告条 =====` + `// v0.1.0q 修: 删 .bjxy-announce-badge ...` 一并删
+
+### 不影响其他功能 (3 处"立即咨询"还剩 2 处)
+- L264 nav `a.bjxy-btn-primary` ✓ 保留
+- L358 hero `a.bjxy-btn-primary` ✓ 保留
+- L588 contact section 完整表单 ✓ 保留 (Playwright 没截到 viewport 内, 但 DOM 仍在)
+
+### Build size 对比 (本地 dist → server vendor bundle)
+| 文件 | 改前 (bytes) | 改后 (bytes) | 差 |
+|------|------------|------------|---|
+| forum.js dist | 105338 | 105046 | -292 |
+| admin.js dist | 74440 | 74440 | 0 (admin 不含公告条, webpack `compared for emit`) |
+| forum.css dist | 7983 | 7983 | 0 (less 删 3 规则但 minify 后字节级一致) |
+| **server public/assets/forum.js** | (vendor 包含所有 ext) | **1402809** | (新生成) |
+| **server public/assets/admin.js** | | **1076139** | (新生成) |
+
+### 部署 (SOP 116 + 138+)
+1. 本地 `yarn build` (走 `js/` 子目录) → forum.js 105046 + admin.js 74440
+2. scp `js/dist/{forum,admin}.js` + `forum.css` → server `/var/www/flarum/packages/ziven-bjxy-website/js/dist/`
+3. `chown -R nginx:nginx` (server 上传后 owner 是 root, 需改)
+4. vendor bundle commit: `sudo -u nginx php -r '$site=require "/var/www/flarum/site.php"; $app=$site->bootApp(); $c=$app->getContainer(); $c->make("flarum.assets.forum")->makeJs()->commit(true); $c->make("flarum.assets.admin")->makeJs()->commit(true);'` (Mavis spec 第 1 版又拼错 `/var/www/flulam/`,第 5 次同根因,改用真实路径 `flarum`)
+5. `sudo -u nginx php flarum cache:clear`
+6. server 验证: `rev-manifest.json` 含 `{"forum.js":"163b711a","admin.js":"324a25b4"}`, `/bjxy` 加载 `forum.js?v=163b711a` 新版本
+
+### Playwright 4 combo 验证 (geek.ski vendor, 2026-08-07 11:57)
+- `desktop_dark` 1280x800: announce=0, cta=2 (hero+nav), data-theme=dark, body bg rgb(20,25,31) ✅
+- `desktop_light` 1280x800: announce=0, cta=2, data-theme=light, body bg rgb(255,255,255) ✅
+- `mobile_dark` 375x812: announce=0, cta=2, data-theme=dark ✅
+- `mobile_light` 375x812: announce=0, cta=2, data-theme=light ✅
+- vendor bundle 0 命中 `bjxy-announce` (改前 ≥1 处, 改后 0)
+- 截图: `/tmp/bjxy_v0125_screenshots/{desktop,mobile}_{dark,light}.png` (4 张) + `{...}_top.png` (4 张顶部 250px 公告条区域)
+
+### 5 URL 验证
+| URL | 状态码 |
+|-----|--------|
+| `/` | 200 ✅ |
+| `/admin` | 403 (本地 MAMP 未登录, 正常) ✅ |
+| `/tags` | 200 ✅ |
+| `/bjxy` | 200 ✅ (server, 本地 MAMP 404 是 bjxy 扩展未 enable) |
+| `/dressUp` | 200 ✅ |
+
+### Commit
+- v0.1.25: 本地 `b38d483` / 服务器 vendor bundle hash `163b711a` (forum) + `324a25b4` (admin)

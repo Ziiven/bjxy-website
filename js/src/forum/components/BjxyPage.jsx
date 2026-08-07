@@ -231,15 +231,6 @@ export default class BjxyPage extends Component {
         // v0.1.0y: 视差背景 div (固定在 viewport, JS 改 backgroundPositionY)
         m('div', { class: 'bjxy-page-bg' }),
 
-      // ===== 公告条 =====
-      // v0.1.0q 修: 删 ELITE badge (辉哥反馈品牌信息 section 中 elite 文字要去掉)
-      //   公告条布局调整: badge 删了, slogan 文字移到最左, 链接 + arrow 仍最右
-      m('div', { class: 'bjxy-announce' }, [
-        m('span', null, s('bjxy_brand_slogan', DEFAULT_SLOGAN) + ' · ' + curriculum.boards.reduce((sum, b) => sum + b.levels.length, 0) + ' 级教学体系 · ' + features.length + ' 大特色'),
-        m('a', { href: '#contact', class: 'bjxy-announce-link' }, '📞 立即咨询'),
-        m('span', { class: 'bjxy-announce-arrow' }, '→'),
-      ]),
-
       // ===== 导航 =====
       // v0.1.9: 导航链接顺序也跟着 bjxy_section_order_json 走 (过滤掉 brand/bg/footer)
       //   跟 v0.1.8 之前 hard-coded 顺序 (关于/活动/特色/教学/教练/评价/联系) 保持 fallback 兼容
