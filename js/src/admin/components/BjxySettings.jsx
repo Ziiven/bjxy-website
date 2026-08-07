@@ -1065,21 +1065,31 @@ export default class BjxySettings extends ExtensionPage {
         try { this.coachGroupIds = JSON.parse(this.data.bjxy_coach_group_ids); } catch (e) {}
       }
       if (this.data.bjxy_coach_user_ids) {
-        try { this.coachUserIds = JSON.parse(this.data.bjxy_coach_user_ids); } catch (e) {}
+        try {
+          // 修 v0.1.24 (D 方案, 辉哥 08:42 拍板): load 时强制 int + dedup
+          //   治本 "1"+1 重复, 跟 GroupPickerModal L30 init + L288 confirm 三处一起改
+          const ids = JSON.parse(this.data.bjxy_coach_user_ids);
+          this.coachUserIds = Array.isArray(ids) ? [...new Set(ids.map(Number))] : [];
+        } catch (e) {}
       }
       if (this.data.bjxy_coach_details) {
         try {
+          // 修 v0.1.24 (D 方案): details 数组每条 userId 强转 int, 跳过无效项
+          //   跟 v0.1.20 fix 同根因 (settings 里可能有 "1" 和 1 两条同 user)
           const arr = JSON.parse(this.data.bjxy_coach_details);
           if (Array.isArray(arr)) {
             this.coachDetails = {};
             arr.forEach(d => {
-              if (d && d.userId) {
-                // v0.1.10 改: 忽略 photoUrl 字段 (辉哥 15:22 拍板, 教练头像统一用用户自己的)
-                this.coachDetails[d.userId] = {
-                  bio: d.bio || '',
-                  achievements: d.achievements || '',
-                  specialties: d.specialties || '',
-                };
+              if (d && d.userId !== undefined && d.userId !== null) {
+                const uid = Number(d.userId);
+                if (!isNaN(uid)) {
+                  // v0.1.10 改: 忽略 photoUrl 字段 (辉哥 15:22 拍板, 教练头像统一用用户自己的)
+                  this.coachDetails[uid] = {
+                    bio: d.bio || '',
+                    achievements: d.achievements || '',
+                    specialties: d.specialties || '',
+                  };
+                }
               }
             });
           }
@@ -1372,10 +1382,13 @@ export default class BjxySettings extends ExtensionPage {
     );
     payload.bjxy_curriculum_boards_json = JSON.stringify(this.boards);
     payload.bjxy_coach_group_ids = JSON.stringify(this.coachGroupIds);
-    payload.bjxy_coach_user_ids = JSON.stringify(this.coachUserIds);
+    // 修 v0.1.24 (D 方案): save 强转 int + dedup, 治本 "1"+1 重复写到 settings
+    const normalizedCoachUserIds = [...new Set(this.coachUserIds.map(Number))];
+    payload.bjxy_coach_user_ids = JSON.stringify(normalizedCoachUserIds);
     payload.bjxy_coach_details = JSON.stringify(
       // v0.1.10 改: 删 photoUrl 字段, 只存 bio/achievements/specialties
-      this.coachUserIds
+      // v0.1.24 改 (D 方案): 上面 normalizedCoachUserIds 已 dedup, 这里直接用
+      normalizedCoachUserIds
         .filter(uid => this.coachDetails[uid] && (this.coachDetails[uid].bio || this.coachDetails[uid].achievements || this.coachDetails[uid].specialties))
         .map(uid => ({
           userId: uid,

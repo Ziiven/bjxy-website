@@ -27,7 +27,8 @@ export default class GroupPickerModal extends Modal {
     super.oninit(vnode);
     // vnode.attrs: { groupIds, selectedUserIds, details, onSelect, onhide }
     this.groupIds = vnode.attrs.groupIds || [];
-    this.selectedUserIds = (vnode.attrs.selectedUserIds || []).slice();
+    // 修 v0.1.24 (D 方案): 父传子时强转 int, 防止 string+int 混合 ("1" 和 1 同一 user)
+    this.selectedUserIds = (vnode.attrs.selectedUserIds || []).map(Number);
     this.onSelect = vnode.attrs.onSelect || (() => {});
     this.attrsOnhide = vnode.attrs.onhide || null;
     // v0.1.5: details map (userId -> {bio, achievements, specialties})
@@ -284,8 +285,9 @@ export default class GroupPickerModal extends Modal {
 
   confirm() {
     // v0.1.5 返回 { userIds, details } (兼容 v0.1.4 只传 userIds)
+    // 修 v0.1.24 (D 方案): confirm 时强转 int + dedup, 治本 "1"+1 重复
     this.onSelect({
-      userIds: this.selectedUserIds.slice(),
+      userIds: [...new Set(this.selectedUserIds.map(Number))],
       details: JSON.parse(JSON.stringify(this.details)),
     });
     this.hide();
