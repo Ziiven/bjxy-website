@@ -494,7 +494,7 @@ export default class BjxyPage extends Component {
       ]),
       m('div', { class: 'bjxy-curri-list' },
         (curriculum.boards[this.activeBoard] ? curriculum.boards[this.activeBoard].levels : []).map((l, i) => m('div', { class: 'bjxy-level-card', key: 'c' + i }, [
-          m('div', { class: 'bjxy-level-num' }, i + 1),
+          m('div', { class: 'bjxy-level-num' }, 'Lv ' + (i + 1)),
           m('div', { class: 'bjxy-level-lvl' }, l.level || ''),
           m('div', { class: 'bjxy-level-name' }, l.name || ''),
           m('div', { class: 'bjxy-level-desc' }, l.desc || ''),
@@ -607,7 +607,7 @@ export default class BjxyPage extends Component {
       style.id = 'bjxy-hide-mobile-tab';
       // 同时隐藏 mobile tab + 移除 .App.affix 底部 padding (50px) + 移除 .App-content 底部 padding (20px)
       // 一起干掉, mobile tab 隐藏后页面底部跟 viewport 底完全贴合, 0 间距
-      style.textContent = 'nav.MobileTab { display: none !important; } .App.affix { padding-bottom: 0 !important; } .App-content { padding-bottom: 0 !important; }';
+      style.textContent = 'nav.MobileTab { display: none !important; } #header {display:none} #app-navigation {display: none !important;} #app { padding-top: 63.8px !important } .App.affix { padding-bottom: 0 !important; } .App-content { padding-bottom: 0 !important; }';
       document.head.appendChild(style);
     }
   }
