@@ -516,7 +516,7 @@ export default class BjxyPage extends Component {
           m('div', { class: 'bjxy-feature-mask', style: 'opacity: ' + overlayOpacity }),
         ]) : null,
         m('div', { class: 'bjxy-feature-content' }, [
-          m('span', { class: 'bjxy-feature-num' }, String(i + 1).padStart(2, '0')),
+          // v0.1.35 删: 数字编号 01-06 span (辉哥 17:12 反馈去掉每个卡片的数字编号)
           m('div', { class: 'bjxy-feature-icon' }, f.icon || '★'),
           m('h3', null, f.title || ''),
           m('p', null, f.desc || ''),

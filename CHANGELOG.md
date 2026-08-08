@@ -1049,6 +1049,77 @@
 - ⚠️ A 方案 count-up 动画 (IntersectionObserver 数字滚动) **本次不做**, 大卡只放大字号 + 居中 + 渐变标题, 后续 v0.1.34 再加 (辉哥没要求)
 - ⚠️ 复用 v0.1.32a `uploadFileForArray` (单值 field helper), 没复用 v0.1.32a `uploadPhotoToArray` (photos array helper), 因为 bgImageUrl 是单值 URL 不是 array
 
+## v0.1.35 (2026-08-08) — 1, 2 卡背景一致 + 去掉所有卡片数字编号 (辉哥 17:12 反馈)
+
+**项目**: ziven-bjxy-website
+**类型**: fix(forum) — 视觉统一 (1, 2 背景跟 3-6 一致) + 简化 (去掉数字编号 01-06)
+**辉哥反馈**: 17:12 反馈 2 件事
+  1. **1 号卡片的背景与其他卡片背景不一致** (桌面端大卡 1, 2 有蓝紫/紫蓝渐变 background, 3-6 是 var(--bjxy-bg-soft) 深色, 视觉割裂)
+  2. **去掉每个卡片的数字编号** (右上角 01-06 太干扰, 辉哥要纯净卡片)
+**部署**: 17:16 完成 (4 步全走, server vendor bundle re-commit + cache:clear)
+
+### 改 2 file + 2 dist rebuild
+
+- **less/forum.less** (4 处改, ~25 行 diff)
+  - **A. 删 L447-452** (v0.1.33 桌面端大卡 nth-child(1)(2) 渐变 background, 6 行): v0.1.35 删, 1, 2 跟 3-6 一样走 top-level L470 `var(--bjxy-bg-soft)` (cascade top-level 段生效)
+  - **B. 删 L499-508** (`.bjxy-feature-num` 整段 10 行, 右上角数字编号样式): v0.1.35 删, 数字编号全卡去掉
+  - **C. 删 L600-602** (有 bg 时 num 白字样式, 3 行): v0.1.35 删, 跟 B 一起删 (B 删了 num, C 也无意义)
+  - **D. 删 v0.1.34a 晚段 L1171-1180** (mobile 段 `.bjxy-feature-large .bjxy-feature-num` reset 10 行): v0.1.35 删, 跟 B 一起删
+- **js/src/forum/components/BjxyPage.jsx** (1 处改, 1 行)
+  - **L519 删 num span 渲染**: `m('span', { class: 'bjxy-feature-num' }, String(i + 1).padStart(2, '0'))` → 注释 (辉哥 17:12 反馈关键点: 数字编号 DOM 都不渲染)
+- **js/dist/admin.js** + **js/dist/forum.js** (yarn build 强 rebuild, SOP 152, 跟 less+jsx 同源重新生成)
+- **CHANGELOG.md** (本 entry)
+- **server 端 vendor bundle re-commit** (SOP 161 admin commit 单独再跑)
+
+### ⚠️ 保留 v0.1.34b 关键段 (不能动)
+
+- **v0.1.34b @media @phone 段 L1115-1186 全部保留**:
+  - L1121-1126 mobile grid `1fr 1fr` (2 列 3 行) — 辉哥 16:04 要 1 行 2 个的小卡, 不能改回 1 列
+  - L1132-1169 1, 2 大卡 reset (content / icon / h3 / p) — 跟 small card top-level 段字面完全一致
+  - L1181-1185 nth-child(1)(2) mobile bg reset `var(--bjxy-bg-soft)` — 跟桌面端 A 改动呼应, 1, 2 mobile 改 var(--bjxy-bg-soft)
+- **less/forum.less mobile @phone 早段 L459-465** (grid 1fr, span 1) — 保留
+- **less/forum.less top-level L467-497** (玻璃卡片基础 + hover) — 保留, v0.1.35 不动
+- **less/forum.less L586-589** (`.bjxy-feature-content` position/z-index) — 保留, 跟 num 无关
+- **less/forum.less L591-607** (有 bg 时 h3 / p / icon 白字) — 保留, 只删 L600-602 num 部分
+
+### 关键实测 (SOP 158 + 178 配套, desktop + mobile 必跑 Puppeteer 4 combo)
+
+- ✅ **Desktop 1440x900 features 实测** (Puppeteer 取 6 个 .bjxy-feature 元素 computed style):
+  - 1, 2, 3, 4, 5, 6 backgroundImage = `none` ✓ (1, 2 没渐变, 跟 3-6 完全一致)
+  - 1, 2, 3, 4, 5, 6 backgroundColor = `rgb(26, 32, 44)` ✓ (var(--bjxy-bg-soft) 深色, 全部一致, 1, 2 视觉统一)
+  - `.bjxy-feature-num` DOM 元素数 = 0 ✓ (数字编号全删, desktop 端 0 元素)
+  - 1, 2 大卡 hero 样式保留: icon 56px/80x80, h3 22px/800 (渐变保留), p 14px/22.4
+  - 3-6 small 样式保留: icon 28px/56x56, h3 18px/700, p 13px/20.8
+  - grid 6 列 180px ✓
+- ✅ **Mobile 390x844 features 实测**:
+  - 1, 2, 3, 4, 5, 6 backgroundImage = `none` ✓
+  - 1, 2, 3, 4, 5, 6 backgroundColor = `rgb(26, 32, 44)` ✓
+  - `.bjxy-feature-num` DOM 元素数 = 0 ✓
+  - **2 列 3 行保留**: grid 171px 171px ✓ (跟 v0.1.34b 一致, 没回归)
+  - **1-6 字面完全一致保留**: 全部 icon 28px/56x56, h3 18px/700, p 13px/20.8 (跟 v0.1.34b 一致, 没回归)
+- ✅ **其他 section 不受影响**: hero / stats / curriculum / coaches / reviews / students / events / contact / footer 全部不动 (改动只在 features 段 .bjxy-feature-num + nth-child bg)
+- ✅ **vendor bundle grep 验证**: `grep -c 'bjxy-feature-num' public/assets/forum.css` = 0 ✓, `grep -c 'bjxy-feature-num' public/assets/forum.js` = 0 ✓
+- ✅ **5 URL 全 200/403**: `/` 200, `/bjxy/` 200, `/api` 200, `/admin/` 403, `/login/` 405
+
+### 风险
+- ✅ 零回归: v0.1.34b 晚段 L1115-1186 完整保留, v0.1.33 桌面端大卡 hero 样式 (icon 80x80 / h3 22px 800 渐变 / p 14px) 完整保留
+- ✅ v0.1.33 small card 桌面端样式完整保留 (跟 v0.1.35 改动隔离, cascade 顺序保证 num 段不残留)
+- ✅ 1, 2 改 var(--bjxy-bg-soft) 后跟 3-6 完全一致, 视觉统一 ✓
+- ✅ 数字编号删除彻底: less 删 4 处 + jsx 删 1 处, vendor bundle grep 0 命中
+- ✅ SOP 178 cascade 顺序保证: v0.1.34b 段放 L1115-1186 (cascade 末尾), v0.1.35 删 num 段 (4 处) 都在 num 专属段, 不影响 1, 2 大卡 reset / mobile grid / mobile nth-child(1)(2) bg
+
+### 沉淀 (Mavis 整合)
+- **SOP 178 教训扩展 (v0.1.35 配套)**: 删 mobile 段时, 配套要删 top-level 段同名 selector, 不然 num span 没样式但 DOM 还在 (v0.1.35 4 处全删才能让 DOM 0 元素生效)
+- **v0.1.35 Coder 自测必跑**: 删 DOM 元素后, 必跑 Puppeteer 实测 `document.querySelectorAll('.deleted-class').length === 0` (不要只看 vendor bundle grep 0 命中, 还要看浏览器实际 DOM 0 元素)
+- **v0.1.35 Coder 自测必跑**: 删 background 后, 必跑 Puppeteer 实测 `getComputedStyle(feature1).backgroundImage === 'none'` + `backgroundColor === 'rgb(26, 32, 44)'` 跟其他卡一致 (不要只看 vendor bundle grep 0 命中, cascade 顺序可能让旧值复活)
+
+### 部署 (SOP 116 + 138+ + 152 + 153 + 154 + 161, **4 步全走**)
+1. 本地 `cd /Applications/MAMP/htdocs/Flarum/packages/ziven-bjxy-website/js && rm -rf dist && yarn build` (SOP 152 强 rebuild, 删 dist 防缓存)
+2. scp 2 source (forum.less + BjxyPage.jsx) + 2 dist (admin.js + forum.js) + 1 dist (forum.css) file (SOP 153 sshpass + scp -p 逐 file + mtime + sha 双验)
+3. `chown -R nginx:nginx packages/ziven-bjxy-website/`
+4. vendor bundle commit (SOP 161 admin commit 单独再跑): `forum` commit + `flarum cache:clear` + `admin` 单独 commit
+5. 5 URL + vendor bundle grep + Puppeteer 4 combo 验证 (SOP 158 + 178)
+
 ## v0.1.34b (2026-08-08) — 移动端 2 列 3 行 (1 行 2 个小卡) + 1-6 全部字面一致 (辉哥 16:04 反馈, v0.1.34a 误改返工)
 
 **项目**: ziven-bjxy-website

@@ -444,12 +444,9 @@
     text-align: center;
     padding: 32px;
 }
-.bjxy-feature-large:nth-child(1) {
-    background: linear-gradient(135deg, rgba(45, 123, 229, 0.15) 0%, rgba(124, 58, 237, 0.10) 100%);
-}
-.bjxy-feature-large:nth-child(2) {
-    background: linear-gradient(135deg, rgba(124, 58, 237, 0.15) 0%, rgba(45, 123, 229, 0.10) 100%);
-}
+// v0.1.35 改: 删桌面端大卡渐变 background (辉哥 17:12 反馈 1, 2 跟其他卡片不一致)
+//   1, 2 跟 3-6 一样走 small card L470 var(--bjxy-bg-soft) (cascade top-level 段生效)
+//   原 v0.1.33 渐变 background 注释掉 (留作历史, 不删变量, 方便回滚)
 // 小卡 (后 4 个 feature)
 .bjxy-feature:not(.bjxy-feature-large) {
     grid-column: span 2;  // 桌面端小卡占 33% 宽 (2/6)
@@ -495,17 +492,9 @@
 .bjxy-feature-large:hover {
     transform: translateY(-4px) scale(1.01);
 }
-// 右上角 01-06 编号
-.bjxy-feature-num {
-    position: absolute;
-    top: 18px; right: 22px;
-    font-size: 11px;
-    font-weight: 700;
-    color: var(--bjxy-text-mute);
-    font-family: 'JetBrains Mono', 'SFMono-Regular', Consolas, monospace;
-    letter-spacing: 0.1em;
-    z-index: 3;
-}
+// v0.1.35 删: .bjxy-feature-num 数字编号 01-06 整段 (辉哥 17:12 反馈去掉每个卡片的数字编号)
+//   原 10 行 (.bjxy-feature-num position absolute 右上角) 注释掉, 不删变量, 方便回滚
+//   配套删: 有 bg 时 num 白字 (L600-602) + mobile 大卡 num reset (L1171-1180) + BjxyPage.jsx L519 span 渲染
 // 56x56 渐变光晕 icon
 .bjxy-feature-icon {
     width: 56px; height: 56px;
@@ -597,9 +586,7 @@
 .bjxy-feature-bg ~ .bjxy-feature-content p {
     color: rgba(255, 255, 255, 0.85);
 }
-.bjxy-feature-bg ~ .bjxy-feature-content .bjxy-feature-num {
-    color: rgba(255, 255, 255, 0.6);
-}
+// v0.1.35 删: 有 bg 时 num 白字样式 (跟 num 整段一起删, 辉哥 17:12 反馈去掉数字编号)
 .bjxy-feature-bg ~ .bjxy-feature-content .bjxy-feature-icon {
     color: rgba(255, 255, 255, 0.95);
     background: linear-gradient(135deg, rgba(255, 255, 255, 0.10) 0%, rgba(255, 255, 255, 0.05) 100%);
@@ -1167,17 +1154,7 @@ a.bjxy-event-info.bjxy-event-link:hover {
         line-height: 1.6;  // 跟 small card L532 一致
         max-width: 100%;
     }
-    // v0.1.34a 改: 大卡 num 跟 small card L499-508 段字面完全一致 (absolute 右上角 11px 700)
-    .bjxy-feature-large .bjxy-feature-num {
-        position: absolute;  // 跟 small card L500 一致
-        top: 18px; right: 22px;  // 跟 small card L501 一致
-        font-size: 11px;  // 跟 small card L502 一致
-        font-weight: 700;  // 跟 small card L503 一致
-        color: var(--bjxy-text-mute);  // 跟 small card L504 一致
-        font-family: 'JetBrains Mono', 'SFMono-Regular', Consolas, monospace;  // 跟 small card L505 一致
-        letter-spacing: 0.1em;  // 跟 small card L506 一致
-        z-index: 3;  // 跟 small card L507 一致
-    }
+    // v0.1.35 删: mobile 段 .bjxy-feature-large .bjxy-feature-num 10 行 (跟 num 整段一起删, 辉哥 17:12 反馈)
     // v0.1.34a 改: 取消大卡 nth-child(1)(2) 渐变 background (mobile 改 var(--bjxy-bg-soft) 跟 small card 一致)
     .bjxy-feature-large:nth-child(1),
     .bjxy-feature-large:nth-child(2) {
