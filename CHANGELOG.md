@@ -1465,3 +1465,35 @@
 ### Commit
 - v0.1.31: 本地 SHA 待 git commit 跑 (commit message "v0.1.31 feat(forum): 删两处 swiper 左右导航箭头 (辉哥 11:48 反馈)") / 服务器 vendor bundle hash `6003892316c9a0025afa8c84bb166dc0a97affc2` (forum.css)
 
+---
+
+## v0.1.36a (2026-08-08) — 教练 card 改回横向布局 (辉哥 22:15 反馈, v0.1.36 返工)
+
+**项目**: ziven-bjxy-website
+**类型**: fix(forum) — 教练 card 改回横向布局 (新加 `.bjxy-coach-left` column 包 avatar + meta, info 在右侧)
+**辉哥反馈**: 22:15 反馈 v0.1.36 改成全垂直堆叠 (avatar / meta / info 三段) 是错的, 本意是横向布局
+- **name + username 在 avatar 下方** (保留 v0.1.36 改的, 跟 avatar 间距 12px)
+- **info (specialties/achievements/bio) 在 avatar 和 name 的右侧** (v0.1.36 改成底部是错的, 改回 v0.1.27 SOP 155 时代横向布局)
+
+### 改法 (v0.1.36a)
+
+**1. BjxyPage.jsx 拆 wrapper** (L565-595):
+- 新加 `.bjxy-coach-left` 包 `.bjxy-coach-avatar` + `.bjxy-coach-meta` (column 模式)
+- `.bjxy-coach-info` 单独在 `.bjxy-coach-left` 右侧 (跟 v0.1.27 SOP 155 一致)
+- mithril fragment child key 问题: 数组里 children 都无 key, 没问题 (SOP 167 不触发)
+
+**2. less/forum.less 改回 row + 新加 .bjxy-coach-left** (L698-758):
+- `.bjxy-coach`: `flex-direction: column → row` (辉哥 22:15 反馈, 改回 v0.1.27 SOP 155 横向布局)
+- `.bjxy-coach`: `gap: 0 → 16px` (跟 v0.1.27 一致)
+- 新加 `.bjxy-coach-left { display: flex; flex-direction: column; align-items: flex-start; flex-shrink: 0; }` (column 包 avatar + meta, flex-shrink: 0 防止被 info 挤压)
+- `.bjxy-coach-meta`: `margin-top: 16px → 12px` (v0.1.36 误改, 现在 column 内不需要 16px, 12px 更紧凑)
+- `.bjxy-coach-meta`: `margin-bottom: 8px → 0` (column 内底部无元素, 不需要下间距)
+- `.bjxy-coach-info` 保留 `flex: 1; min-width: 0;` (右侧占满 + 防止溢出)
+
+### 预期效果 (跟 v0.1.27 SOP 155 一致)
+- desktop 1440x900: avatar 80x80 圆形 + meta(name/username) 在 avatar 下方 + info (specialties/achievements/bio) 在右侧
+- mobile 390x844: 卡片还是 swiper 横向, 单卡布局跟 desktop 一致 (loop:true, slidesPerView: 1, 辉哥 21:50 改的 8497a0a)
+
+### Commit (待跑)
+- v0.1.36a: commit message `v0.1.36a fix(forum): 教练 card 改回横向布局 (辉哥 22:15 反馈, v0.1.36 误改返工)`
+

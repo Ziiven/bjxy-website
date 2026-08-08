@@ -563,22 +563,28 @@ export default class BjxyPage extends Component {
                   // v0.1.27 改 (A 方案): 删原来的 detail 二分判断, 所有 coach 统一走详细卡片样式
                   //   没字段的字段 (bio/achievements/specialties) 在下方三元判断自动隐藏, 不显示空白
                   m('div', { class: 'bjxy-coach' }, [
-                    m('div', { class: 'bjxy-coach-avatar' }, [
-                      // v0.1.10 改: 用用户自己的系统头像 (user.avatar_url 走 vendor User::getAvatarUrlAttribute() accessor 拼 URL)
-                      //   + srcset 走 2x/3x 让 Retina 屏幕清晰
-                      c.avatarUrl
-                        ? m('img', { src: c.avatarUrl, srcset: c.avatarSrcset || null, alt: c.displayName, loading: 'lazy' })
-                        : (c.displayName || '?').charAt(0),
-                    ]),
-                    // v0.1.36 改: name + username 单独块, 跟 avatar 保持合适间距 (16px), 跟 info 间距 8px
-                    //   辉哥 21:52 反馈: 教练 name/username 放到头像下方, 跟 avatar 保持合适的间距
-                    //   less 配套: .bjxy-coach 父容器从 flex row 改 column, .bjxy-coach-meta { margin-top: 16px; margin-bottom: 8px; }
-                    m('div', { class: 'bjxy-coach-meta' }, [
-                      m('div', { class: 'bjxy-coach-name' }, c.displayName || ''),
-                      c.username ? m('div', { class: 'bjxy-coach-username' }, '@' + c.username) : null,
+                    // v0.1.36a 改回: 横向布局 (辉哥 22:15 反馈)
+                    //   辉哥本意: avatar 单独在左, name + username 跟在 avatar 下方, info 还是在右侧
+                    //   v0.1.36 Coder 改成全 vertical 堆叠是错的, 现在拆 .bjxy-coach-left column 包 avatar + meta
+                    //   info (.bjxy-coach-info) 单独放在 .bjxy-coach-left 右侧
+                    m('div', { class: 'bjxy-coach-left' }, [
+                      m('div', { class: 'bjxy-coach-avatar' }, [
+                        // v0.1.10 改: 用用户自己的系统头像 (user.avatar_url 走 vendor User::getAvatarUrlAttribute() accessor 拼 URL)
+                        //   + srcset 走 2x/3x 让 Retina 屏幕清晰
+                        c.avatarUrl
+                          ? m('img', { src: c.avatarUrl, srcset: c.avatarSrcset || null, alt: c.displayName, loading: 'lazy' })
+                          : (c.displayName || '?').charAt(0),
+                      ]),
+                      // v0.1.36a 保留: name + username 单独块, 跟 avatar 间距 12px (新加 .bjxy-coach-left column 模式)
+                      //   辉哥 21:52 反馈: 教练 name/username 放到头像下方, 跟头像保持合适的间距
+                      m('div', { class: 'bjxy-coach-meta' }, [
+                        m('div', { class: 'bjxy-coach-name' }, c.displayName || ''),
+                        c.username ? m('div', { class: 'bjxy-coach-username' }, '@' + c.username) : null,
+                      ]),
                     ]),
                     m('div', { class: 'bjxy-coach-info' }, [
-                      // v0.1.36 删: name + username (移到上面 .bjxy-coach-meta 块)
+                      // v0.1.36 删: name + username (移到 .bjxy-coach-left 内 .bjxy-coach-meta 块)
+                      // v0.1.36a 保留: info 单独放在右侧, 跟 .bjxy-coach-left (avatar+meta) 平行
                       c.specialties ? m('div', { class: 'bjxy-coach-specialties' }, [
                         m('span', { class: 'bjxy-coach-label' }, '🏂 专长'),
                         m('span', { class: 'bjxy-coach-text' }, c.specialties),
