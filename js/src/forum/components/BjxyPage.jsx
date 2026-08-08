@@ -514,8 +514,9 @@ export default class BjxyPage extends Component {
         : this.coaches.length === 0
           ? m('p', null, '（暂无教练, 请在后台选择用户组）')
           : m('div', { class: 'bjxy-coach-grid' }, this.coaches.map((c, i) => {
-              const hasDetail = c.bio || c.achievements || c.specialties;
-              return m('div', { class: 'bjxy-coach' + (hasDetail ? ' bjxy-coach-detailed' : ''), key: 'c' + i }, [
+              // v0.1.27 改 (A 方案): 删原来的 detail 二分判断, 所有 coach 统一走详细卡片样式
+              //   没字段的字段 (bio/achievements/specialties) 在下方三元判断自动隐藏, 不显示空白
+              return m('div', { class: 'bjxy-coach', key: 'c' + i }, [
                 m('div', { class: 'bjxy-coach-avatar' }, [
                   // v0.1.10 改: 用用户自己的系统头像 (user.avatar_url 走 vendor User::getAvatarUrlAttribute() accessor 拼 URL)
                   //   + srcset 走 2x/3x 让 Retina 屏幕清晰

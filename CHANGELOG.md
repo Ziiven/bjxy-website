@@ -869,3 +869,95 @@
 
 ### Commit
 - v0.1.25: 本地 `b38d483` / 服务器 vendor bundle hash `163b711a` (forum) + `324a25b4` (admin)
+
+## v0.1.26 (2026-08-07) — 同步辉哥 a7ec3da 页面样式 (跟 v0.1.25 公告条累计)
+
+**项目**: ziven-bjxy-website  
+**类型**: chore(deploy) — 同步辉哥 22:51 反馈的 a7ec3da 页面样式 + 修复 v0.1.25 实施疏漏 (server source 落后 4 commit)  
+**辉哥反馈**: 22:51 反馈 bjxy 网站做了一些修改 (commit `a7ec3da` "修改页面样式"), 让同步到测试服 (geek.ski)
+
+### ⚠️ 重要背景: server 端 source 落后 (Coder v0.1.25 部署疏漏)
+- server 端 bjxy **git HEAD = `d421821` v0.1.22** (8/6 19:02 部署), **源码落后本地 4 个 commit**
+- v0.1.23/v0.1.24/v0.1.25 部署时**只 scp 了 dist (js/dist/admin.js + forum.js)**, 没 scp 源码
+- server 端 `js/dist/forum.js` mtime = 2026-08-07 11:54:23 (v0.1.25 部署时本地编译的) 但源码停在 v0.1.22
+- 潜在风险: 任何后续 vendor bundle commit 会**回滚 dist 到 v0.1.22 (含公告条 + 旧 coach normalize)**
+- 本次部署 4 步全走修复: scp 4 source + scp 2 dist + vendor bundle commit(true) + cache:clear
+
+### 改 2 个 source file (a7ec3da 部分, 累计 v0.1.22 → a7ec3da 4 commit 改 4 file)
+- **js/src/forum/components/BjxyPage.jsx** (a7ec3da 2 处)
+  - L497 课程等级数字: `i + 1` → `'Lv ' + (i + 1)` (新前缀 Lv)
+  - L610 mobile style: 加 `#header{display:none}` + `#app-navigation {display:none}` + `#app { padding-top: 63.8px }`
+- **less/forum.less** (a7ec3da 7 处)
+  - L151-152 `.bjxy-nav` `position: sticky` → `position: fixed; width: 100%` (全宽 fixed)
+  - L249 `.bjxy-hero` `padding: 64px 32px` → `32px 32px 0px 32px` (hero padding 减小)
+  - L326 `.bjxy-section` `padding: 56px 32px` → `56px 0px` (section padding)
+  - L522 `.bjxy-curri-list` `gap: 12px` → `gap: 8px` (课程等级 card gap 8px)
+  - L538 `.bjxy-level-num` `font-size: 22px` → `font-size: 16px` (等级字号 22→16)
+  - L940 `@media @phone` `.bjxy-hero` `padding: 32px 16px` → `padding: 10px 16px` (移动端 hero 10px)
+
+### Build size 对比 (本地 dist → server vendor bundle)
+| 文件 | 改前 (bytes) | 改后 (bytes) | 差 |
+|------|------------|------------|---|
+| forum.js dist | 105161 | 105161 | 0 (Lv 文本, 字节级一致) |
+| admin.js dist | 74440 | 74440 | 0 (admin 不含 Lv/less 改动) |
+| **server public/assets/forum.js** | 1374947 | **1375062** | +115 (含 4 commit 累计) |
+| **server public/assets/forum.css** | (没记录) | **578997** | (新生成, 含 v0.1.25 删公告条 + a7ec3da 7 处) |
+| **server public/assets/admin.js** | 986193 | 986193 | 0 (含 v0.1.24 coach normalize, 字节级一致) |
+
+### 部署 (SOP 116 + 138+ + 144 + 151, **4 步全走**)
+1. 本地 `yarn build` (走 `js/` 子目录, **先删 6 dist file 强 rebuild**, webpack "compared for emit" 跳过写盘, 见 SOP 152) → forum.js 105161 + admin.js 74440
+2. scp 2 dist file + 4 source file (BjxySettings.jsx / GroupPickerModal.js / BjxyPage.jsx / forum.less) → server `packages/ziven-bjxy-website/` (复制目录, **不是 vendor/ziiven/bjxy-website/ 软链**, 见 SOP 144 强化)
+   - 第一次 sshpass scp 4 file 一起不生效 (server mtime + sha 没变), 改 scp -p 逐 file (见 SOP 153)
+3. `chown -R nginx:nginx packages/ziven-bjxy-website/`
+4. vendor bundle commit: `sudo -u nginx php -r '$site=require "/var/www/flarum/site.php"; $app=$site->bootApp(); $c=$app->getContainer(); $c->make("flarum.assets.forum")->makeJs()->commit(true); $c->make("flarum.assets.admin")->makeJs()->commit(true);'` (用 server system PHP `/usr/bin/php` 8.3.31, **不是 MAMP `/Applications/MAMP/bin/php/php8.3.30/bin/php`**, 见 SOP 154)
+5. `sudo -u nginx php flarum cache:clear`
+6. server 验证: 6 项 + 实际渲染 7 处新样式
+
+### Playwright 实际渲染验证 (geek.ski vendor, 2026-08-07 23:00)
+#### desktop 1440x900
+| 元素 | 实际 computed style | 期望 (a7ec3da) | 结果 |
+|---|---|---|---|
+| .bjxy-announce | null (DOM 不存在) | 不存在 | ✅ |
+| .bjxy-nav | position: fixed, width: 1440px, top: 0 | fixed 全宽 | ✅ |
+| .bjxy-hero | padding: 32px 32px 0px | 减小 | ✅ |
+| .bjxy-section | padding: 56px 0px | 改 | ✅ |
+| .bjxy-curri-list | gap: 8px | 8px | ✅ |
+| .bjxy-level-num | font-size: 16px | 16px | ✅ |
+| .bjxy-level-num 文本 | "Lv 1, Lv 2, Lv 3, Lv 4, Lv 5, Lv 6, Lv 7, Lv 8" | Lv 前缀 | ✅ |
+| #app-navigation | display: none | 隐藏 | ✅ (见风险) |
+| #header | display: none | 隐藏 | ✅ (见风险) |
+| #app | padding: 63.8px 0px 0px | 补 padding-top 63.8px | ✅ |
+
+#### mobile 390x844
+| 元素 | 实际 computed style | 期望 | 结果 |
+|---|---|---|---|
+| .bjxy-nav | padding: 12px 16px (mobile shim) | mobile | ✅ |
+| .bjxy-nav-links | display: none (mobile shim) | 隐藏 | ✅ |
+| .bjxy-hero | padding: 10px 16px, grid-template-columns: 1fr | 10px + 1 列 | ✅ |
+| .bjxy-curri-list | gap: 8px | 8px | ✅ |
+| .bjxy-level-num | font-size: 16px | 16px | ✅ |
+| #app-navigation | display: none | 隐藏 | ✅ |
+| #header | display: none | 隐藏 | ✅ |
+| #app | padding: 63.8px 0px 0px | 补 padding-top | ✅ |
+
+### 5 URL 验证
+| URL | 状态码 |
+|-----|--------|
+| `/` | 200 ✅ |
+| `/admin` | 403 ✅ |
+| `/tags` | 200 ✅ |
+| `/bjxy` | 200 ✅ |
+| `/dressUp` | 200 ✅ |
+
+### 截图
+- 5 张: `/tmp/bjxy_screenshots/{01_desktop,02_desktop_full,03_mobile,04_mobile_mid,05_mobile_full}.png`
+
+### 风险
+- ✅ 零回归: v0.1.25 公告条已部署, 新部署叠加不破坏
+- ✅ vendor bundle 增量合理 (forum.js +115, 其他 0)
+- ✅ server 源码 v0.1.25 部署漏的 source scp 这次补上, 未来 vendor bundle commit 不会回滚
+- ✅ a7ec3da 7 处样式都是 CSS 调整 + 1 处 mobile style 调整, 不影响 bjxy 业务逻辑
+- ⚠️ **a7ec3da 把 `#header {display:none}` + `#app-navigation {display:none}` 不分 desktop/mobile 全部隐藏**, 实际渲染验证 desktop 1440x900 也 hidden. 辉哥描述"移动端 header + nav 隐藏" 跟实际"全局隐藏" 略有不一致, 建议辉哥确认是否需要 desktop 保留 header/nav. 如果要 desktop 保留, 需要把这两个隐藏规则包到 `@media @phone` 里
+
+### Commit
+- v0.1.26: 本地 `a7ec3da` / 服务器 vendor bundle hash 待补 (cache:clear 后 lazy compile, 首访问触发)

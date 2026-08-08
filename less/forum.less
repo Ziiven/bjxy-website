@@ -553,8 +553,10 @@
 
 // ===== 教练 =====
 // v0.1.5 改: 教练卡片支持详情展开 (bio/achievements/specialties/photoUrl)
-//   简单模式 (没详情): 跟 v0.1.4 一样, 头像 + 名字 居中显示
-//   详细模式 (有任意详情字段): 改成 flex 布局, 头像在左, 文字在右
+// v0.1.27 改 (A 方案, 辉哥 09:54 拍板): 合并 detailed 样式, 3 个 coach 都走统一详细卡片 (跨整行 + 大图 + flex row)
+//   - 之前的 hasDetail 二分逻辑删除, 没字段的字段 (bio/achievements/specialties) JS 三元判断自动隐藏
+//   - alice (uid=5) + bob (uid=6) 之前走简单卡片, 跟 Ziven 详细卡片视觉不一致, 现在统一
+//   - 前端展示一致性 > 后端数据完整性, 用户体验优先 (SOP 155)
 .bjxy-coach-grid {
     display: grid;
     grid-template-columns: repeat(6, 1fr);
@@ -562,37 +564,8 @@
     margin-top: 16px;
 }
 .bjxy-coach {
-    text-align: center;
-    cursor: pointer;
-    padding: 12px;
-    border-radius: 8px;
-    transition: background 0.15s;
-}
-.bjxy-coach:hover { background: var(--bjxy-bg-soft); }
-.bjxy-coach-avatar {
-    width: 64px;
-    height: 64px;
-    border-radius: 50%;
-    background: linear-gradient(135deg, var(--bjxy-blue), var(--bjxy-blue-light));
-    margin: 0 auto 8px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: #fff;
-    font-size: 22px;
-    font-weight: 800;
-    overflow: hidden;
-}
-.bjxy-coach-avatar img { width: 100%; height: 100%; object-fit: cover; }
-.bjxy-coach-name { font-size: 12px; font-weight: 600; }
-.bjxy-coach-title { font-size: 10px; color: var(--bjxy-text-mute); margin-top: 2px; }
-
-// v0.1.5 新加: 详细模式教练卡片 (有 bio/achievements/specialties)
-//   跨整行 (1/7 占 6 列), flex row 布局: 头像在左, 文字在右
-//   之前的 grid 6 列只适合头像+名字的简单卡片, 详细卡片需要更多空间展示文字
-// v0.1.5b 修: grid-column 拆 start/end (SOP 79, wikimedia/less.php 编译坑)
-//   之前 `grid-column: 1 / -1` 被 less 解析成 1 / -1 = -1 (除法), CSS 是 `grid-column: -1` 单值, 浏览器 invalid 不跨整行
-.bjxy-coach-detailed {
+    // v0.1.5b 修: grid-column 拆 start/end (SOP 79, wikimedia/less.php 编译坑)
+    //   之前 `grid-column: 1 / -1` 被 less 解析成 1 / -1 = -1 (除法), CSS 是 `grid-column: -1` 单值, 浏览器 invalid 不跨整行
     grid-column-start: 1;
     grid-column-end: -1;
     text-align: left;
@@ -604,30 +577,41 @@
     border: 1px solid var(--bjxy-border);
     border-radius: 8px;
     cursor: default;
+    transition: background 0.15s;
 }
-.bjxy-coach-detailed:hover { background: var(--bjxy-bg); }
-.bjxy-coach-detailed .bjxy-coach-avatar {
+.bjxy-coach:hover { background: var(--bjxy-bg); }
+.bjxy-coach-avatar {
     width: 80px;
     height: 80px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--bjxy-blue), var(--bjxy-blue-light));
     margin: 0;
     flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
     font-size: 28px;
+    font-weight: 800;
+    overflow: hidden;
 }
-.bjxy-coach-detailed .bjxy-coach-info {
+.bjxy-coach-avatar img { width: 100%; height: 100%; object-fit: cover; }
+.bjxy-coach-info {
     flex: 1;
     min-width: 0;
 }
-.bjxy-coach-detailed .bjxy-coach-name {
+.bjxy-coach-name {
     font-size: 16px;
+    font-weight: 600;
     margin-bottom: 2px;
 }
-.bjxy-coach-detailed .bjxy-coach-username {
+.bjxy-coach-username {
     font-size: 12px;
     color: var(--bjxy-text-mute);
     margin-bottom: 8px;
 }
-.bjxy-coach-detailed .bjxy-coach-specialties,
-.bjxy-coach-detailed .bjxy-coach-achievements {
+.bjxy-coach-specialties,
+.bjxy-coach-achievements {
     font-size: 13px;
     line-height: 1.6;
     margin-bottom: 4px;
@@ -635,17 +619,17 @@
     gap: 6px;
     align-items: flex-start;
 }
-.bjxy-coach-detailed .bjxy-coach-label {
+.bjxy-coach-label {
     flex-shrink: 0;
     font-weight: 600;
     color: var(--bjxy-blue);
     min-width: 64px;
 }
-.bjxy-coach-detailed .bjxy-coach-text {
+.bjxy-coach-text {
     color: var(--bjxy-text);
     word-break: break-word;
 }
-.bjxy-coach-detailed .bjxy-coach-bio {
+.bjxy-coach-bio {
     font-size: 13px;
     line-height: 1.7;
     color: var(--bjxy-text-soft);
@@ -653,6 +637,8 @@
     padding-top: 8px;
     border-top: 1px dashed var(--bjxy-border);
 }
+
+// v0.1.27 删: 原 detailed 样式整段 (跟基础 .bjxy-coach 合并, 见上方注释)
 
 // ===== 学员评价 =====
 .bjxy-review-grid {
