@@ -961,3 +961,114 @@
 
 ### Commit
 - v0.1.26: 本地 `a7ec3da` / 服务器 vendor bundle hash 待补 (cache:clear 后 lazy compile, 首访问触发)
+
+## v0.1.27 (2026-08-08) — 教练展示统一详细样式 (A 方案, 辉哥 09:46 反馈)
+
+**项目**: ziven-bjxy-website
+**类型**: feat(forum) — 教练展示统一详细样式
+**辉哥反馈**: 09:46 反馈 3 张教练卡片字段差异 (Ziven 详细 vs alice/bob 简单), 让统一走详细样式, 没字段不显示空白
+
+(详细 v0.1.27 SOP 155 沉淀见 commit `b59a244`)
+
+## v0.1.28 (2026-08-08) — 教练列表横向 carousel 排列 (辉哥 10:08 反馈)
+
+**项目**: ziven-bjxy-website
+**类型**: feat(forum) — 教练列表改 CSS scroll-snap 横向 carousel
+**辉哥反馈**: 10:08 反馈教练列表 3 张卡片挤在一起不雅观, 让做横向滚动
+
+(详细 v0.1.28 CSS scroll-snap 沉淀见 commit `fa638a2`)
+
+## v0.1.29 (2026-08-08) — 教练列表滚动条隐藏 + 左右渐变阴影 (辉哥 10:39 反馈)
+
+**项目**: ziven-bjxy-website
+**类型**: feat(forum) — 教练列表滚动条隐藏 + 左右渐变阴影 mask-image
+**辉哥反馈**: 10:39 反馈滚动条丑, 让隐藏 + 加渐变阴影提示可滚动
+
+(详细 v0.1.29 mask-image 沉淀见 commit `38664e2`, 后被 v0.1.30 弃用)
+
+## v0.1.30 (2026-08-08) — 教练列表改用 swiper 11 peek carousel (辉哥 11:08 反馈, 11:10 拍板 B 方案)
+
+**项目**: ziven-bjxy-website
+**类型**: feat(forum) — 教练列表改用 swiper 11 peek carousel (1 张完整 + 0.2 张 peek, 经典 macOS App Store / iOS Music 风格)
+**辉哥反馈**: 11:08 反馈 v0.1.29 mask-image 渐变阴影效果不好, 11:10 拍板 B 方案改用 swiper 11 配 `slidesPerView: 1.2` peek carousel
+
+(详细 v0.1.30 swiper 11 peek 沉淀见 commit `55f0d9a` + SOP 160)
+
+## v0.1.31 (2026-08-08) — 删两处 swiper 左右导航箭头 (辉哥 11:48 反馈)
+
+**项目**: ziven-bjxy-website
+**类型**: feat(forum) — 删 events + coach 两处 swiper 左右导航箭头, 保留蓝点分页器 + 滑动功能
+**辉哥反馈**: 11:48 反馈"把两处使用 swiper 的轮播图 (events section + coach section) 的左右小箭头都去掉", 没说禁滑动, 只说删箭头
+
+### 改 2 个 source file
+- **js/src/forum/components/BjxyPage.jsx** (-12 行, 4 块全删)
+  - events initSwiper L108-111 删 `navigation: { nextEl, prevEl }` 块 (4 行)
+  - events container L496-497 删 `m('div', { class: 'swiper-button-prev' })` + `m('div', { class: 'swiper-button-next' })` (2 行)
+  - coach initCoachSwiper L142-145 删 `navigation: { nextEl, prevEl }` 块 (4 行)
+  - coach container L589-590 删 prev/next 元素 (2 行)
+- **less/forum.less** (-34 行, 2 块 + dark mode 覆盖)
+  - 删 `.bjxy-coach-swiper .swiper-button-prev/.swiper-button-next` 样式块 (L667-683, 17 行, 含 2 行 v0.1.30 加注释)
+  - 删 `.bjxy-event-swiper .swiper-button-prev/.swiper-button-next` 样式块 (L886-902, 17 行, 含 1 行注释 + dark mode 覆盖)
+  - 保留: `.bjxy-coach-swiper .swiper-pagination*` (L669-677) + `.bjxy-event-swiper .swiper-pagination*` (L873-879) 蓝点分页器
+  - 保留: vendor 默认 `.swiper-button-prev/.swiper-button-next` 样式 (vendor 自带不删, 删了会 break vendor 内部)
+
+### 沉淀 (Mavis 整合)
+- **SOP 164 (新)**: 简单 carousel (无左右箭头) 走 swiper 11 即可, 不用 CSS scroll-snap. swiper pagination 蓝点分页器走默认, navigation 按钮不传 `navigation: { nextEl, prevEl }` 配置就不渲染
+
+### 部署 (SOP 116 + 138+ + 152 + 153 + 154 + 161, **4 步全走**)
+1. 本地 `cd js && yarn build` (先 `mavis-trash js/dist/admin.js js/dist/forum.js` 强 rebuild, 绕开 webpack "compared for emit", SOP 152) → forum.js 105490 (-378) + admin.js 74440 (0)
+2. scp 4 file (SOP 153 mtime + sha 双验):
+   - BjxyPage.jsx: 2d261cedb8469a9763e512601e2cdfe15f011397
+   - forum.less: 85cfcd3e2b24cf24e556be821f457d9a07b97cfb
+   - admin.js: ce6a8b0e2bd28ccfdba3c9eadb4c3af2c35fa968
+   - forum.js: df227c2e9c5cae555592730520799b45e09ae1ee
+3. `chown -R nginx:nginx packages/ziven-bjxy-website/`
+4. vendor bundle commit (SOP 161 admin commit 单独再跑):
+   - `sudo -u nginx /usr/bin/php -r '$site=require "/var/www/flarum/site.php"; ...' (forum)` + `flarum cache:clear` + admin 单独再跑
+   - server `public/assets/forum.css` mtime 2026-08-08 11:53:32, SHA 6003892316c9a0025afa8c84bb166dc0a97affc2
+
+### ⚠️ server 端 git HEAD 状态
+- server HEAD `38664e2` (v0.1.29) **落后本地 `55f0d9a` (v0.1.30) 1 commit**
+- SOP 162 警告: SOP 144 升级"git fetch + reset --hard origin/master"不适用 (origin 也落后), 走 scp-only 流程, 不 reset
+- v0.1.31 deploy 走 scp-only 完美, dist 跟源码都同步
+
+### 5 URL 验证 (geek.ski, 2026-08-08 11:53)
+| URL | 状态码 |
+|-----|--------|
+| `/` | 200 ✅ |
+| `/bjxy` | 200 ✅ |
+| `/api` | 200 ✅ |
+| `/admin` | 403 ✅ (未登录) |
+| `/login` | 405 ✅ (GET 不允许) |
+
+### vendor bundle grep 验证
+| 模式 | grep -c 结果 | 期望 | 结果 |
+|------|------|------|------|
+| `bjxy-coach-swiper .swiper-button-prev` | 0 | 0 (删了) | ✅ |
+| `bjxy-event-swiper .swiper-button-prev` | 0 | 0 (删了) | ✅ |
+| `bjxy-coach-swiper .swiper-pagination` | 1 | >0 (保留) | ✅ |
+| `bjxy-event-swiper .swiper-pagination` | 1 | >0 (保留) | ✅ |
+
+### Puppeteer 4 combo 验证 (geek.ski, 2026-08-08 11:54, puppeteer-core + 本地 Chrome)
+| 场景 | arrows DOM | pagination bullets | slidesPerView 反推 | autoplay 行为 | 结果 |
+|------|------|------|------|------|------|
+| desktop events 1440x900 | 0+0 | 4 | 1.000 (=1.0) | activeIndex 2→3 (3.5s 后) | ✅ |
+| desktop coach 1440x900 | 0+0 | 3 | 0.831 (=1/1.2) | - | ✅ |
+| mobile events 390x844 | 0+0 | 4 | 1.000 (=1.0) | activeIndex 1 (跑过) | ✅ |
+| mobile coach 390x844 | 0+0 | 3 | 0.905 (=1/1.1) | - | ✅ |
+
+### 截图
+- 4 张: `/tmp/bjxy_v0131_screenshots/{01_desktop_1440x900_events, 02_desktop_1440x900_coach, 03_mobile_390x844_events, 04_mobile_390x844_coach}.png`
+- 视觉: events section 春季进阶特训班 + 4 蓝点, coach section Ziven 完整 + alice peek + 3 蓝点, **左右 0 箭头**
+
+### 风险
+- ✅ 零回归: v0.1.30 swiper peek 1.2 行为 + SOP 155 教练卡片详细样式保留
+- ✅ vendor bundle 增量合理 (forum.js -378, admin.js 0, forum.css 减 34 行)
+- ✅ 保留蓝点分页器 (辉哥没说删, 留用点击切换)
+- ✅ 保留滑动功能 (辉哥没说禁, autoplay + snap + 1.2 peek 行为都在)
+- ✅ vendor 默认 `.swiper-button-prev/.swiper-button-next` 样式 L1249+ 不删 (vendor 自带, 删了会 break vendor 内部)
+- ✅ SOP 162 server HEAD 落后本地, 走 scp-only 完美, 没 reset 翻车
+
+### Commit
+- v0.1.31: 本地 SHA 待 git commit 跑 (commit message "v0.1.31 feat(forum): 删两处 swiper 左右导航箭头 (辉哥 11:48 反馈)") / 服务器 vendor bundle hash `6003892316c9a0025afa8c84bb166dc0a97affc2` (forum.css)
+

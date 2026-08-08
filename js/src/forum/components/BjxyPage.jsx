@@ -105,10 +105,6 @@ export default class BjxyPage extends Component {
       slidesPerView: 1,
       spaceBetween: 16,
       pagination: { el: vnode.dom.querySelector('.swiper-pagination'), clickable: true },
-      navigation: {
-        nextEl: vnode.dom.querySelector('.swiper-button-next'),
-        prevEl: vnode.dom.querySelector('.swiper-button-prev'),
-      },
       // v0.1.6g: 自动轮播配置 (后台 bjxy_events_autoplay_ms, 默认 3000ms)
       autoplay: {
         delay: autoplayMs,
@@ -138,10 +134,6 @@ export default class BjxyPage extends Component {
       pagination: {
         el: vnode.dom.querySelector('.swiper-pagination'),
         clickable: true,
-      },
-      navigation: {
-        nextEl: vnode.dom.querySelector('.swiper-button-next'),
-        prevEl: vnode.dom.querySelector('.swiper-button-prev'),
       },
     });
   }
@@ -493,8 +485,6 @@ export default class BjxyPage extends Component {
                 ]);
               })
             ),
-            m('div', { class: 'swiper-button-prev' }),
-            m('div', { class: 'swiper-button-next' }),
             m('div', { class: 'swiper-pagination' }),
           ])
         : m('p', null, '（暂无活动展示, 请在后台添加）'),
@@ -586,8 +576,6 @@ export default class BjxyPage extends Component {
                   ]),
                 ]))
               ),
-              m('div', { class: 'swiper-button-prev' }),
-              m('div', { class: 'swiper-button-next' }),
               m('div', { class: 'swiper-pagination' }),
             ]),
     ]);

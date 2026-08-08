@@ -664,23 +664,8 @@
     border-top: 1px dashed var(--bjxy-border);
 }
 
-// v0.1.30 加: swiper navigation 按钮 + pagination 指示器 (跟 events section 同款, 复用 swiper 11 依赖)
-//   圆形 prev/next 按钮 + 蓝点 pagination 指示器
-.bjxy-coach-swiper .swiper-button-prev,
-.bjxy-coach-swiper .swiper-button-next {
-    color: var(--bjxy-blue);
-    background: var(--bjxy-bg);
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    border: 1px solid var(--bjxy-border);
-}
-.bjxy-coach-swiper .swiper-button-prev::after,
-.bjxy-coach-swiper .swiper-button-next::after {
-    font-size: 16px;
-    font-weight: 900;
-}
+// v0.1.31 删: swiper 左右导航箭头 (辉哥 11:48 反馈, 留蓝点分页器 + 滑动功能)
+// v0.1.30 沉淀: 蓝点 pagination 指示器 (swiper 11 默认渲染, vendor 不需要额外样式, 跟 events section 同款)
 .bjxy-coach-swiper .swiper-pagination {
     position: relative;
     margin-top: 16px;
@@ -883,23 +868,8 @@ a.bjxy-event-info.bjxy-event-link:hover {
     padding-top: 8px;
     border-top: 1px dashed var(--bjxy-border);
 }
-// swiper navigation 按钮
-.bjxy-event-swiper .swiper-button-prev,
-.bjxy-event-swiper .swiper-button-next {
-    color: var(--bjxy-text);
-    background: rgba(255, 255, 255, 0.7);
-    width: 36px;
-    height: 36px;
-    border-radius: 50%;
-    margin-top: -18px;
-}
-.bjxy-event-swiper .swiper-button-prev::after,
-.bjxy-event-swiper .swiper-button-next::after { font-size: 16px; font-weight: 800; }
-[data-theme^="dark"] .bjxy-event-swiper .swiper-button-prev,
-[data-theme^="dark"] .bjxy-event-swiper .swiper-button-next {
-    background: rgba(45, 55, 72, 0.8);
-    color: #fff;
-}
+// v0.1.31 删: swiper 左右导航箭头 (辉哥 11:48 反馈, 留蓝点分页器 + 滑动功能)
+//   保留 v0.1.30 沉淀的 pagination 蓝点样式
 .bjxy-event-swiper .swiper-pagination { position: relative; margin-top: 12px; text-align: center; }
 .bjxy-event-swiper .swiper-pagination-bullet {
     background: var(--bjxy-border);
