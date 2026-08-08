@@ -994,6 +994,59 @@
 
 (详细 v0.1.30 swiper 11 peek 沉淀见 commit `55f0d9a` + SOP 160)
 
+## v0.1.32 (2026-08-08) — 联系我们 section 改造 (辉哥 11:48 反馈)
+
+**项目**: ziven-bjxy-website
+**类型**: feat(forum) + feat(admin) — 联系我们 4 字段 → 3 字段, 复用 reviews/students array pattern
+**辉哥反馈**: 11:48 反馈"联系我们 section 这块: 1. 地址改成可以填写多个地址的 2. 微信改成可以上传多个图片, 前端微信也展示图片 3. 邮箱可以去掉 4. 电话保留"
+
+### 改 4 个 file (+ 1 dist rebuild)
+
+- **extend.php** (+6 行, 跟 v0.1.6 reviews/students 模式一致)
+  - L105-111: 保留旧 `bjxy_contact_address` / `bjxy_contact_phone` / `bjxy_contact_wechat` / `bjxy_contact_email` (向后兼容迁移)
+  - L110-111: 新加 `bjxy_contact_addresses` (JSON array of `{value}`) + `bjxy_contact_wechat_images` (JSON array of URL)
+- **js/src/admin/components/BjxySettings.jsx** (+99 行, 5 处改)
+  - L143-146 constructor: 加 `this.contactAddresses = []` + `this.contactWechatImages = []`
+  - L1412 uploadPhotoToArray: 加 `'contact'` kind (微信多图上传, 走 `bjxy_contact_photo_*` key)
+  - L879-948 renderContactSection: 4 字段 → 3 字段, 地址 array card (复用 reviews L700-775 pattern) + 微信 photos grid (复用 reviews L755-765 pattern) + 电话单值
+  - L1187-1206 loadSettings: 解析 `bjxy_contact_addresses` (JSON array) + 向后兼容旧 `bjxy_contact_address` → `[{value: old}]`; 解析 `bjxy_contact_wechat_images` (旧 `bjxy_contact_wechat` 文字值不迁移, 不能当图)
+  - L1493-1498 save: 序列化 `bjxy_contact_addresses` + `bjxy_contact_wechat_images`; 邮箱字段不写 (前端不用, 后续 V 测反馈再删)
+- **js/src/forum/components/BjxyPage.jsx** (+56 行, renderContactSection 改 array 模式)
+  - 解析多地址 (JSON array of {value} → array of string, 向后兼容旧 `bjxy_contact_address` → `[old]`)
+  - 解析多图微信 (JSON array of URL)
+  - 地址: 1-3 个 `.bjxy-contact-item` 卡片, 标签 `📍 地址 #1` / `📍 地址 #2` / `📍 地址 #3`
+  - 微信: 多图 `.bjxy-contact-wechat-grid` (3 列缩略图墙, a 标签新窗口打开原图)
+  - 电话: 1 个卡片保留
+  - 邮箱: 完全删除
+- **less/forum.less** (+26 行, 3 处)
+  - L882-887 `.bjxy-contact-grid` 4 列 → 3 列 (`repeat(4, 1fr)` → `repeat(3, 1fr)`)
+  - L903-920 新加 `.bjxy-contact-wechat-grid` (3 列缩略图, 1:1 aspect-ratio, hover scale 1.05) + `.bjxy-contact-wechat-img` (含 `img`)
+  - L982 mobile `@media @phone`: `.bjxy-contact-grid` 1fr 1fr → 1fr (mobile 1 列堆叠, 微信图墙 3 列保留)
+- **CHANGELOG.md** (本 entry)
+- **js/dist/admin.js** + **js/dist/forum.js** (yarn build 强 rebuild, 走 SOP 152)
+
+### 沉淀 (Mavis 整合)
+- **SOP 165 (新)**: bjxy settings 字段单值 string 转多值 JSON array pattern 复用 reviews/students 模板
+  - 加 2 字段: `xxx_addresses` (array of {value}) + `xxx_images` (array of URL)
+  - `serializeToForum` 跟 reviews/students 同模式, vendor 直接 JSON 序列化
+  - 旧字段保留 `serializeToForum` (向后兼容), loadSettings 时 if 新字段空 then 迁移到 `[{value: old}]`
+  - admin renderSection 走 `BjxyField-array` + `BjxyField-array-card` + `BjxyField-photos-grid` + `BjxyField-photo-item` + `BjxyField-photo-del` + `BjxyField-file` (uploadPhotoToArray 加新 kind 即可, kind 走 `bjxy_[a-z0-9_]+_photo_*` 正则, vendor UploadController L85 接受)
+  - 前台 renderSection 走 `addresses.map(...)` + `.bjxy-contact-wechat-grid` a 标签新窗口打开
+  - 适用: 任何 bjxy 单值字段后续想加多值支持 (e.g. 多电话, 多邮箱, 多联系 QQ)
+- 复用 `BjxyField-*` CSS (admin.less L302+), 不用新增 admin CSS
+- vendor bundle grep: `bjxy-contact-wechat-grid` > 0, `bjxy-contact-label` > 0 (保留)
+
+### 部署 (SOP 116 + 138+ + 152 + 153 + 154 + 161, **4 步全走**)
+1. 本地 `cd /Applications/MAMP/htdocs/Flarum/packages/ziven-bjxy-website && yarn build` (SOP 152 强 rebuild)
+2. scp 4 source + 2 dist file (SOP 153 sshpass + scp -p 逐 file + mtime + sha 双验)
+3. `chown -R nginx:nginx packages/ziven-bjxy-website/`
+4. vendor bundle commit (SOP 161 admin commit 单独再跑): `forum` commit + `flarum cache:clear` + `admin` 单独 commit
+
+### ⚠️ server 端 git HEAD 状态
+- server HEAD `38664e2` (v0.1.29) **落后本地 `ee71201` (v0.1.31) 2 commit**
+- SOP 162 警告: SOP 144 升级"git fetch + reset --hard origin/master"不适用 (origin 也落后), 走 scp-only 流程, 不 reset
+- v0.1.32 deploy 走 scp-only 完美, dist 跟源码都同步
+
 ## v0.1.31 (2026-08-08) — 删两处 swiper 左右导航箭头 (辉哥 11:48 反馈)
 
 **项目**: ziven-bjxy-website

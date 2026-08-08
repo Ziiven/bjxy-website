@@ -613,16 +613,62 @@ export default class BjxyPage extends Component {
   }
 
   // 联系
+  // v0.1.32 改: 4 字段 → 3 字段 (辉哥 11:48 反馈)
+  //   - 地址 改多地址 (1-3 个卡片, 复用 reviews array 模式)
+  //   - 微信 改多图 (3 列缩略图墙, 复用 reviews photos 模式)
+  //   - 邮箱 完全删 (前台 + 后台都不渲染)
+  //   - 电话 保留单值
+  //   - 向后兼容: 旧 bjxy_contact_address 单值 → 多地址迁移, 旧 bjxy_contact_wechat 文字值不迁移 (不能当图)
   renderContactSection(s) {
+    // 解析多地址 (array of {value} → array of string)
+    const addresses = (() => {
+      try {
+        const raw = s('bjxy_contact_addresses', '[]');
+        const arr = JSON.parse(raw);
+        if (Array.isArray(arr)) {
+          return arr.map(a => typeof a === 'string' ? a : (a && a.value) || '').filter(Boolean);
+        }
+      } catch (e) {}
+      // 向后兼容: 旧 bjxy_contact_address 单值 → [old]
+      const old = s('bjxy_contact_address', '');
+      return old ? [old] : [];
+    })();
+    // 解析多图微信 (array of URL)
+    const wechatImages = (() => {
+      try {
+        const raw = s('bjxy_contact_wechat_images', '[]');
+        const arr = JSON.parse(raw);
+        return Array.isArray(arr) ? arr.filter(Boolean) : [];
+      } catch (e) { return []; }
+    })();
     return m('section', { class: 'bjxy-section', id: 'contact', key: 'sec-contact' }, [
       m('div', { class: 'bjxy-sub' }, 'CONTACT'),
       m('h2', null, '联系我们'),
       m('div', { class: 'bjxy-contact-grid' }, [
-        m('div', { class: 'bjxy-contact-item' }, [m('div', { class: 'bjxy-contact-label' }, '📍 地址'), m('div', { class: 'bjxy-contact-value' }, s('bjxy_contact_address', '北京市朝阳区滑雪场路 88 号'))]),
-        m('div', { class: 'bjxy-contact-item' }, [m('div', { class: 'bjxy-contact-label' }, '📞 电话'), m('div', { class: 'bjxy-contact-value' }, s('bjxy_contact_phone', '400-888-8888'))]),
-        m('div', { class: 'bjxy-contact-item' }, [m('div', { class: 'bjxy-contact-label' }, '💬 微信'), m('div', { class: 'bjxy-contact-value' }, s('bjxy_contact_wechat', 'bjxy_ski'))]),
-        m('div', { class: 'bjxy-contact-item' }, [m('div', { class: 'bjxy-contact-label' }, '✉ 邮箱'), m('div', { class: 'bjxy-contact-value' }, s('bjxy_contact_email', 'hi@bjxy.com'))]),
-      ]),
+        // 地址 (多地址, 每个地址一个卡片, 跟 reviews 列表一样)
+        ...addresses.map((addr, i) => m('div', { class: 'bjxy-contact-item', key: 'addr-' + i }, [
+          m('div', { class: 'bjxy-contact-label' }, '📍 地址 #' + (i + 1)),
+          m('div', { class: 'bjxy-contact-value' }, addr),
+        ])),
+        // 电话 (单值保留) — 修 v0.1.32.1: 加 key 'phone' 修 mithril "vnodes must either all have keys or none"
+        m('div', { class: 'bjxy-contact-item', key: 'phone' }, [
+          m('div', { class: 'bjxy-contact-label' }, '📞 电话'),
+          m('div', { class: 'bjxy-contact-value' }, s('bjxy_contact_phone', '400-888-8888')),
+        ]),
+        // 微信 (多图, 3 列缩略图墙, 跟 reviews photos 风格)
+        wechatImages.length > 0 ? m('div', { class: 'bjxy-contact-item bjxy-contact-wechat', key: 'wechat' }, [
+          m('div', { class: 'bjxy-contact-label' }, '💬 微信'),
+          m('div', { class: 'bjxy-contact-wechat-grid' },
+            wechatImages.map((url, i) => m('a', {
+              class: 'bjxy-contact-wechat-img',
+              href: url,
+              target: '_blank',
+              rel: 'noopener noreferrer',
+              key: 'wc-' + i,
+            }, m('img', { src: url, alt: '微信二维码 #' + (i + 1) })))
+          ),
+        ]) : null,
+      ].filter(Boolean)),
     ]);
   }
 

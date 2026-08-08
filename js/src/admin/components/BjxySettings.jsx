@@ -139,6 +139,11 @@ export default class BjxySettings extends ExtensionPage {
     this.coachDetails = {};
     this.reviews = [];
     this.students = [];
+    // v0.1.32: 联系我们 section 改造 (辉哥 11:48 反馈)
+    //   - contactAddresses: 多地址 array, 复用 reviews array card pattern
+    //   - contactWechatImages: 微信多图 array, 复用 reviews photos grid pattern
+    this.contactAddresses = [];
+    this.contactWechatImages = [];
     this.eventsAutoplayMs = 3000;
     // v0.1.15: 10 个 section 可见性状态 (默认全部 true 开启)
     //   辉哥 18:19 拍板: "给每个section的tab里加上一个开关，默认是开启状态，只有在开启时前端对应的section才展示"
@@ -877,15 +882,71 @@ export default class BjxySettings extends ExtensionPage {
   }
 
   // Tab 10: 联系我们
+  // v0.1.32 改: 4 字段 → 3 字段 (辉哥 11:48 反馈)
+  //   - 地址 改多地址: 复用 reviews array card pattern (L700-775)
+  //     每个 card 一个 value input + 删 + 添加按钮
+  //   - 微信 改多图: 复用 reviews photos array pattern (L755-765)
+  //     photos-grid + photo-item + photo-del + file (上传触发 uploadPhotoToArray)
+  //   - 邮箱 完全删 (前台不渲染, 后台也不展示)
+  //   - 电话 保留单值
   renderContactSection() {
     return (
       <div className="bjxy-section glass-card">
         {this.sectionHead('📞', '联系我们', null, 'contact')}
         <div className="bjxy-section-content">
-          {this.field('地址', 'bjxy_contact_address', '北京市朝阳区滑雪场路 88 号')}
+          {/* 电话 (单值保留) */}
           {this.field('电话', 'bjxy_contact_phone', '400-888-8888')}
-          {this.field('微信', 'bjxy_contact_wechat', 'bjxy_ski')}
-          {this.field('邮箱', 'bjxy_contact_email', 'hi@bjxy.com')}
+
+          {/* 地址 (多地址 array, 复用 reviews pattern) */}
+          <div
+            className="BjxyField-array BjxyField-array-wide BjxyField-sortable"
+            oncreate={(vnode) => this.initSortable(vnode, 'contactAddresses')}
+            onremove={() => this.destroySortable('contactAddresses')}
+          >
+            {this.contactAddresses.map((a, i) => m('div', { class: 'BjxyField-array-card', key: 'ca' + i }, [
+              m('div', { class: 'BjxyField-array-card-head' }, [
+                m('span', { class: 'BjxyField-array-card-num' }, '地址 #' + (i + 1)),
+                m('button', {
+                  class: 'del',
+                  onclick: () => { this.contactAddresses.splice(i, 1); m.redraw(); },
+                }, '× 删除'),
+              ]),
+              m('div', { class: 'BjxyField-array-card-body' }, [
+                m('div', { class: 'BjxyField-row' }, [
+                  m('div', { class: 'BjxyField-label' }, '地址内容'),
+                  m('input', {
+                    class: 'BjxyField-input',
+                    value: a.value,
+                    placeholder: '北京市朝阳区滑雪场路 88 号',
+                    oninput: (e) => { a.value = e.target.value; },
+                  }),
+                ]),
+              ]),
+            ]))}
+            <div className="BjxyField-array-add" onclick={() => { this.contactAddresses.push({ value: '' }); m.redraw(); }}>
+              + 添加地址
+            </div>
+          </div>
+
+          {/* 微信 (多图 photos array, 复用 reviews photos pattern) */}
+          <div className="BjxyField-row">
+            <div className="BjxyField-label">微信 (多图, 展示微信二维码)</div>
+            <div>
+              {this.contactWechatImages.length > 0 ? m('div', { class: 'BjxyField-photos-grid' },
+                this.contactWechatImages.map((url, i) => m('div', { class: 'BjxyField-photo-item', key: 'wi' + i }, [
+                  m('img', { src: url, alt: '' }),
+                  m('button', {
+                    class: 'BjxyField-photo-del',
+                    onclick: () => { this.contactWechatImages.splice(i, 1); m.redraw(); },
+                  }, '×'),
+                ]))
+              ) : null}
+              <div className="BjxyField-file" onclick={(e) => this.uploadPhotoToArray(e, this.contactWechatImages, 0)}>
+                📷 添加微信图片 ({this.contactWechatImages.length} 张)
+              </div>
+              <div className="BjxyField-hint">支持多张微信二维码图片, 前台会展示图片墙</div>
+            </div>
+          </div>
         </div>
       </div>
     );
@@ -1123,6 +1184,27 @@ export default class BjxySettings extends ExtensionPage {
           }
         } catch (e) {}
       }
+      // v0.1.32: 联系我们 多地址 (JSON array of {value}, 向后兼容旧 bjxy_contact_address 单值)
+      if (this.data.bjxy_contact_addresses) {
+        try {
+          const arr = JSON.parse(this.data.bjxy_contact_addresses);
+          if (Array.isArray(arr)) {
+            this.contactAddresses = arr.map(a => (typeof a === 'string' ? { value: a } : (a && typeof a === 'object' ? { value: a.value || '' } : { value: '' })));
+          }
+        } catch (e) {}
+      } else if (this.data.bjxy_contact_address) {
+        // 向后兼容: 旧 bjxy_contact_address 单值 → [{value: old}]
+        this.contactAddresses = [{ value: this.data.bjxy_contact_address }];
+      }
+      // v0.1.32: 联系我们 微信多图 (JSON array of URL, 旧 bjxy_contact_wechat 文字值不迁移, 不能当图)
+      if (this.data.bjxy_contact_wechat_images) {
+        try {
+          const arr = JSON.parse(this.data.bjxy_contact_wechat_images);
+          if (Array.isArray(arr)) {
+            this.contactWechatImages = arr.filter(url => url);
+          }
+        } catch (e) {}
+      }
       if (this.data.bjxy_events_autoplay_ms) {
         const n = parseInt(this.data.bjxy_events_autoplay_ms, 10);
         if (!isNaN(n) && n >= 500 && n <= 60000) this.eventsAutoplayMs = n;
@@ -1326,7 +1408,8 @@ export default class BjxySettings extends ExtensionPage {
       if (!file) return;
       const form = new FormData();
       form.append('file', file);
-      const kind = arr === this.reviews ? 'review' : 'event';
+      // v0.1.32 加: 'contact' kind (微信多图上传, 跟 review/event 同模式)
+      const kind = arr === this.reviews ? 'review' : (arr === this.contactWechatImages ? 'contact' : 'event');
       form.append('key', 'bjxy_' + kind + '_photo_' + i + '_' + Date.now());
       try {
         const r = await app.request({
@@ -1404,6 +1487,14 @@ export default class BjxySettings extends ExtensionPage {
     payload.bjxy_students = JSON.stringify(
       this.students.filter(s => s.name || (s.photos && s.photos.length > 0))
         .map(s => ({ name: s.name, level: s.level, achievement: s.achievement, photos: s.photos || [], url: s.url || '' }))
+    );
+    // v0.1.32: 联系我们 多地址 + 微信多图
+    //   邮箱字段不写 (前端不用), 保留 serializeToForum 给后续清理
+    payload.bjxy_contact_addresses = JSON.stringify(
+      this.contactAddresses.filter(a => a.value && a.value.trim()).map(a => ({ value: a.value.trim() }))
+    );
+    payload.bjxy_contact_wechat_images = JSON.stringify(
+      this.contactWechatImages.filter(url => url)
     );
     const ms = parseInt(this.eventsAutoplayMs, 10);
     payload.bjxy_events_autoplay_ms = (!isNaN(ms) && ms >= 500 && ms <= 60000) ? String(ms) : '3000';

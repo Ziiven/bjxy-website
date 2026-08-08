@@ -102,6 +102,13 @@ return [
         ->serializeToForum('bjxy_contact_phone', 'bjxy_contact_phone')
         ->serializeToForum('bjxy_contact_wechat', 'bjxy_contact_wechat')
         ->serializeToForum('bjxy_contact_email', 'bjxy_contact_email')
+        // v0.1.32: 联系我们 section 改造 (辉哥 11:48 反馈)
+        //   - 地址 改多地址: bjxy_contact_addresses (JSON array of {value})
+        //   - 微信 改多图: bjxy_contact_wechat_images (JSON array of URL)
+        //   - 邮箱保留 serializeToForum (前端不用, 后续 V 测反馈再删)
+        //   - 旧 bjxy_contact_address / bjxy_contact_wechat 单值保留, 加载时 if 新字段空 then 迁移
+        ->serializeToForum('bjxy_contact_addresses', 'bjxy_contact_addresses')
+        ->serializeToForum('bjxy_contact_wechat_images', 'bjxy_contact_wechat_images')
         // v0.1.0ab: footer icp 备案号 (后台可设, 前台 footer 渲染)
         ->serializeToForum('bjxy_icp_number', 'bjxy_icp_number')
         // v0.1.2: 公安备案号 + 网安链接 (国家规定中国大陆站点 footer 必须有)

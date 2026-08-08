@@ -879,9 +879,13 @@ a.bjxy-event-info.bjxy-event-link:hover {
 .bjxy-event-swiper .swiper-pagination-bullet-active { background: var(--bjxy-blue); }
 
 // ===== 联系我们 =====
+// v0.1.32 改: 4 列 → 3 列 (地址+电话+微信, 邮箱删, 辉哥 11:48 反馈)
+//   - 地址: 多地址卡片 (可能 1-3 个), 每个占 1 列
+//   - 电话: 1 个卡片
+//   - 微信: 多图卡片, 占 1 列
 .bjxy-contact-grid {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(3, 1fr);
     gap: 12px;
     margin-top: 16px;
 }
@@ -899,6 +903,24 @@ a.bjxy-event-info.bjxy-event-link:hover {
     margin-bottom: 6px;
 }
 .bjxy-contact-value { font-size: 14px; font-weight: 600; color: var(--bjxy-text); word-break: break-all; }
+
+// v0.1.32 加: 微信多图网格 (跟 reviews photos 风格一致, 3 列缩略图墙)
+.bjxy-contact-wechat-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+    margin-top: 4px;
+}
+.bjxy-contact-wechat-img {
+    display: block;
+    aspect-ratio: 1;
+    border-radius: 4px;
+    overflow: hidden;
+    border: 1px solid var(--bjxy-border);
+    transition: transform 0.15s;
+}
+.bjxy-contact-wechat-img:hover { transform: scale(1.05); }
+.bjxy-contact-wechat-img img { width: 100%; height: 100%; object-fit: cover; }
 
 // ===== Footer =====
 .bjxy-footer {
@@ -969,7 +991,7 @@ a.bjxy-event-info.bjxy-event-link:hover {
     .bjxy-event-photo { min-height: 200px; }
     .bjxy-event-info { padding: 16px; }
     .bjxy-student-grid { grid-template-columns: repeat(3, 1fr); }
-    .bjxy-contact-grid { grid-template-columns: 1fr 1fr; }
+    .bjxy-contact-grid { grid-template-columns: 1fr; }
     .bjxy-stats { grid-template-columns: 1fr 1fr 1fr; }
     .bjxy-footer { padding: 24px 16px; }
 }
