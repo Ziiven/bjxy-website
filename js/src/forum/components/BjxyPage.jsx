@@ -117,7 +117,36 @@ export default class BjxyPage extends Component {
     });
   }
 
-  // 销毁 swiper
+  // v0.1.30 改: 教练列表 swiper peek carousel (辉哥 11:08 反馈, 11:10 拍板 B 方案)
+  //   - 经典 macOS App Store / iOS Music 风格: 1 张完整 + 0.2 张 peek
+  //   - 复用 swiper 11 依赖 (v0.1.6 装 events 用), 跟 events section 同款 swiper pattern
+  //   - 跟 this.swiper 独立 instance, onremove 各自 destroy
+  initCoachSwiper(vnode) {
+    if (!vnode || !vnode.dom) return;
+    if (this.coachSwiper) this.coachSwiper.destroy(true, true);
+    this.coachSwiper = new Swiper(vnode.dom, {
+      // 不需要 Autoplay, 教练列表静态展示
+      modules: [Navigation, Pagination],
+      slidesPerView: 1.2,
+      slidesPerGroup: 1,
+      spaceBetween: 16,
+      // 响应式: desktop 1.2 (1 张完整 + 0.2 张 peek ≈ 100px), mobile 1.1 (1 张完整 + 0.1 张 peek ≈ 30px)
+      breakpoints: {
+        0:    { slidesPerView: 1.1 },  // mobile
+        768:  { slidesPerView: 1.2 },  // tablet/desktop
+      },
+      pagination: {
+        el: vnode.dom.querySelector('.swiper-pagination'),
+        clickable: true,
+      },
+      navigation: {
+        nextEl: vnode.dom.querySelector('.swiper-button-next'),
+        prevEl: vnode.dom.querySelector('.swiper-button-prev'),
+      },
+    });
+  }
+
+  // 销毁 events swiper
   destroySwiper() {
     if (this.swiper) {
       this.swiper.destroy(true, true);
@@ -125,9 +154,20 @@ export default class BjxyPage extends Component {
     }
   }
 
+  // 销毁教练 swiper
+  // v0.1.30 改: 多 swiper instance, coach swiper 独立 destroy
+  destroyCoachSwiper() {
+    if (this.coachSwiper) {
+      this.coachSwiper.destroy(true, true);
+      this.coachSwiper = null;
+    }
+  }
+
   // 组件销毁时清理
+  // v0.1.30 改: 多 swiper instance, events + coach 各自 destroy
   onremove() {
     this.destroySwiper();
+    this.destroyCoachSwiper();
   }
 
   view() {
@@ -505,6 +545,10 @@ export default class BjxyPage extends Component {
 
   // 教练
   // v0.1.5: 加 bio + achievements + specialties + photoUrl
+  // v0.1.30 改: 改用 swiper 11 peek carousel (辉哥 11:08 反馈, 11:10 拍板 B 方案)
+  //   - 删 v0.1.28/v0.1.29 CSS scroll-snap 容器, 改用 swiper 11 instance (跟 events section 同款 pattern)
+  //   - desktop slidesPerView 1.2 (1 张完整 + 0.2 张 peek ≈ 100px), mobile breakpoints 1.1
+  //   - 保留 v0.1.27 SOP 155 沉淀: 3 张卡片统一详细样式, alice/bob 没字段不显示空白
   renderCoachSection(s) {
     return m('section', { class: 'bjxy-section', id: 'coach', key: 'sec-coach' }, [
       m('div', { class: 'bjxy-sub' }, 'COACHES'),
@@ -513,32 +557,39 @@ export default class BjxyPage extends Component {
         ? m('p', null, '加载中...')
         : this.coaches.length === 0
           ? m('p', null, '（暂无教练, 请在后台选择用户组）')
-          : m('div', { class: 'bjxy-coach-grid' }, this.coaches.map((c, i) => {
-              // v0.1.27 改 (A 方案): 删原来的 detail 二分判断, 所有 coach 统一走详细卡片样式
-              //   没字段的字段 (bio/achievements/specialties) 在下方三元判断自动隐藏, 不显示空白
-              return m('div', { class: 'bjxy-coach', key: 'c' + i }, [
-                m('div', { class: 'bjxy-coach-avatar' }, [
-                  // v0.1.10 改: 用用户自己的系统头像 (user.avatar_url 走 vendor User::getAvatarUrlAttribute() accessor 拼 URL)
-                  //   + srcset 走 2x/3x 让 Retina 屏幕清晰
-                  c.avatarUrl
-                    ? m('img', { src: c.avatarUrl, srcset: c.avatarSrcset || null, alt: c.displayName, loading: 'lazy' })
-                    : (c.displayName || '?').charAt(0),
-                ]),
-                m('div', { class: 'bjxy-coach-info' }, [
-                  m('div', { class: 'bjxy-coach-name' }, c.displayName || ''),
-                  c.username ? m('div', { class: 'bjxy-coach-username' }, '@' + c.username) : null,
-                  c.specialties ? m('div', { class: 'bjxy-coach-specialties' }, [
-                    m('span', { class: 'bjxy-coach-label' }, '🏂 专长'),
-                    m('span', { class: 'bjxy-coach-text' }, c.specialties),
-                  ]) : null,
-                  c.achievements ? m('div', { class: 'bjxy-coach-achievements' }, [
-                    m('span', { class: 'bjxy-coach-label' }, '🏆 成就'),
-                    m('span', { class: 'bjxy-coach-text' }, c.achievements),
-                  ]) : null,
-                  c.bio ? m('div', { class: 'bjxy-coach-bio' }, c.bio) : null,
-                ]),
-              ]);
-            })),
+          : m('div', { class: 'bjxy-coach-swiper swiper', oncreate: (vnode) => this.initCoachSwiper(vnode) }, [
+              m('div', { class: 'swiper-wrapper' },
+                this.coaches.map((c, i) => m('div', { class: 'swiper-slide bjxy-coach-slide', key: 'c' + i }, [
+                  // v0.1.27 改 (A 方案): 删原来的 detail 二分判断, 所有 coach 统一走详细卡片样式
+                  //   没字段的字段 (bio/achievements/specialties) 在下方三元判断自动隐藏, 不显示空白
+                  m('div', { class: 'bjxy-coach' }, [
+                    m('div', { class: 'bjxy-coach-avatar' }, [
+                      // v0.1.10 改: 用用户自己的系统头像 (user.avatar_url 走 vendor User::getAvatarUrlAttribute() accessor 拼 URL)
+                      //   + srcset 走 2x/3x 让 Retina 屏幕清晰
+                      c.avatarUrl
+                        ? m('img', { src: c.avatarUrl, srcset: c.avatarSrcset || null, alt: c.displayName, loading: 'lazy' })
+                        : (c.displayName || '?').charAt(0),
+                    ]),
+                    m('div', { class: 'bjxy-coach-info' }, [
+                      m('div', { class: 'bjxy-coach-name' }, c.displayName || ''),
+                      c.username ? m('div', { class: 'bjxy-coach-username' }, '@' + c.username) : null,
+                      c.specialties ? m('div', { class: 'bjxy-coach-specialties' }, [
+                        m('span', { class: 'bjxy-coach-label' }, '🏂 专长'),
+                        m('span', { class: 'bjxy-coach-text' }, c.specialties),
+                      ]) : null,
+                      c.achievements ? m('div', { class: 'bjxy-coach-achievements' }, [
+                        m('span', { class: 'bjxy-coach-label' }, '🏆 成就'),
+                        m('span', { class: 'bjxy-coach-text' }, c.achievements),
+                      ]) : null,
+                      c.bio ? m('div', { class: 'bjxy-coach-bio' }, c.bio) : null,
+                    ]),
+                  ]),
+                ]))
+              ),
+              m('div', { class: 'swiper-button-prev' }),
+              m('div', { class: 'swiper-button-next' }),
+              m('div', { class: 'swiper-pagination' }),
+            ]),
     ]);
   }
 

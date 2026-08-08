@@ -567,37 +567,32 @@
 //   - mask-image: linear-gradient(to right, transparent, black 5%, black 95%, transparent) 左右两端 5% 渐变透明, 视觉提示用户"这里可以左右滑"
 //   - mask-image 是 CSS 属性不是 less 函数, 不踩 SOP 159 (wikimedia/less.php 不支持 min/max/calc 跨 vw/px) 坑
 //   - 加 -webkit-mask-image 前缀兼容老 Safari (iOS < 14)
-.bjxy-coach-grid {
-    display: flex;
-    overflow-x: auto;
-    overflow-y: visible;
-    scroll-snap-type: x mandatory;
-    scroll-padding-left: 32px;
-    gap: 16px;
+//   - v0.1.29 反思: 渐变阴影视觉提示效果不好 (辉哥 11:08 反馈), v0.1.30 改用 swiper peek
+// v0.1.30 改 (B 方案, 辉哥 2026-08-08 11:10 拍板): 改用 swiper 11 配 slidesPerView: 1.2, 经典 peek carousel
+//   - 删 mask-image 渐变阴影 (辉哥说效果不好)
+//   - 删 CSS scroll-snap + flex 固定宽度 + scroll-snap-align: start (swiper 控制布局)
+//   - 复用 bjxy 已有 swiper 11 依赖 (v0.1.6 装 events 用), 跟 events section 同款 swiper pattern
+//   - desktop slidesPerView 1.2 (1 张完整 + 0.2 张 peek ≈ 100px), mobile breakpoints 1.1 (1 张完整 + 0.1 张 peek ≈ 30px)
+//   - 加 swiper navigation 按钮 (圆形 prev/next) + pagination 指示器, 跟 events section 同款样式
+//   - 保留 v0.1.27 SOP 155 沉淀 (详细卡片样式: 80px 头像 + flex row + 专长/成就/bio 字段, alice/bob 没字段不显示空白)
+.bjxy-coach-swiper {
+    position: relative;
     margin-top: 16px;
-    -webkit-overflow-scrolling: touch;  // iOS 兼容
-
-    // Firefox: 隐藏滚动条
-    scrollbar-width: none;
-
-    // 左右两端 5% 渐变透明, 视觉提示用户"这里可以左右滑"
-    mask-image: linear-gradient(to right, transparent, black 5%, black 95%, transparent);
-    -webkit-mask-image: linear-gradient(to right, transparent, black 5%, black 95%, transparent);
+    overflow: hidden;  // swiper 容器需要
 }
-.bjxy-coach-grid::-webkit-scrollbar {
-    display: none;  // Chrome/Safari/Edge: 隐藏滚动条
-    width: 0;
-    height: 0;
+.bjxy-coach-swiper .swiper-wrapper {
+    align-items: stretch;
+}
+.bjxy-coach-slide {
+    height: auto;  // 跟 swiper-slide 配合
 }
 .bjxy-coach {
-    // v0.1.28 改: 删 v0.1.5b grid-column 跨整行 (改 flex 容器后不需), 改 flex 固定宽度 carousel 卡片
-    //   - scroll-snap-align: start 让滑到第 2/3 张时浏览器自动 snap 对齐
-    //   - width 448px: desktop 1440 视口可见 3 张 (3*448 + 2*16 + 64 padding = 1440 几乎满)
-    //   - 不写 min(90vw, 448px): wikimedia/less.php 不支持 min() 跨 vw/px 单位 (new pitfall 159)
-    //     SOP 79 提过 wikimedia/less.php 不支持 grid-column 跨整行解析, 同源坑
-    flex: 0 0 auto;
-    width: 448px;
-    scroll-snap-align: start;
+    // v0.1.27 改: 统一详细卡片样式 (SOP 155)
+    //   - 80px 头像 + flex row + 专长/成就/bio 字段
+    //   - alice/bob 没字段的字段 (bio/achievements/specialties) JS 三元判断自动隐藏, 不显示空白
+    // v0.1.30 改: 删 flex: 0 0 auto + width: 448px + scroll-snap-align: start (swiper 控制布局)
+    //   - swiper 11 swiper-slide 自动设 width, 不用 less 手动控制
+    //   - height: 100% 让 swiper-slide 高度等于 wrapper 高度, 多张卡片对齐
     text-align: left;
     display: flex;
     align-items: flex-start;
@@ -608,6 +603,7 @@
     border-radius: 8px;
     cursor: default;
     transition: background 0.15s;
+    height: 100%;
 }
 .bjxy-coach:hover { background: var(--bjxy-bg); }
 .bjxy-coach-avatar {
@@ -666,6 +662,35 @@
     margin-top: 8px;
     padding-top: 8px;
     border-top: 1px dashed var(--bjxy-border);
+}
+
+// v0.1.30 加: swiper navigation 按钮 + pagination 指示器 (跟 events section 同款, 复用 swiper 11 依赖)
+//   圆形 prev/next 按钮 + 蓝点 pagination 指示器
+.bjxy-coach-swiper .swiper-button-prev,
+.bjxy-coach-swiper .swiper-button-next {
+    color: var(--bjxy-blue);
+    background: var(--bjxy-bg);
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    border: 1px solid var(--bjxy-border);
+}
+.bjxy-coach-swiper .swiper-button-prev::after,
+.bjxy-coach-swiper .swiper-button-next::after {
+    font-size: 16px;
+    font-weight: 900;
+}
+.bjxy-coach-swiper .swiper-pagination {
+    position: relative;
+    margin-top: 16px;
+}
+.bjxy-coach-swiper .swiper-pagination-bullet {
+    background: var(--bjxy-border);
+    opacity: 1;
+}
+.bjxy-coach-swiper .swiper-pagination-bullet-active {
+    background: var(--bjxy-blue);
 }
 
 // v0.1.27 删: 原 detailed 样式整段 (跟基础 .bjxy-coach 合并, 见上方注释)
@@ -965,13 +990,9 @@ a.bjxy-event-info.bjxy-event-link:hover {
     .bjxy-feature h3 { font-size: 16px; }
     .bjxy-feature p { font-size: 12px; }
     .bjxy-curri-list { grid-template-columns: 1fr; }
-    // v0.1.28 改: mobile 1 张满宽 carousel (跟 desktop 一致, 1 行 1 张, 触屏左右滑)
-    //   - mobile section padding 16px, 跟 desktop 32px 区分
-    //   - mobile 1 张满宽 358px: viewport 390 - 32 section padding = 358 内容
-    //   - 不写 min(85vw, 360px): wikimedia/less.php 不支持 min() 跨 vw/px 单位 (new pitfall 159)
-    //     calc() 跨 vw/px 也踩坑, 干脆 mobile fixed 358px (390 mobile 主流视口)
-    .bjxy-coach-grid { scroll-padding-left: 16px; }
-    .bjxy-coach { width: 358px; }
+    // v0.1.30 改: mobile 走 swiper breakpoints 自动响应 (slidesPerView: 1.1), 不用手动媒体查询
+    //   - 原 v0.1.28/v0.1.29 mobile hardcode 358px 删, swiper 内部 breakpoints 处理
+    //   - swiper 11 走 window.matchMedia 监听 viewport, 自动切换 slidesPerView
     .bjxy-review-grid { grid-template-columns: 1fr; }
     .bjxy-review-photos { grid-template-columns: repeat(3, 1fr); }
     .bjxy-event-slide { grid-template-columns: 1fr; }
