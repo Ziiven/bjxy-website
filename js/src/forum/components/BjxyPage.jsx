@@ -102,8 +102,16 @@ export default class BjxyPage extends Component {
       // v0.1.6g: 加 Autoplay module (SOP 90)
       modules: [Navigation, Pagination, Autoplay],
       loop: true,
+      // v0.1.38 改: 响应式 (辉哥 8/9 0:51 反馈)
+      //   移动端 (默认 < 768px) 1 卡, 桌面端 (>= 768px) 2 卡
+      //   swiper 11 breakpoints 触发 slidesPerView 切换, 跟 v0.1.30 swiper peek breakpoints 模式一致
       slidesPerView: 1,
       spaceBetween: 16,
+      breakpoints: {
+        768: {
+          slidesPerView: 2,
+        },
+      },
       pagination: { el: vnode.dom.querySelector('.swiper-pagination'), clickable: true },
       // v0.1.6g: 自动轮播配置 (后台 bjxy_events_autoplay_ms, 默认 3000ms)
       autoplay: {
@@ -124,8 +132,16 @@ export default class BjxyPage extends Component {
       // 不需要 Autoplay, 教练列表静态展示
       modules: [Navigation, Pagination],
       loop: true,
-      slidesPerView: 3,
+      // v0.1.38 改: 响应式 (辉哥 8/9 0:51 反馈)
+      //   移动端 (默认 < 768px) 1 卡, 桌面端 (>= 768px) 3 卡
+      //   v0.1.37 改的 slidesPerView: 3 是 desktop 3 (辉哥当时没说分移动/桌面, 0:51 补明确)
+      slidesPerView: 1,
       spaceBetween: 16,
+      breakpoints: {
+        768: {
+          slidesPerView: 3,
+        },
+      },
       pagination: {
         el: vnode.dom.querySelector('.swiper-pagination'),
         clickable: true,
