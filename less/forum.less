@@ -561,6 +561,12 @@
 //   - 保留 v0.1.27 卡片样式 (统一详细: 80px 头像 + flex row + 专长/成就/bio, SOP 155 沉淀)
 //   - 容器从 grid 改 flex 横向滚动 + CSS scroll-snap 原生支持 mobile 触屏 + desktop 滚轮/trackpad
 //   - 5 分钟改完, 1 file less 改 3 处, JS 不动 (BjxyPage.jsx 不动)
+// v0.1.29 改 (C 方案, 辉哥 2026-08-08 10:39 反馈, 10:41 拍板): 教练列表滚动条隐藏 + 左右渐变阴影视觉提示
+//   - 保留 v0.1.28 carousel 行为 (CSS scroll-snap + 固定宽度卡片 + 滑动功能, SOP 156 沉淀)
+//   - scrollbar-width: none (Firefox) + ::-webkit-scrollbar { display: none } (Chrome/Safari/Edge) 跨浏览器隐藏滚动条
+//   - mask-image: linear-gradient(to right, transparent, black 5%, black 95%, transparent) 左右两端 5% 渐变透明, 视觉提示用户"这里可以左右滑"
+//   - mask-image 是 CSS 属性不是 less 函数, 不踩 SOP 159 (wikimedia/less.php 不支持 min/max/calc 跨 vw/px) 坑
+//   - 加 -webkit-mask-image 前缀兼容老 Safari (iOS < 14)
 .bjxy-coach-grid {
     display: flex;
     overflow-x: auto;
@@ -570,8 +576,18 @@
     gap: 16px;
     margin-top: 16px;
     -webkit-overflow-scrolling: touch;  // iOS 兼容
-    scrollbar-width: thin;
-    scrollbar-color: var(--bjxy-border) transparent;
+
+    // Firefox: 隐藏滚动条
+    scrollbar-width: none;
+
+    // 左右两端 5% 渐变透明, 视觉提示用户"这里可以左右滑"
+    mask-image: linear-gradient(to right, transparent, black 5%, black 95%, transparent);
+    -webkit-mask-image: linear-gradient(to right, transparent, black 5%, black 95%, transparent);
+}
+.bjxy-coach-grid::-webkit-scrollbar {
+    display: none;  // Chrome/Safari/Edge: 隐藏滚动条
+    width: 0;
+    height: 0;
 }
 .bjxy-coach {
     // v0.1.28 改: 删 v0.1.5b grid-column 跨整行 (改 flex 容器后不需), 改 flex 固定宽度 carousel 卡片
