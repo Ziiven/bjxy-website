@@ -994,6 +994,88 @@
 
 (详细 v0.1.30 swiper 11 peek 沉淀见 commit `55f0d9a` + SOP 160)
 
+## v0.1.32a (2026-08-08) — 联系我们 section 返工修 2 bug (辉哥 12:?? V 测 v0.1.32 FAIL 反馈)
+
+**项目**: ziven-bjxy-website
+**类型**: fix(admin) — 字母后缀返工, 修 v0.1.32 V 测 FAIL 的 P0 + P2
+**辉哥反馈**: 12:?? V 测 v0.1.32 FAIL, 2 bug 派 Coder 返工 v0.1.32a
+
+### V 测 FAIL 2 bug
+
+- **P0**: 微信图片上传功能完全坏掉 — `uploadPhotoToArray` 对 flat URL array (`contactWechatImages`) 抛 TypeError
+  - 真实浏览器测试 (Playwright `fileChooser.setFiles` 1x1 PNG): POST /api/bjxy/upload → 200 OK, 但 UI alert "上传异常" + photo count 不变
+  - 根因: `BjxySettings.jsx` L1422-1423 `arr[i].photos.push(r.url)` — `arr[i]` 是 string (flat URL array) 不是 object with `photos` 字段
+  - 旧 SOP 165 复用 reviews pattern, 假设 receiver 都是 nested object array, 没考虑 contactWechatImages 是 flat URL array
+- **P2**: 向后兼容迁移逻辑坏掉 — `loadSettings` 对 `"[]"` truthy 判断错, else 分支永远不跑
+  - 真实测试: 设 `bjxy_contact_addresses='[]'` + `bjxy_contact_address='旧地址'`, admin 联系我们 tab 显示 `arrayCardCount: 0` (期望 1)
+  - 根因: `BjxySettings.jsx` L1187 `if (this.data.bjxy_contact_addresses)` — `"[]"` 是 truthy string, else if (旧单值迁移) 永远不跑
+  - Coder v0.1.32 自测盲区: 5/5 PASS + 4 combo verify 但没跑真实上传流程, 只测了 UI 渲染
+
+### 改 1 file (+ 2 dist rebuild + 1 vendor bundle re-commit)
+
+- **js/src/admin/components/BjxySettings.jsx** (+36 行 / -18 行, 3 处)
+  - L1187-1224 loadSettings (v0.1.32a): 联系我们 多地址 + 微信多图
+    - 加显式 truthy 守卫: `'[]'` / `'null'` / `''` 都视为"无新字段数据", 才走 `else if` 旧字段迁移
+    - contact addresses: `parsedAddresses.length > 0` 走新字段, `else if (this.data.bjxy_contact_address)` 走旧字段迁移, `else` 默认 `[{value: ''}]`
+    - wechat images: `parsedWechatImages || []` (旧 bjxy_contact_wechat 文字值不迁移, 不能当图)
+  - L1428-1441 uploadPhotoToArray (v0.1.32a): 区分 2 种 array shape
+    - `if (arr === this.contactWechatImages)`: flat URL array, 直接 `arr.push(r.url)`
+    - `else`: nested object array (reviews/students), `arr[i].photos.push(r.url)`
+- **js/dist/admin.js** (yarn build 强 rebuild, SOP 152, 76640 → 76903 字节, +263)
+- **js/dist/forum.js** (yarn build 强 rebuild, 没改, 105881 字节)
+- **CHANGELOG.md** (本 entry)
+- **server 端 vendor bundle re-commit** (SOP 161 admin commit 单独再跑)
+
+### 沉淀 (Mavis 整合)
+
+- **SOP 168 (新)**: bjxy 通用 `uploadPhotoToArray` helper 必先看 receiver 实际 shape
+  - 当前 helper 只支持 nested `{photos: []}` pattern (reviews/students 用), v0.1.32 加 flat URL array (`contactWechatImages`) 时没区分, 直接踩坑
+  - 修法: helper 内加 `if (arr === this.contactWechatImages) flat push else nested push` 分支
+  - 后续 v0.1.6 style 字段如要加新 array 类型, 必先看 receiver 实际是 object array 还是 URL array
+  - 适用: 任何复用 `uploadPhotoToArray` 的新 array 字段
+- **SOP 169 (新)**: Mavis 报告 admin 密码 V 测先 `password_verify` 自验
+  - v0.1.32 V 测用 memory summary 写的 `o60Gmdw4XungBI6ITFwy` 30 次 login 全 401, 浪费时间
+  - 实际 server 密码是 `0524zhao` (跟 user.md Mac 论坛密码一致), 之前 memory summary 写的 password 是错的 (Coder v0.1.32 改过 hash, Mavis 没注意)
+  - 修法: V 测起手先 PHP `password_verify` 验目标密码, 通过再开 Playwright 流程
+  - 适用: 任何 admin 登录 / 密码 reset 验证场景
+- Coder 自测盲区教训 (V 测 5/5 PASS + 4 combo verify 但漏跑真实上传): 自测必走 end-to-end 真实数据流 (DB 写入 + UI 真实上传/删除), 不只测 UI 渲染
+
+### 部署 (SOP 116 + 138+ + 152 + 153 + 154 + 161, **4 步全走**)
+
+1. 本地 `cd /Applications/MAMP/htdocs/Flarum/packages/ziven-bjxy-website/js && yarn build` (SOP 152 强 rebuild)
+2. scp 1 source (BjxySettings.jsx) + 2 dist (admin.js + forum.js) file (SOP 153 sshpass + scp -p 逐 file + mtime + sha 双验)
+3. `chown -R nginx:nginx packages/ziven-bjxy-website/`
+4. vendor bundle commit (SOP 161 admin commit 单独再跑): `forum` commit + `flarum cache:clear` + `admin` 单独 commit
+
+### Coder 自验 (v0.1.32 自测盲区, v0.1.32a 必修正)
+
+- ✅ 5 URL 全 200/403/405 (`/ /bjxy/ /api /admin/ /login/`)
+- ✅ Playwright `fileChooser.setFiles` 1x1 PNG 真实上传流程 (P0 验证)
+  - 微信照片 grid 真实上传 → photo count 2 → 3 → 4 → 5 (3 轮上传都可叠加)
+  - 缩略图每次 +1 立即出现
+  - alert "图片上传成功 (3 张)" — 无 "上传异常" alert
+  - 删除按钮 5 → 4 OK
+- ✅ SQL 临时设旧字段验证 P2 向后兼容迁移
+  - 设 `bjxy_contact_addresses='[]'` + `bjxy_contact_address='old_address_test_v0132a'`
+  - admin 加载联系我们 tab, `arrayCardCount = 1` (期望 1, 旧地址迁移成功)
+  - truthy 守卫生效 (`'[]'` 不再被认为是"有数据", 落到 `else if` 旧字段迁移)
+  - 跑完恢复 SQL
+- ✅ 4 combo 回归 (desktop/mobile × /bjxy + /admin, 跟 v0.1.32 一致, 无 regression)
+  - arrayCardCount = 3 (跟 v0.1.32 V 测时 SQL seed 的 3 地址一致)
+- ✅ vendor bundle grep 4 项全过 (`bjxy-contact-wechat-grid` > 0, `bjxy-contact-label` > 0, `bjxy-contact-wechat` > 0, `bjxy-contact-label` > 0)
+
+### 截图 (9 张)
+
+- `combo_01_desktop_1440x900_contact.png` (/bjxy desktop 3 地址 + 1 电话 + 2 wechat)
+- `combo_02_mobile_390x844_contact.png` (/bjxy mobile 单列堆叠)
+- `combo_03_admin_desktop_1440x900_contact.png` (/admin desktop 3 地址 array card)
+- `combo_04_admin_mobile_390x844_contact.png` (/admin mobile 单列堆叠)
+- `p0_01_after_upload_1.png` (P0 修验证: photo count 2 → 3, alert 成功)
+- `p0_02_after_3_uploads_and_delete.png` (P0 多次上传 3→4→5, 删除 5→4)
+- `p0_03_admin_contact_section.png` (P0 admin 联系我们 section)
+- `p2_01_arraycardcount_after_migration.png` (P2 修验证: arrayCardCount = 1)
+- `p2_02_contact_section.png` (P2 admin 联系我们 section 旧地址迁移显示)
+
 ## v0.1.32 (2026-08-08) — 联系我们 section 改造 (辉哥 11:48 反馈)
 
 **项目**: ziven-bjxy-website

@@ -1184,27 +1184,37 @@ export default class BjxySettings extends ExtensionPage {
           }
         } catch (e) {}
       }
-      // v0.1.32: 联系我们 多地址 (JSON array of {value}, 向后兼容旧 bjxy_contact_address 单值)
-      if (this.data.bjxy_contact_addresses) {
+      // v0.1.32a 改 (P2 bug 修复, SOP 168 配套): 联系我们 多地址 (JSON array of {value}, 向后兼容旧 bjxy_contact_address 单值)
+      // "[]" 是 truthy string, 旧 if (this.data.bjxy_contact_addresses) 永远进 try 分支, else (旧单值迁移) 永远不跑
+      // v0.1.32a 加显式 truthy 守卫: '[]' / 'null' / '' 都视为"无新字段数据", 才走 else if 旧字段迁移
+      const rawAddresses = this.data.bjxy_contact_addresses;
+      const parsedAddresses = (() => {
+        if (!rawAddresses || rawAddresses === '[]' || rawAddresses === 'null' || rawAddresses === '') return null;
         try {
-          const arr = JSON.parse(this.data.bjxy_contact_addresses);
-          if (Array.isArray(arr)) {
-            this.contactAddresses = arr.map(a => (typeof a === 'string' ? { value: a } : (a && typeof a === 'object' ? { value: a.value || '' } : { value: '' })));
-          }
-        } catch (e) {}
+          const arr = JSON.parse(rawAddresses);
+          return Array.isArray(arr) ? arr : null;
+        } catch (e) { return null; }
+      })();
+      if (parsedAddresses && parsedAddresses.length > 0) {
+        this.contactAddresses = parsedAddresses.map(a => (typeof a === 'string' ? { value: a } : (a && typeof a === 'object' ? { value: a.value || '' } : { value: '' })));
       } else if (this.data.bjxy_contact_address) {
         // 向后兼容: 旧 bjxy_contact_address 单值 → [{value: old}]
         this.contactAddresses = [{ value: this.data.bjxy_contact_address }];
+      } else {
+        // 都没, 默认 1 个空地址 (v0.1.32a 加, 之前无新字段+无旧字段是 undefined, UI 不渲染 array card)
+        this.contactAddresses = [{ value: '' }];
       }
-      // v0.1.32: 联系我们 微信多图 (JSON array of URL, 旧 bjxy_contact_wechat 文字值不迁移, 不能当图)
-      if (this.data.bjxy_contact_wechat_images) {
+      // v0.1.32a 改 (P2 配套, SOP 168): 联系我们 微信多图 (JSON array of URL, 旧 bjxy_contact_wechat 文字值不迁移, 不能当图)
+      // 同样加 truthy 守卫
+      const rawWechatImages = this.data.bjxy_contact_wechat_images;
+      const parsedWechatImages = (() => {
+        if (!rawWechatImages || rawWechatImages === '[]' || rawWechatImages === 'null' || rawWechatImages === '') return null;
         try {
-          const arr = JSON.parse(this.data.bjxy_contact_wechat_images);
-          if (Array.isArray(arr)) {
-            this.contactWechatImages = arr.filter(url => url);
-          }
-        } catch (e) {}
-      }
+          const arr = JSON.parse(rawWechatImages);
+          return Array.isArray(arr) ? arr : null;
+        } catch (e) { return null; }
+      })();
+      this.contactWechatImages = parsedWechatImages || [];
       if (this.data.bjxy_events_autoplay_ms) {
         const n = parseInt(this.data.bjxy_events_autoplay_ms, 10);
         if (!isNaN(n) && n >= 500 && n <= 60000) this.eventsAutoplayMs = n;
@@ -1418,9 +1428,17 @@ export default class BjxySettings extends ExtensionPage {
           body: form,
         });
         if (r.ok && r.url) {
-          if (!Array.isArray(arr[i].photos)) arr[i].photos = [];
-          arr[i].photos.push(r.url);
-          app.alerts.show({ type: 'success' }, '图片上传成功 (' + arr[i].photos.length + ' 张)');
+          // v0.1.32a 改 (P0 bug 修复, SOP 168): 区分 flat URL array (contactWechatImages) 跟 nested object array (reviews/students)
+          if (arr === this.contactWechatImages) {
+            // flat URL array: 直接 push 到 arr 本身
+            arr.push(r.url);
+            app.alerts.show({ type: 'success' }, '图片上传成功 (' + arr.length + ' 张)');
+          } else {
+            // nested object array: arr[i] 是 object with photos field
+            if (!Array.isArray(arr[i].photos)) arr[i].photos = [];
+            arr[i].photos.push(r.url);
+            app.alerts.show({ type: 'success' }, '图片上传成功 (' + arr[i].photos.length + ' 张)');
+          }
           m.redraw();
         } else {
           app.alerts.show({ type: 'error' }, r.error || '上传失败');
