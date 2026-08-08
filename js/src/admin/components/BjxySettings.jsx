@@ -590,20 +590,47 @@ export default class BjxySettings extends ExtensionPage {
 
   // Tab 5: 办学特色 (6 个卡片)
   // v0.1.0w 改: 删 "特色卡片" label, 改 class BjxyField-features
+  // v0.1.33 改 (辉哥 14:38 反馈): array card 模式 (跟 reviews / contactWechatImages 同款) + 每条加 bgImageUrl 上传字段 + 顶部遮罩不透明度设置
   renderFeaturesSection() {
     return (
       <div className="bjxy-section glass-card">
         {this.sectionHead('✨', '办学特色 (6 个卡片)', null, 'features')}
         <div className="bjxy-section-content">
+          {/* v0.1.33 改: 背景遮罩不透明度设置 (0-100, 整数, 默认 50) */}
+          {this.field('背景遮罩不透明度 (0-100)', 'bjxy_feature_card_overlay_opacity', '50', 'number')}
           <div className="BjxyField-array BjxyField-features">
-            {this.features.map((f, i) => m('div', { class: 'BjxyField-array-row', key: 'f' + i }, [
-              m('div', { class: 'ic-mini' }, f.icon || '★'),
-              m('input', { value: f.title, oninput: (e) => { f.title = e.target.value; } }),
-              m('input', { value: f.icon, oninput: (e) => { f.icon = e.target.value; } }),
-              m('input', { value: f.desc, oninput: (e) => { f.desc = e.target.value; } }),
-              m('button', { class: 'del', onclick: () => { this.features.splice(i, 1); m.redraw(); } }, '×'),
+            {this.features.map((f, i) => m('div', { class: 'BjxyField-array-card', key: 'f' + i }, [
+              m('div', { class: 'BjxyField-array-card-head' }, [
+                m('span', { class: 'BjxyField-array-card-num' }, '特色 #' + (i + 1)),
+                m('button', { class: 'del', onclick: () => { this.features.splice(i, 1); m.redraw(); } }, '× 删除'),
+              ]),
+              m('div', { class: 'BjxyField-array-card-body' }, [
+                m('div', { class: 'BjxyField-row' }, [
+                  m('div', { class: 'BjxyField-label' }, '图标 (emoji 或文字)'),
+                  m('input', { class: 'BjxyField-input', value: f.icon, oninput: (e) => { f.icon = e.target.value; } }),
+                ]),
+                m('div', { class: 'BjxyField-row' }, [
+                  m('div', { class: 'BjxyField-label' }, '标题'),
+                  m('input', { class: 'BjxyField-input', value: f.title, oninput: (e) => { f.title = e.target.value; } }),
+                ]),
+                m('div', { class: 'BjxyField-row' }, [
+                  m('div', { class: 'BjxyField-label' }, '描述'),
+                  m('textarea', { class: 'BjxyField-textarea', value: f.desc, rows: '2', oninput: (e) => { f.desc = e.target.value; } }),
+                ]),
+                // v0.1.33 改: 背景图上传 (fileField pattern 跟 reviews.photos 同款, 走 uploadFileForArray)
+                m('div', { class: 'BjxyField-row' }, [
+                  m('div', { class: 'BjxyField-label' }, '背景图 (可选, 留空用透明)'),
+                  m('div', null, [
+                    f.bgImageUrl ? m('div', { class: 'BjxyField-file-preview' }, [
+                      m('img', { src: f.bgImageUrl, alt: '背景图预览', style: 'max-width: 200px; max-height: 120px; border-radius: 8px; border: 1px solid var(--bjxy-border);' }),
+                      m('button', { class: 'BjxyField-file-remove', onclick: () => { f.bgImageUrl = ''; m.redraw(); } }, '× 移除'),
+                    ]) : null,
+                    m('div', { class: 'BjxyField-file', onclick: (e) => this.uploadFileForArray(e, this.features, i, 'bgImageUrl') }, '🖼 上传背景图'),
+                  ]),
+                ]),
+              ]),
             ]))}
-            <div className="BjxyField-array-add" onclick={() => { this.features.push({ icon: '★', title: '新特色', desc: '' }); m.redraw(); }}>
+            <div className="BjxyField-array-add" onclick={() => { this.features.push({ icon: '★', title: '新特色', desc: '', bgImageUrl: '' }); m.redraw(); }}>
               + 添加特色
             </div>
           </div>
@@ -1069,11 +1096,18 @@ export default class BjxySettings extends ExtensionPage {
   // ================== 数据加载 ==================
   async loadSettings() {
     try {
+      // v0.1.33 改 (辉哥 14:38 反馈): 给 bjxy_feature_card_overlay_opacity 默认值 50 (server 没这 key 时)
+      //   不然 save() payload 不包含 (this.data 是 server 拿的, 没这 key 就不传)
+      //   this.data 下面 await 后赋值, 这里先看 this.data 是否已被初始化 (老 session 可能遗留)
+      if (this.data && !this.data.bjxy_feature_card_overlay_opacity) this.data.bjxy_feature_card_overlay_opacity = '50';
       const data = await app.request({
         method: 'GET',
         url: app.forum.attribute('apiUrl') + '/bjxy/settings',
       });
       this.data = data.settings || {};
+      // v0.1.33 改 (辉哥 14:38 反馈): 给 bjxy_feature_card_overlay_opacity 默认值 50 (server 没这 key 时)
+      //   不然 save() payload 不包含 (this.data 是 server 拿的, 没这 key 就不传)
+      if (!this.data.bjxy_feature_card_overlay_opacity) this.data.bjxy_feature_card_overlay_opacity = '50';
       // v0.1.15: 读 10 个 section 可见性 setting (bjxy_section_visible_<key>)
       //   旧部署缺这些 setting 时, 默认全部 true (跟 oninit 默认一致, 自动兼容)
       const sectionKeys = ['brand', 'hero', 'about', 'events', 'features', 'curriculum', 'coach', 'reviews', 'contact', 'footer'];
@@ -1108,7 +1142,18 @@ export default class BjxySettings extends ExtensionPage {
         } catch (e) {}
       }
       if (this.data.bjxy_features_json) {
-        try { this.features = JSON.parse(this.data.bjxy_features_json); } catch (e) {}
+        // v0.1.33 改: 解析 bjxy_features_json 时补 bgImageUrl 字段 (旧数据无此字段时给默认空)
+        try {
+          const parsed = JSON.parse(this.data.bjxy_features_json);
+          if (Array.isArray(parsed)) {
+            this.features = parsed.map(f => ({
+              icon: f.icon || '★',
+              title: f.title || '',
+              desc: f.desc || '',
+              bgImageUrl: f.bgImageUrl || '',
+            }));
+          }
+        } catch (e) {}
       }
       if (this.data.bjxy_curriculum_boards_json) {
         try {
@@ -1374,7 +1419,11 @@ export default class BjxySettings extends ExtensionPage {
       if (!file) return;
       const form = new FormData();
       form.append('file', file);
-      form.append('key', 'bjxy_' + (arr === this.reviews ? 'review' : 'student') + '_' + field + '_' + i);
+      // v0.1.33 改 (辉哥 14:38 反馈): field 转小写 (server UploadController L85 `^[a-z0-9_]+$` 不接受驼峰)
+      //   bgImageUrl → bgimageurl, photoUrl → photourl
+      //   修法: toLowerCase() + replace 非 [a-z0-9_] 字符为 _
+      const safeField = field.toLowerCase().replace(/[^a-z0-9_]/g, '_');
+      form.append('key', 'bjxy_' + (arr === this.reviews ? 'review' : (arr === this.features ? 'feature' : 'student')) + '_' + safeField + '_' + i);
       try {
         const r = await app.request({
           method: 'POST',
@@ -1478,8 +1527,12 @@ export default class BjxySettings extends ExtensionPage {
     // v0.1.17: '显示底部 Tab' 开关持久化 (前台 BjxyPage.jsx 读这个 setting 决定是否 hide nav.MobileTab)
     //   '1' = 隐藏 mobile tab, '0' = 显示 mobile tab (默认, 跟辉哥说的 '默认关闭' 一致)
     payload.bjxy_show_mobile_tab = this.showMobileTab ? '1' : '0';
+    // v0.1.33 改 (辉哥 14:38 反馈): 办学特色背景遮罩不透明度持久化 (0-100, 默认 50)
+    payload.bjxy_feature_card_overlay_opacity = this.data.bjxy_feature_card_overlay_opacity || '50';
+    // v0.1.33 改: filter 条件放宽, 允许只填 bgImageUrl 也保留 (避免新增 '只换背景图' 场景被 filter 掉)
     payload.bjxy_features_json = JSON.stringify(
-      this.features.filter(f => f && f.title && f.title.trim() && f.desc && f.desc.trim())
+      this.features.filter(f => f && (f.title || f.desc || f.bgImageUrl))
+        .map(f => ({ icon: f.icon || '★', title: f.title || '', desc: f.desc || '', bgImageUrl: f.bgImageUrl || '' }))
     );
     payload.bjxy_curriculum_boards_json = JSON.stringify(this.boards);
     payload.bjxy_coach_group_ids = JSON.stringify(this.coachGroupIds);

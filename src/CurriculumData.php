@@ -31,13 +31,15 @@ class CurriculumData
         ['level' => 'ADVANCED', 'name' => '全地域大神', 'desc' => '单脚滑行、豚跳、180 度旋转、360 度旋转、小跳台等技巧，并且可以在雪上多种地形游刃有余。'],
     ];
 
+    // v0.1.33 改: 加 bgImageUrl 字段 (admin 可上传背景图, 前端走 bjxy-feature-bg + bjxy-feature-mask 渲染)
+    //   默认空, 留空时前端不渲染背景层, 保持原玻璃卡样式
     const FEATURES = [
-        ['icon' => '🏂', 'title' => '室内滑雪高效', 'desc' => '一年四季恒温环境, 不受天气影响'],
-        ['icon' => '🛡️', 'title' => '安全专业教练', 'desc' => '认证教练全程指导, 安全第一'],
-        ['icon' => '📚', 'title' => '滑雪教学', 'desc' => '自主研发课程体系, 分级进阶'],
-        ['icon' => '🎿', 'title' => '雪具护具免费', 'desc' => '全套装备免费使用, 省心省力'],
-        ['icon' => '🌐', 'title' => '全国品牌机构', 'desc' => '连锁品牌, 标准化教学'],
-        ['icon' => '🏔️', 'title' => '学玩用赛', 'desc' => '全生态滑雪服务'],
+        ['icon' => '🏂', 'title' => '室内滑雪高效', 'desc' => '一年四季恒温环境, 不受天气影响', 'bgImageUrl' => ''],
+        ['icon' => '🛡️', 'title' => '安全专业教练', 'desc' => '认证教练全程指导, 安全第一', 'bgImageUrl' => ''],
+        ['icon' => '📚', 'title' => '滑雪教学', 'desc' => '自主研发课程体系, 分级进阶', 'bgImageUrl' => ''],
+        ['icon' => '🎿', 'title' => '雪具护具免费', 'desc' => '全套装备免费使用, 省心省力', 'bgImageUrl' => ''],
+        ['icon' => '🌐', 'title' => '全国品牌机构', 'desc' => '连锁品牌, 标准化教学', 'bgImageUrl' => ''],
+        ['icon' => '🏔️', 'title' => '学玩用赛', 'desc' => '全生态滑雪服务', 'bgImageUrl' => ''],
     ];
 
     public static function getSingleBoard(): array

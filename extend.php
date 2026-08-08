@@ -165,7 +165,12 @@ return [
         //   '1' = 隐藏 mobile tab (前台 bjxy 页面 CSS hide nav.MobileTab)
         //   旧部署缺这 setting 时, 前台默认 '0' (显示 mobile tab, 跟默认一致)
         //   是否渲染开关由 admin 检测 mobile tab 扩展是否安装决定 (custom-tab-items API 拿)
-        ->serializeToForum('bjxy_show_mobile_tab', 'bjxy_show_mobile_tab'),
+        ->serializeToForum('bjxy_show_mobile_tab', 'bjxy_show_mobile_tab')
+        // v0.1.33 (辉哥 14:38 反馈): 办学特色 section 背景图黑色遮罩不透明度 (0-100, 默认 50)
+        //   前台 BjxyPage.jsx renderFeaturesSection 读这个 setting, 设 .bjxy-feature-mask opacity
+        //   0 = 透明遮罩 (背景图全亮), 100 = 全黑遮罩 (背景图全黑)
+        //   默认 50, 走 admin '办学特色' tab 顶部数字输入框
+        ->serializeToForum('bjxy_feature_card_overlay_opacity', 'bjxy_feature_card_overlay_opacity'),
 
     (new Extend\Frontend('admin'))
         ->js(__DIR__ . '/js/dist/admin.js')

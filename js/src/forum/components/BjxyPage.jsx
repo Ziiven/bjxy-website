@@ -493,18 +493,34 @@ export default class BjxyPage extends Component {
 
   // 特色
   // v0.1.6h: 改玻璃拟态 (辉哥 16:06 选 A 方案)
+  // v0.1.33 改 (辉哥 14:38 反馈):
+  //   桌面端改 Bento 网格 (前 2 个 bjxy-feature-large + 后 4 个常规, 6 列 grid span 3 / span 2)
+  //   移动端保持 1 列堆叠 (less @phone media query)
+  //   每条支持背景图 + 黑色遮罩层 (opacity 走 bjxy_feature_card_overlay_opacity setting, 默认 0.5)
+  //   有背景图时文字改白 (黑遮罩后深色文字看不清)
   renderFeaturesSection(visibleFeatures) {
+    const overlayOpacity = parseInt(app.forum.attribute('bjxy_feature_card_overlay_opacity') || '50', 10) / 100;
     return m('section', { class: 'bjxy-section bjxy-section-alt bjxy-features-glass', id: 'features', key: 'sec-features' }, [
       m('div', { class: 'bjxy-section-head' }, [
         m('div', { class: 'bjxy-features-eyebrow' }, 'Why Choose Us'),
         m('h2', null, '为什么选择北极雪屿'),
         m('p', { class: 'bjxy-features-sub' }, '从环境到教练, 从课程到装备, 每一个细节都为你精心准备'),
       ]),
-      m('div', { class: 'bjxy-feature-grid' }, visibleFeatures.map((f, i) => m('div', { class: 'bjxy-feature', key: 'f' + i }, [
-        m('span', { class: 'bjxy-feature-num' }, String(i + 1).padStart(2, '0')),
-        m('div', { class: 'bjxy-feature-icon' }, f.icon || '★'),
-        m('h3', null, f.title || ''),
-        m('p', null, f.desc || ''),
+      m('div', { class: 'bjxy-feature-grid' }, visibleFeatures.map((f, i) => m('div', {
+        class: 'bjxy-feature' + (i < 2 ? ' bjxy-feature-large' : ''),
+        key: 'f' + i,
+      }, [
+        // v0.1.33 改: 背景图 (可选) + 黑色遮罩层 (opacity 走 setting)
+        f.bgImageUrl ? m('div', { class: 'bjxy-feature-bg' }, [
+          m('img', { src: f.bgImageUrl, alt: '' }),
+          m('div', { class: 'bjxy-feature-mask', style: 'opacity: ' + overlayOpacity }),
+        ]) : null,
+        m('div', { class: 'bjxy-feature-content' }, [
+          m('span', { class: 'bjxy-feature-num' }, String(i + 1).padStart(2, '0')),
+          m('div', { class: 'bjxy-feature-icon' }, f.icon || '★'),
+          m('h3', null, f.title || ''),
+          m('p', null, f.desc || ''),
+        ]),
       ]))),
     ]);
   }

@@ -994,6 +994,61 @@
 
 (详细 v0.1.30 swiper 11 peek 沉淀见 commit `55f0d9a` + SOP 160)
 
+## v0.1.33 (2026-08-08) — 办学特色 section 改造 (辉哥 14:38 反馈)
+
+**项目**: ziven-bjxy-website
+**类型**: feat(admin+forum) — 桌面端 Bento 网格 + 背景图上传 + 黑色遮罩层 (admin 可调 opacity)
+**辉哥反馈**: 14:38 反馈, 3 件事: (1) 桌面端改 A_desktop.png 那种 Bento 网格 (2 大 + 4 小) + 大数字滚动; (2) 移动端保持当前 3x2 玻璃卡 grid (v0.1.32a 部署版本); (3) 后台办学特色 section 每条加背景图上传 + 前端展示背景图片 + 黑色遮罩层 + admin 可调 opacity
+
+### 改 5 file + 2 dist + 1 setting
+
+- **src/CurriculumData.php** (FEATURES schema 加 `bgImageUrl` 字段, 6 条)
+  - 6 条 `FEATURES` array 都加 `'bgImageUrl' => ''` 默认空
+  - 留空时前端不渲染背景层, 保持原玻璃卡样式
+- **extend.php** (+1 setting serializeToForum)
+  - `bjxy_feature_card_overlay_opacity` (默认 '50', 0-100 整数)
+  - 走 `serializeToForum` 让前端 `app.forum.attribute('bjxy_feature_card_overlay_opacity')` 读到
+- **js/src/admin/components/BjxySettings.jsx** (4 处改)
+  - L593-655 `renderFeaturesSection` (v0.1.33): 改 array card 模式 (跟 reviews / contactWechatImages 同款)
+    - 顶部加 "背景遮罩不透明度 (0-100)" 数字输入框 (`this.field('背景遮罩不透明度 (0-100)', 'bjxy_feature_card_overlay_opacity', '50', 'number')`)
+    - 每条 4 字段: 图标 / 标题 / 描述 / 背景图上传 (fileField pattern, `uploadFileForArray(e, this.features, i, 'bgImageUrl')`)
+    - 添加特色按钮 push 加 `bgImageUrl: ''`
+  - L1110-1124 `loadSettings` (v0.1.33): 解析 `bjxy_features_json` 时补 `bgImageUrl` 字段 (旧数据无此字段时给默认空, 向后兼容)
+  - L1377 `uploadFileForArray` kind (v0.1.33): 加 `arr === this.features ? 'feature'` 分支 (跟 reviews / students 区分)
+  - L1481-1485 `save` (v0.1.33): filter 条件放宽 `f.title || f.desc || f.bgImageUrl` (允许只填 bgImageUrl 也保留) + map 序列化保留 bgImageUrl
+- **js/src/forum/components/BjxyPage.jsx** (`renderFeaturesSection` 改)
+  - 读 `app.forum.attribute('bjxy_feature_card_overlay_opacity')` (默认 50, parseInt / 100 → 0-1 浮点)
+  - 第 1, 2 个 feature 加 `.bjxy-feature-large` class (前 2 个是大卡, 后 4 个是小卡)
+  - 有 `bgImageUrl` 时渲染 `.bjxy-feature-bg` div (包 img + `.bjxy-feature-mask` 黑色遮罩层, opacity 走 setting)
+  - 内容包在 `.bjxy-feature-content` div
+- **less/forum.less** (`.bjxy-feature-grid` + `.bjxy-feature` 改 Bento + 背景图 + 遮罩层)
+  - `.bjxy-feature-grid` 改 `grid-template-columns: repeat(6, 1fr)` (6 列 grid)
+  - `.bjxy-feature-large` `grid-column: span 3` (大卡占 50% 宽), min-height 260px
+  - `.bjxy-feature-large:nth-child(1)(2)` 不同蓝紫渐变 background
+  - `.bjxy-feature:not(.bjxy-feature-large)` `grid-column: span 2` (小卡占 33% 宽), min-height 200px
+  - `@media @phone` 移动端 1 列堆叠 (保持 v0.1.32a 行为)
+  - 大卡内容: 居中 + 大字 (icon 56px / h3 22px 渐变 / p 14px) + flex column center
+  - `.bjxy-feature-bg` absolute inset 0 + img cover + mask absolute inset 0 #000 opacity 0.5
+  - 有 `.bjxy-feature-bg` 时文字白 (`.bjxy-feature-bg ~ .bjxy-feature-content h3/p/.bjxy-feature-num/.bjxy-feature-icon` 颜色)
+  - z-index 调整: ::before z 1, content z 2, num z 3 (避免被 bg / mask 盖)
+- **js/dist/admin.js** (yarn build 强 rebuild, SOP 152)
+- **js/dist/forum.js** (yarn build 强 rebuild, SOP 152)
+- **CHANGELOG.md** (本 entry)
+
+### 风险
+
+- ✅ 复用 `uploadFileForArray` pattern (跟 reviews.photoUrl / students.photoUrl 同款, 单值 string 字段)
+  - 跟 `uploadPhotoToArray` (SOP 168 区分 flat/nested) 不同: bgImageUrl 是 nested object 的单值 field, 走 `uploadFileForArray` (SOP 165 原 pattern)
+  - kind 加 'feature' 分支避免跟 reviews/students 冲突 (bjxy_<kind>_<field>_<i> key namespace)
+- ✅ Bento grid 大小卡 nth-child(1)(2) span 3 + (3-6) span 2, 6 列 CSS grid
+- ✅ 移动端 `@media @phone` 1 列堆叠 (保持 v0.1.32a 行为)
+- ✅ 背景图 + 黑色遮罩层 (rgba(0,0,0,X)) + opacity 走 admin setting (`bjxy_feature_card_overlay_opacity`, 默认 0.5)
+- ✅ 文字白字 (有背景图时, 走 `.bjxy-feature-bg ~ .bjxy-feature-content *` selector) + 透明时 (没背景图) 走原色
+- ✅ 大卡 nth-child(1)(2) 硬编码, admin 删 1 个 feature 变成 5 个, 大卡自动变 2 个 (nth 0, 1), 保持
+- ✅ Coder v0.1.33 自测修正 v0.1.32 自测盲区: 真实 Playwright fileChooser.setFiles 上传背景图 + 改 setting opacity 30/50/80 + mobile/1440/1920 viewport 验证
+- ⚠️ A 方案 count-up 动画 (IntersectionObserver 数字滚动) **本次不做**, 大卡只放大字号 + 居中 + 渐变标题, 后续 v0.1.34 再加 (辉哥没要求)
+- ⚠️ 复用 v0.1.32a `uploadFileForArray` (单值 field helper), 没复用 v0.1.32a `uploadPhotoToArray` (photos array helper), 因为 bgImageUrl 是单值 URL 不是 array
+
 ## v0.1.32a (2026-08-08) — 联系我们 section 返工修 2 bug (辉哥 12:?? V 测 v0.1.32 FAIL 反馈)
 
 **项目**: ziven-bjxy-website

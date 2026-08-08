@@ -422,14 +422,49 @@
     line-height: 1.6;
 }
 
-// 6 卡片 3 列 grid
+// v0.1.33 改 (辉哥 14:38 反馈): 桌面端 Bento 网格 (2 大 + 4 小, 6 列 grid 大卡 span 3 / 小卡 span 2)
+//   移动端保持 1 列堆叠 (v0.1.32a 行为, @phone media query)
+//   大卡 nth-child(1)(2) 不同渐变 background, 大字 + 居中 + 蓝紫渐变标题
+//   小卡保持原玻璃卡样式 + 加背景图支持
+// v0.1.6h 改: 玻璃拟态 (辉哥 16:06 选 A 方案), 之前朴素方块 + 小圆 icon
+//   保留玻璃高光 + 渐变光晕 icon, 加 backdrop-filter blur(20px)
 .bjxy-feature-grid {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 20px;
+    grid-template-columns: repeat(6, 1fr);  // 6 列网格 (大卡 span 3, 小卡 span 2)
+    gap: 16px;
     margin-top: 8px;
 }
-// 玻璃卡片
+// v0.1.33 改: 大卡 (前 2 个 feature) — Bento 网格主视觉
+.bjxy-feature-large {
+    grid-column: span 3;  // 桌面端大卡占 50% 宽 (3/6)
+    min-height: 260px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 32px;
+}
+.bjxy-feature-large:nth-child(1) {
+    background: linear-gradient(135deg, rgba(45, 123, 229, 0.15) 0%, rgba(124, 58, 237, 0.10) 100%);
+}
+.bjxy-feature-large:nth-child(2) {
+    background: linear-gradient(135deg, rgba(124, 58, 237, 0.15) 0%, rgba(45, 123, 229, 0.10) 100%);
+}
+// 小卡 (后 4 个 feature)
+.bjxy-feature:not(.bjxy-feature-large) {
+    grid-column: span 2;  // 桌面端小卡占 33% 宽 (2/6)
+    min-height: 200px;
+}
+
+@media @phone {
+    .bjxy-feature-grid { grid-template-columns: 1fr; }  // 移动端 1 列堆叠 (保持 v0.1.32a)
+    .bjxy-feature-large,
+    .bjxy-feature:not(.bjxy-feature-large) {
+        grid-column: span 1;
+    }
+}
+
+// 玻璃卡片 (大卡 / 小卡共用)
 .bjxy-feature {
     padding: 32px 28px;
     background: var(--bjxy-bg-soft);
@@ -449,12 +484,16 @@
     border-radius: 16px;
     background: linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, transparent 50%);
     pointer-events: none;
+    z-index: 1;
 }
 .bjxy-feature:hover {
     transform: translateY(-4px);
     border-color: rgba(45, 123, 229, 0.4);
     box-shadow: 0 20px 40px -16px rgba(0, 0, 0, 0.3),
                 0 0 0 1px rgba(45, 123, 229, 0.1);
+}
+.bjxy-feature-large:hover {
+    transform: translateY(-4px) scale(1.01);
 }
 // 右上角 01-06 编号
 .bjxy-feature-num {
@@ -465,7 +504,7 @@
     color: var(--bjxy-text-mute);
     font-family: 'JetBrains Mono', 'SFMono-Regular', Consolas, monospace;
     letter-spacing: 0.1em;
-    z-index: 2;
+    z-index: 3;
 }
 // 56x56 渐变光晕 icon
 .bjxy-feature-icon {
@@ -477,7 +516,7 @@
     font-size: 28px;
     margin-bottom: 20px;
     position: relative;
-    z-index: 1;
+    z-index: 2;
 }
 // icon 外圈光晕
 .bjxy-feature-icon::after {
@@ -491,6 +530,81 @@
 }
 .bjxy-feature h3 { font-size: 18px; font-weight: 700; margin-bottom: 8px; color: var(--bjxy-text); }
 .bjxy-feature p { font-size: 13px; color: var(--bjxy-text-soft); line-height: 1.6; }
+
+// v0.1.33 改: 大卡内容样式 — 居中 + 大字 + 渐变标题
+.bjxy-feature-large .bjxy-feature-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+}
+.bjxy-feature-large .bjxy-feature-icon {
+    font-size: 56px;  // 大卡 icon 大
+    margin-bottom: 16px;
+    width: 80px; height: 80px;
+}
+.bjxy-feature-large h3 {
+    font-size: 22px;
+    font-weight: 800;
+    margin-bottom: 8px;
+    background: linear-gradient(135deg, var(--bjxy-blue) 0%, var(--bjxy-purple) 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+}
+.bjxy-feature-large p {
+    font-size: 14px;
+    color: var(--bjxy-text-soft);
+    line-height: 1.6;
+    max-width: 80%;
+}
+
+// v0.1.33 改: 背景图 + 黑色遮罩层 (admin 上传背景图后渲染)
+//   .bjxy-feature-bg: absolute inset 0, 包 img + mask, z-index 0
+//   .bjxy-feature-mask: 纯黑遮罩, opacity 走 admin setting (默认 0.5)
+//   有背景图时文字改白 (黑遮罩后深色文字看不清)
+.bjxy-feature-bg {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+}
+.bjxy-feature-bg img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+.bjxy-feature-mask {
+    position: absolute;
+    inset: 0;
+    background: #000;
+    opacity: 0.5;  // 默认 50%, admin 可调 (0-100)
+    transition: opacity 0.3s;
+    z-index: 1;
+}
+.bjxy-feature-content {
+    position: relative;
+    z-index: 2;  // 内容在遮罩之上
+}
+// 有背景图时文字改白 (黑遮罩后深色文字看不清)
+.bjxy-feature-bg ~ .bjxy-feature-content h3 {
+    color: rgba(255, 255, 255, 0.95);
+    background: none;  // 大卡渐变标题在黑背景上看不清, 取消
+    -webkit-background-clip: border-box;
+    background-clip: border-box;
+}
+.bjxy-feature-bg ~ .bjxy-feature-content p {
+    color: rgba(255, 255, 255, 0.85);
+}
+.bjxy-feature-bg ~ .bjxy-feature-content .bjxy-feature-num {
+    color: rgba(255, 255, 255, 0.6);
+}
+.bjxy-feature-bg ~ .bjxy-feature-content .bjxy-feature-icon {
+    color: rgba(255, 255, 255, 0.95);
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.10) 0%, rgba(255, 255, 255, 0.05) 100%);
+    border-color: rgba(255, 255, 255, 0.2);
+}
 
 // ===== 教学体系 (tab + 8/9 级卡片网格) =====
 .bjxy-curri-tabs {
