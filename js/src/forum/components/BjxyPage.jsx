@@ -123,14 +123,9 @@ export default class BjxyPage extends Component {
     this.coachSwiper = new Swiper(vnode.dom, {
       // 不需要 Autoplay, 教练列表静态展示
       modules: [Navigation, Pagination],
-      slidesPerView: 1.2,
-      slidesPerGroup: 1,
+      loop: true,
+      slidesPerView: 1,
       spaceBetween: 16,
-      // 响应式: desktop 1.2 (1 张完整 + 0.2 张 peek ≈ 100px), mobile 1.1 (1 张完整 + 0.1 张 peek ≈ 30px)
-      breakpoints: {
-        0:    { slidesPerView: 1.1 },  // mobile
-        768:  { slidesPerView: 1.2 },  // tablet/desktop
-      },
       pagination: {
         el: vnode.dom.querySelector('.swiper-pagination'),
         clickable: true,
@@ -377,9 +372,6 @@ export default class BjxyPage extends Component {
       m('div', { class: 'bjxy-hero-text' }, [
         m('h1', null, [s('bjxy_hero_title', '探索极致的滑雪体验。')]),
         m('p', null, s('bjxy_hero_subtitle', '专注滑雪领域的全国连锁机构, 17 级渐进教学体系 + 认证教练 + 全国品牌机构。')),
-        m('div', { class: 'bjxy-hero-cta-row' }, [
-          m('a', { href: s('bjxy_hero_cta_link', '#contact'), class: 'bjxy-btn bjxy-btn-primary' }, s('bjxy_hero_cta_text', '立即咨询')),
-        ]),
         m('div', { class: 'bjxy-hero-features' }, [
           m('div', { class: 'bjxy-hero-feature' }, [m('span', { class: 'check' }, '✓'), m('strong', null, s('bjxy_about_stat_1_num', '10+')), ' ' + s('bjxy_about_stat_1_label', '年教学经验')]),
           m('div', { class: 'bjxy-hero-feature' }, [m('span', { class: 'check' }, '✓'), m('strong', null, s('bjxy_about_stat_2_num', '50+')), ' ' + s('bjxy_about_stat_2_label', '专业教练')]),
