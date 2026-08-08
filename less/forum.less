@@ -495,28 +495,32 @@
 // v0.1.35 删: .bjxy-feature-num 数字编号 01-06 整段 (辉哥 17:12 反馈去掉每个卡片的数字编号)
 //   原 10 行 (.bjxy-feature-num position absolute 右上角) 注释掉, 不删变量, 方便回滚
 //   配套删: 有 bg 时 num 白字 (L600-602) + mobile 大卡 num reset (L1171-1180) + BjxyPage.jsx L519 span 渲染
+// v0.1.36 删: .bjxy-feature-icon 56x56 渐变光晕 icon 整段 + ::after 光晕 (辉哥 21:52 反馈去掉 "为什么选择北极雪屿" feature icon)
+//   原 20 行 (10 行 icon 主体 + 10 行 ::after) 注释掉, 不删变量, 方便回滚
+//   配套删: 大卡 .bjxy-feature-icon reset + mobile 段大卡 reset + 有 bg 时白字 + BjxyPage.jsx L512 渲染 + BjxySettings.jsx L608-611 输入字段
+//   f.icon 字段 data schema 保留 (兼容老数据, 序列化 L1150 / 反序列化 L1535 不动)
 // 56x56 渐变光晕 icon
-.bjxy-feature-icon {
-    width: 56px; height: 56px;
-    border-radius: 16px;
-    background: linear-gradient(135deg, rgba(45, 123, 229, 0.18) 0%, rgba(139, 92, 246, 0.18) 100%);
-    border: 1px solid rgba(45, 123, 229, 0.25);
-    display: flex; align-items: center; justify-content: center;
-    font-size: 28px;
-    margin-bottom: 20px;
-    position: relative;
-    z-index: 2;
-}
+// .bjxy-feature-icon {
+//     width: 56px; height: 56px;
+//     border-radius: 16px;
+//     background: linear-gradient(135deg, rgba(45, 123, 229, 0.18) 0%, rgba(139, 92, 246, 0.18) 100%);
+//     border: 1px solid rgba(45, 123, 229, 0.25);
+//     display: flex; align-items: center; justify-content: center;
+//     font-size: 28px;
+//     margin-bottom: 20px;
+//     position: relative;
+//     z-index: 2;
+// }
 // icon 外圈光晕
-.bjxy-feature-icon::after {
-    content: '';
-    position: absolute;
-    inset: -6px;
-    border-radius: 22px;
-    background: radial-gradient(circle, rgba(45, 123, 229, 0.3) 0%, transparent 70%);
-    filter: blur(8px);
-    z-index: -1;
-}
+// .bjxy-feature-icon::after {
+//     content: '';
+//     position: absolute;
+//     inset: -6px;
+//     border-radius: 22px;
+//     background: radial-gradient(circle, rgba(45, 123, 229, 0.3) 0%, transparent 70%);
+//     filter: blur(8px);
+//     z-index: -1;
+// }
 .bjxy-feature h3 { font-size: 18px; font-weight: 700; margin-bottom: 8px; color: var(--bjxy-text); }
 .bjxy-feature p { font-size: 13px; color: var(--bjxy-text-soft); line-height: 1.6; }
 
@@ -528,11 +532,13 @@
     justify-content: center;
     width: 100%;
 }
-.bjxy-feature-large .bjxy-feature-icon {
-    font-size: 56px;  // 大卡 icon 大
-    margin-bottom: 16px;
-    width: 80px; height: 80px;
-}
+// v0.1.36 删: 大卡 .bjxy-feature-icon reset (跟 .bjxy-feature-icon 整段一起删, 辉哥 21:52 反馈)
+//   原 4 行 (font-size 56px / margin-bottom 16px / width 80px height 80px) 注释掉, 方便回滚
+// .bjxy-feature-large .bjxy-feature-icon {
+//     font-size: 56px;  // 大卡 icon 大
+//     margin-bottom: 16px;
+//     width: 80px; height: 80px;
+// }
 .bjxy-feature-large h3 {
     font-size: 22px;
     font-weight: 800;
@@ -587,11 +593,13 @@
     color: rgba(255, 255, 255, 0.85);
 }
 // v0.1.35 删: 有 bg 时 num 白字样式 (跟 num 整段一起删, 辉哥 17:12 反馈去掉数字编号)
-.bjxy-feature-bg ~ .bjxy-feature-content .bjxy-feature-icon {
-    color: rgba(255, 255, 255, 0.95);
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.10) 0%, rgba(255, 255, 255, 0.05) 100%);
-    border-color: rgba(255, 255, 255, 0.2);
-}
+// v0.1.36 删: 有 bg 时 .bjxy-feature-icon 白字样式 (跟 icon 整段一起删, 辉哥 21:52 反馈)
+//   原 4 行 (color 0.95 白字 + 渐变 background + 边框色 0.2) 注释掉, 方便回滚
+// .bjxy-feature-bg ~ .bjxy-feature-content .bjxy-feature-icon {
+//     color: rgba(255, 255, 255, 0.95);
+//     background: linear-gradient(135deg, rgba(255, 255, 255, 0.10) 0%, rgba(255, 255, 255, 0.05) 100%);
+//     border-color: rgba(255, 255, 255, 0.2);
+// }
 
 // ===== 教学体系 (tab + 8/9 级卡片网格) =====
 .bjxy-curri-tabs {
@@ -694,10 +702,16 @@
     // v0.1.30 改: 删 flex: 0 0 auto + width: 448px + scroll-snap-align: start (swiper 控制布局)
     //   - swiper 11 swiper-slide 自动设 width, 不用 less 手动控制
     //   - height: 100% 让 swiper-slide 高度等于 wrapper 高度, 多张卡片对齐
+    // v0.1.36 改: 头像 + meta(name/username) + info(specialties/achievements/bio) 三段垂直堆叠
+    //   辉哥 21:52 反馈: 教练 name/username 放到头像下方, 跟 avatar 保持合适间距
+    //   flex-direction: row → column (avatar 单独一行, meta 一行, info 一行, 各自 width 100%)
+    //   gap: 16px → 0 (各子段自己的 margin 控制间距, meta 16px 跟 avatar, 8px 跟 info)
+    //   align-items: flex-start 保持左对齐 (column 模式 align-items 控制水平, 跟 row 模式顶部对齐视觉一致)
     text-align: left;
     display: flex;
-    align-items: flex-start;
-    gap: 16px;
+    flex-direction: column;  // v0.1.36 改: row → column
+    align-items: flex-start;  // v0.1.36 保留: 左对齐 (column 模式 cross axis)
+    gap: 0;  // v0.1.36 改: 16px → 0 (各子段 margin 控制)
     padding: 16px;
     background: var(--bjxy-bg-soft);
     border: 1px solid var(--bjxy-border);
@@ -723,6 +737,14 @@
     overflow: hidden;
 }
 .bjxy-coach-avatar img { width: 100%; height: 100%; object-fit: cover; }
+// v0.1.36 改: 教练 name + username 单独块, 跟 avatar 间距 16px, 跟 info 间距 8px
+//   辉哥 21:52 反馈: 教练 name/username 放到头像下方, 跟头像保持合适的间距
+//   父容器 .bjxy-coach 改 flex-direction: column, 配合这里 meta margin 垂直堆叠
+.bjxy-coach-meta {
+    margin-top: 16px;  // 跟上方 avatar 间距 16px
+    margin-bottom: 8px;  // 跟下方 info 间距 8px
+    width: 100%;  // column 模式 width 100% 让 meta 跟 info 同样宽
+}
 .bjxy-coach-info {
     flex: 1;
     min-width: 0;
@@ -1125,17 +1147,19 @@ a.bjxy-event-info.bjxy-event-link:hover {
         height: auto;
     }
     // v0.1.34a 改: 大卡 icon 跟 small card L510-520 段字面完全一致
-    .bjxy-feature-large .bjxy-feature-icon {
-        width: 56px; height: 56px;
-        border-radius: 16px;
-        background: linear-gradient(135deg, rgba(45, 123, 229, 0.18) 0%, rgba(139, 92, 246, 0.18) 100%);
-        border: 1px solid rgba(45, 123, 229, 0.25);
-        display: flex; align-items: center; justify-content: center;
-        font-size: 28px;  // 跟 small card L516 一致
-        margin-bottom: 20px;  // 跟 small card L517 一致
-        position: relative;
-        z-index: 2;
-    }
+    // v0.1.36 删: mobile 段 .bjxy-feature-large .bjxy-feature-icon reset (跟 icon 整段一起删, 辉哥 21:52 反馈)
+    //   原 12 行 (width 56 / height 56 / border-radius 16 / 渐变 / border / display flex / font 28 / margin 20 / position / z-index 2) 注释掉, 方便回滚
+    // .bjxy-feature-large .bjxy-feature-icon {
+    //     width: 56px; height: 56px;
+    //     border-radius: 16px;
+    //     background: linear-gradient(135deg, rgba(45, 123, 229, 0.18) 0%, rgba(139, 92, 246, 0.18) 100%);
+    //     border: 1px solid rgba(45, 123, 229, 0.25);
+    //     display: flex; align-items: center; justify-content: center;
+    //     font-size: 28px;  // 跟 small card L516 一致
+    //     margin-bottom: 20px;  // 跟 small card L517 一致
+    //     position: relative;
+    //     z-index: 2;
+    // }
     // v0.1.34a 改: 大卡 h3 跟 small card L531 段字面完全一致 (取消渐变, 改原色)
     .bjxy-feature-large h3 {
         font-size: 18px;  // 跟 small card L531 一致

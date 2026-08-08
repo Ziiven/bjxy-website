@@ -605,10 +605,10 @@ export default class BjxySettings extends ExtensionPage {
                 m('button', { class: 'del', onclick: () => { this.features.splice(i, 1); m.redraw(); } }, '× 删除'),
               ]),
               m('div', { class: 'BjxyField-array-card-body' }, [
-                m('div', { class: 'BjxyField-row' }, [
-                  m('div', { class: 'BjxyField-label' }, '图标 (emoji 或文字)'),
-                  m('input', { class: 'BjxyField-input', value: f.icon, oninput: (e) => { f.icon = e.target.value; } }),
-                ]),
+                // v0.1.36 删: 图标输入字段 (辉哥 21:52 反馈后台去掉相关配置)
+                //   f.icon 字段 data schema 保留 (L1150 序列化 / L1535 反序列化不动), 兼容老数据
+                //   配套删: less .bjxy-feature-icon 整段 + ::after + 大卡 reset + mobile 段 reset + 有 bg 白字
+                //   配套删: BjxyPage.jsx L512 bjxy-feature-icon 渲染
                 m('div', { class: 'BjxyField-row' }, [
                   m('div', { class: 'BjxyField-label' }, '标题'),
                   m('input', { class: 'BjxyField-input', value: f.title, oninput: (e) => { f.title = e.target.value; } }),

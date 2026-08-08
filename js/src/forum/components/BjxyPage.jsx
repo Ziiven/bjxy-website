@@ -509,7 +509,9 @@ export default class BjxyPage extends Component {
         ]) : null,
         m('div', { class: 'bjxy-feature-content' }, [
           // v0.1.35 删: 数字编号 01-06 span (辉哥 17:12 反馈去掉每个卡片的数字编号)
-          m('div', { class: 'bjxy-feature-icon' }, f.icon || '★'),
+          // v0.1.36 删: bjxy-feature-icon 渲染 (辉哥 21:52 反馈去掉 feature icon)
+          //   后台 BjxySettings.jsx 也删了 icon 输入字段, less 也删了 .bjxy-feature-icon 整段 + ::after + 大卡 reset + mobile 段 reset + 有 bg 白字
+          //   f.icon 字段 data schema 保留 (兼容老数据, 序列化 L1150 / 反序列化 L1535 不动)
           m('h3', null, f.title || ''),
           m('p', null, f.desc || ''),
         ]),
@@ -568,9 +570,15 @@ export default class BjxyPage extends Component {
                         ? m('img', { src: c.avatarUrl, srcset: c.avatarSrcset || null, alt: c.displayName, loading: 'lazy' })
                         : (c.displayName || '?').charAt(0),
                     ]),
-                    m('div', { class: 'bjxy-coach-info' }, [
+                    // v0.1.36 改: name + username 单独块, 跟 avatar 保持合适间距 (16px), 跟 info 间距 8px
+                    //   辉哥 21:52 反馈: 教练 name/username 放到头像下方, 跟 avatar 保持合适的间距
+                    //   less 配套: .bjxy-coach 父容器从 flex row 改 column, .bjxy-coach-meta { margin-top: 16px; margin-bottom: 8px; }
+                    m('div', { class: 'bjxy-coach-meta' }, [
                       m('div', { class: 'bjxy-coach-name' }, c.displayName || ''),
                       c.username ? m('div', { class: 'bjxy-coach-username' }, '@' + c.username) : null,
+                    ]),
+                    m('div', { class: 'bjxy-coach-info' }, [
+                      // v0.1.36 删: name + username (移到上面 .bjxy-coach-meta 块)
                       c.specialties ? m('div', { class: 'bjxy-coach-specialties' }, [
                         m('span', { class: 'bjxy-coach-label' }, '🏂 专长'),
                         m('span', { class: 'bjxy-coach-text' }, c.specialties),
