@@ -1092,9 +1092,11 @@ a.bjxy-event-info.bjxy-event-link:hover {
     .bjxy-features-sub { font-size: 14px; }
     .bjxy-section-head { margin-bottom: 28px; }
     .bjxy-feature { padding: 24px 20px; }
-    .bjxy-feature-icon { width: 48px; height: 48px; font-size: 24px; margin-bottom: 16px; }
-    .bjxy-feature h3 { font-size: 16px; }
-    .bjxy-feature p { font-size: 12px; }
+    // v0.1.34b 删: v0.1.6h 早段 L1095-1097 mobile 段对小卡改写 (icon 48/24 / h3 16 / p 12)
+    //   辉哥 16:04 反馈: 1-6 全部字面一致, 删 v0.1.6h 早段让 1-6 都走 top-level 段 (icon 28 / h3 18 / p 13)
+    //   .bjxy-feature-icon { width: 48px; height: 48px; font-size: 24px; margin-bottom: 16px; }
+    //   .bjxy-feature h3 { font-size: 16px; }
+    //   .bjxy-feature p { font-size: 12px; }
     .bjxy-curri-list { grid-template-columns: 1fr; }
     // v0.1.30 改: mobile 走 swiper breakpoints 自动响应 (slidesPerView: 1.1), 不用手动媒体查询
     //   - 原 v0.1.28/v0.1.29 mobile hardcode 358px 删, swiper 内部 breakpoints 处理
@@ -1110,16 +1112,24 @@ a.bjxy-event-info.bjxy-event-link:hover {
     .bjxy-footer { padding: 24px 16px; }
 }
 
-// v0.1.34 改 (辉哥 15:10 反馈): 移动端 1, 2 大卡样式 reset 跟 3-6 小卡一致
-//   取消大卡居中/大字/蓝紫渐变标题, 改回小卡常规 (小卡 mobile 走原样, 不改)
-//   ⚠️ 必须放在 L1115-1143 @media @phone 块之后 (cascade 顺序: 此段在最晚, 同 specificity 晚写赢,
-//     才能覆盖 L567-589 top-level 段的大卡基础样式 .bjxy-feature-large h3 { font-size: 22px } 等)
-//   如果改回 L459 早段, top-level 段晚写赢, v0.1.34 reset 被覆盖 (V 测 P0 cascade bug 复现)
+// v0.1.34b 改 (辉哥 2026-08-08 16:04 反馈, v0.1.34a 误改返工): 移动端 1-6 全部字面完全一致 + 2 列 3 行
+//   v0.1.34a 误改 mobile grid 为 1 列堆叠 (L1124 1fr), 辉哥要的是 1 行 2 个的小卡 (2 列 3 行, 跟 v0.1.33 cascade 实际渲染一致)
+//   v0.1.34b 改: L1124 mobile grid 改回 1fr 1fr (2 列 3 行, 6 卡堆叠 = 3 行 × 2 列)
+//   v0.1.34b 删: v0.1.6h 早段 L1095-1097 mobile 段对小卡的 24/16/12 改写, 让 1-6 全部走 top-level 段 (28/18/13) 字面完全一致
+//   v0.1.34a 1, 2 大卡 reset (L1141-1186) 跟 small card top-level 段字面已经一致, v0.1.34b 保留
+//   ⚠️ 此段必须在 L1115-1143 @media @phone 块之后 (SOP 178: cascade 顺序, 同 specificity 晚写赢, 否则被 top-level 段覆盖)
 @media @phone {
+    // v0.1.34b 改: mobile grid 改回 2 列 (辉哥 16:04 要 1 行 2 个的小卡, 修 v0.1.34a 误改的 1 列堆叠)
+    .bjxy-feature-grid {
+        grid-template-columns: 1fr 1fr;
+    }
+    // 大小卡都 span 1, 取消大卡 min-height 260px / 小卡 min-height 200px
     .bjxy-feature-large,
     .bjxy-feature:not(.bjxy-feature-large) {
-        min-height: auto;  // 取消大卡 min-height 260px / 小卡 min-height 200px
+        grid-column: span 1;
+        min-height: auto;
     }
+    // v0.1.34a 改: 大卡 content 跟 small card top-level 段完全一致 (left / block / normal)
     .bjxy-feature-large .bjxy-feature-content {
         text-align: left;
         display: block;
@@ -1127,27 +1137,51 @@ a.bjxy-event-info.bjxy-event-link:hover {
         justify-content: normal;
         height: auto;
     }
-    .bjxy-feature-large .bjxy-feature-icon { font-size: 32px; margin-bottom: 8px; }
+    // v0.1.34a 改: 大卡 icon 跟 small card L510-520 段字面完全一致
+    .bjxy-feature-large .bjxy-feature-icon {
+        width: 56px; height: 56px;
+        border-radius: 16px;
+        background: linear-gradient(135deg, rgba(45, 123, 229, 0.18) 0%, rgba(139, 92, 246, 0.18) 100%);
+        border: 1px solid rgba(45, 123, 229, 0.25);
+        display: flex; align-items: center; justify-content: center;
+        font-size: 28px;  // 跟 small card L516 一致
+        margin-bottom: 20px;  // 跟 small card L517 一致
+        position: relative;
+        z-index: 2;
+    }
+    // v0.1.34a 改: 大卡 h3 跟 small card L531 段字面完全一致 (取消渐变, 改原色)
     .bjxy-feature-large h3 {
-        font-size: 16px;
-        font-weight: 600;
-        margin-bottom: 4px;
-        background: none;
+        font-size: 18px;  // 跟 small card L531 一致
+        font-weight: 700;  // 跟 small card L531 一致
+        margin-bottom: 8px;  // 跟 small card L531 一致
+        color: var(--bjxy-text);  // 跟 small card L531 一致
+        background: none;  // 取消渐变
         -webkit-background-clip: initial;
         background-clip: initial;
-        color: var(--bjxy-text);
         letter-spacing: normal;
     }
+    // v0.1.34a 改: 大卡 p 跟 small card L532 段字面完全一致
     .bjxy-feature-large p {
-        font-size: 13px;
+        font-size: 13px;  // 跟 small card L532 一致
         color: var(--bjxy-text-soft);
-        line-height: 1.5;
+        line-height: 1.6;  // 跟 small card L532 一致
         max-width: 100%;
     }
+    // v0.1.34a 改: 大卡 num 跟 small card L499-508 段字面完全一致 (absolute 右上角 11px 700)
     .bjxy-feature-large .bjxy-feature-num {
-        position: static;
-        font-size: 12px;
-        color: var(--bjxy-text-mute);
+        position: absolute;  // 跟 small card L500 一致
+        top: 18px; right: 22px;  // 跟 small card L501 一致
+        font-size: 11px;  // 跟 small card L502 一致
+        font-weight: 700;  // 跟 small card L503 一致
+        color: var(--bjxy-text-mute);  // 跟 small card L504 一致
+        font-family: 'JetBrains Mono', 'SFMono-Regular', Consolas, monospace;  // 跟 small card L505 一致
+        letter-spacing: 0.1em;  // 跟 small card L506 一致
+        z-index: 3;  // 跟 small card L507 一致
+    }
+    // v0.1.34a 改: 取消大卡 nth-child(1)(2) 渐变 background (mobile 改 var(--bjxy-bg-soft) 跟 small card 一致)
+    .bjxy-feature-large:nth-child(1),
+    .bjxy-feature-large:nth-child(2) {
+        background: var(--bjxy-bg-soft);  // 跟 small card L470 background 一致
     }
 }
 

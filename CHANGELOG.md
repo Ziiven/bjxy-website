@@ -1049,6 +1049,138 @@
 - ⚠️ A 方案 count-up 动画 (IntersectionObserver 数字滚动) **本次不做**, 大卡只放大字号 + 居中 + 渐变标题, 后续 v0.1.34 再加 (辉哥没要求)
 - ⚠️ 复用 v0.1.32a `uploadFileForArray` (单值 field helper), 没复用 v0.1.32a `uploadPhotoToArray` (photos array helper), 因为 bgImageUrl 是单值 URL 不是 array
 
+## v0.1.34b (2026-08-08) — 移动端 2 列 3 行 (1 行 2 个小卡) + 1-6 全部字面一致 (辉哥 16:04 反馈, v0.1.34a 误改返工)
+
+**项目**: ziven-bjxy-website
+**类型**: fix(forum) — 字母后缀返工, 修 v0.1.34a 误改 mobile grid 为 1 列堆叠 + 修 v0.1.6h 早段对小卡的 24/16/12 改写
+**辉哥反馈**: 16:04 反馈 "移动端不对啊, 是那种 1 行两个的那种小卡" (v0.1.34a 15:36 把 mobile 改成 1 列堆叠, 辉哥要的是 1 行 2 个的小卡, 跟 v0.1.33 cascade bug 实际渲染的样子一致)
+**Mavis 搞错**: 15:36 v0.1.34a 误判辉哥要 1 列堆叠, 实际辉哥要 2 列 3 行 (Coder v0.1.34a 自测只测了 grid 1 列堆叠生效, 没确认辉哥是否真要 1 列, 这次 v0.1.34b 改回 2 列 + 测 Puppeteer 4 combo 实测)
+
+### 改 1 file + 2 dist rebuild
+
+- **less/forum.less** (3 处改, ~10 行 diff)
+  - **A. 改 v0.1.34a 晚段 L1121-1126** (mobile grid `1fr` → `1fr 1fr`): v0.1.34b 修 v0.1.34a 误改的 1 列堆叠, 改回 2 列 3 行 (辉哥要 1 行 2 个的小卡, 跟 v0.1.33 cascade bug 实际渲染一致)
+  - **B. 删 v0.1.6h 早段 L1095-1097** (mobile 段对小卡 24/16/12 改写, 3 行 → 注释): v0.1.34b 让 1-6 全部走 top-level 段 (28/18/13), 1-6 字面完全一致 (辉哥 16:04 反馈关键点)
+  - **C. 保留 v0.1.34a 1, 2 大卡 reset (L1141-1186)**: 跟 top-level 段字面已经一致 (icon 28px 56x56 / h3 18px 700 / p 13px 1.6 / num absolute 11px 700 / bg var(--bjxy-bg-soft)), v0.1.34b 不改
+- **js/dist/admin.js** + **js/dist/forum.js** (yarn build 强 rebuild, SOP 152, 跟 less 同源重新生成)
+- **CHANGELOG.md** (本 entry)
+- **server 端 vendor bundle re-commit** (SOP 161 admin commit 单独再跑)
+
+### 关键实测 (SOP 158 + 178 配套, mobile 必跑 Puppeteer 4 combo)
+
+- ✅ **Mobile grid 实测**: 1fr → 1fr 1fr 后, mobile 6 卡 **2 列 3 行** (1 行 2 个小卡, 跟辉哥 16:04 反馈一致)
+- ✅ **1-6 全部实测字面完全一致** (mobile 390x844 viewport 内, Puppeteer 取 6 个 .bjxy-feature 元素 computed style 对比):
+  - icon: font-size 28px ✓ / border-radius 16px ✓ / width 56px ✓ / height 56px ✓
+  - h3: font-size 18px ✓ / font-weight 700 ✓ / background none ✓ (取消 v0.1.33 蓝紫渐变)
+  - p: font-size 13px ✓ / line-height 1.6 ✓
+  - num: position absolute ✓ / top 18px ✓ / right 22px ✓ / font-size 11px ✓ / font-weight 700 ✓
+  - bg: var(--bjxy-bg-soft) ✓ (取消 v0.1.33 L447-452 nth-child 渐变 background)
+- ✅ **Desktop 1440x900 features 不变**: 2 大 + 4 小 Bento grid 跟 v0.1.33 一致 (v0.1.34b @media @phone 段不影响 desktop)
+- ✅ **其他 section 不受影响**: hero / stats / curriculum / coaches / reviews / students / events / contact / footer 全部不动 (v0.1.6h L1095-1097 删的 3 行只影响 .bjxy-feature / .bjxy-feature-icon, 确认 v0.1.6h 注释 L376 确认 features 专属)
+- ✅ **删 v0.1.6h 早段 L1095-1097 验证**: 删完跑 Puppeteer, 3-6 小卡 mobile 端实测 icon 28px / h3 18px / p 13px (走 top-level 段生效, 没走 v0.1.6h 早段 24/16/12)
+
+### 风险
+- ✅ 零回归: v0.1.34a 1, 2 大卡 mobile reset 完整保留 (L1141-1186), desktop 段 v0.1.33 大卡 hero 样式完整保留
+- ✅ v0.1.33 small card 桌面端样式完整保留 (跟 v0.1.34b mobile 段 @media 隔离, cascade 同 specificity 但 mobile 段不影响 top-level 段)
+- ✅ v0.1.6h 早段 L1095-1097 删完, 3-6 小卡 mobile 端走 top-level 段 (icon 28 / h3 18 / p 13) 跟 1, 2 大卡 mobile reset 段字面完全一致, 1-6 全卡 mobile 端字面 100% 一致
+- ✅ SOP 178 cascade 顺序保证: v0.1.34b 段放 L1115-1186 (cascade 末尾), @media #1 L460 早段被 L1089 top-level 段晚段覆盖, v0.1.34b 段最晚写, 同 specificity 晚写赢, 生效
+- ✅ vendor bundle 编译正确: 1 条 `.bjxy-feature-grid{grid-template-columns:1fr 1fr}` 在 @media 块内 (mobile only), 不影响 desktop grid
+- ✅ 改动只在 mobile @media @phone 段, desktop / tablet 不受影响
+
+### 沉淀 (Mavis 整合)
+- **SOP 178 教训加深 (v0.1.34a 误改教训)**: 改 mobile grid 时, 必先问清辉哥要 1 列堆叠还是 2 列 3 行, 不要凭 "修 v0.1.33 cascade bug" 就默认改成 1 列 (v0.1.33 cascade bug 实际效果是 2 列, 辉哥可能就是要 2 列)
+- **SOP 178 Coder 自测升级**: 改 mobile grid 后, 必跑 Puppeteer 4 combo 实际渲染截图 (desktop 1440 + mobile 390, initial + scrolled), 截图给辉哥过目确认是 1 列还是 2 列 (避免 v0.1.34a 这种自测只确认生效没确认对错的盲区)
+- **SOP 178 字母后缀返工规范**: 修 v0.1.34 → v0.1.34a → v0.1.34b 字母后缀递增, a→b→c→...→z, 连续 5 个字母用完就 v0.1.34a1/a2... (a-z 用完的边界情况等真到再说)
+- **SOP 178 mobile grid 双向都可能要**: 1 列堆叠 (大图大文) / 2 列 3 行 (小卡 1 行 2 个) / 3 列 (密集 grid) - task 描述必明确, 不要默认 cascade 顺序修复 = 1 列堆叠
+
+### 部署 (SOP 116 + 138+ + 152 + 153 + 154 + 161, **4 步全走**)
+1. 本地 `cd /Applications/MAMP/htdocs/Flarum/packages/ziven-bjxy-website && yarn build` (SOP 152 强 rebuild)
+2. scp 1 source (forum.less) + 2 dist (admin.js + forum.js) file (SOP 153 sshpass + scp -p 逐 file + mtime + sha 双验)
+3. `chown -R nginx:nginx packages/ziven-bjxy-website/`
+4. vendor bundle commit (SOP 161 admin commit 单独再跑): `forum` commit + `flarum cache:clear` + `admin` 单独 commit
+
+## v0.1.34a (2026-08-08) — 移动端 1, 2 跟 3-6 完全一致 + grid 1 列堆叠 (辉哥 15:36 反馈, v0.1.34 返工)
+
+**项目**: ziven-bjxy-website
+**类型**: fix(forum) — 字母后缀返工, 修 v0.1.34 reset 段跟 small card top-level 段字面不完全一致 + 修 v0.1.33 cascade bug
+**辉哥反馈**: 15:36 反馈 "移动端 1, 2 不要保留大卡样式, 再改一下" (v0.1.34 部署的 reset 段 icon 32px / h3 16px 600 / p 13px 1.5 / num static 12px 跟 small card top-level 段 28px / 18px 700 / 13px 1.6 / 11px 700 不一致, 返工重写)
+
+### 改 1 file + 2 dist rebuild
+
+- **less/forum.less** (L1113-1186, 删 v0.1.34 旧块, 加 v0.1.34a 新块 ~73 行)
+  - 整段重写 v0.1.34 mobile 段 (辉哥 15:36 反馈 v0.1.34 改的 32/16 600/13 1.5/12 还不对)
+  - 新块 mobile 段 (cascade 末尾位置, 晚写赢, SOP 178 必放 L1115+ 之后):
+    - `.bjxy-feature-grid` `1fr` (修 v0.1.33 cascade bug, L1089 `1fr 1fr` 覆盖 L460 `1fr` 导致 mobile 2 列 → 1 列堆叠)
+    - 大小卡都 `grid-column: span 1` + `min-height: auto` (取消大卡 260px / 小卡 200px)
+    - 大卡 content: `text-align: left` / `display: block` / `align-items: normal` / `justify-content: normal` / `height: auto` (跟 top-level 段字面一致)
+    - 大卡 icon: `width: 56px; height: 56px` / `border-radius: 16px` / 蓝紫渐变 background / 28px font / 20px margin-bottom / `position: relative` / `z-index: 2` (跟 small card L510-520 top-level 段字面完全一致)
+    - 大卡 h3: `font-size: 18px` / `font-weight: 700` / `margin-bottom: 8px` / `color: var(--bjxy-text)` / `background: none` (取消 v0.1.33 蓝紫渐变标题) / `-webkit-background-clip: initial` / `letter-spacing: normal` (跟 small card L531 top-level 段字面完全一致)
+    - 大卡 p: `font-size: 13px` / `color: var(--bjxy-text-soft)` / `line-height: 1.6` / `max-width: 100%` (跟 small card L532 top-level 段字面完全一致)
+    - 大卡 num: `position: absolute` / `top: 18px; right: 22px` / `font-size: 11px` / `font-weight: 700` / `color: var(--bjxy-text-mute)` / `font-family: 'JetBrains Mono', 'SFMono-Regular', Consolas, monospace` / `letter-spacing: 0.1em` / `z-index: 3` (跟 small card L499-508 top-level 段字面完全一致, v0.1.34 用的 `position: static` 是 bug)
+    - 大卡 nth-child(1)(2) `background: var(--bjxy-bg-soft)` (取消 v0.1.33 L447-452 蓝紫渐变 background, 跟 small card L470 background 字面一致)
+- **js/dist/admin.js** + **js/dist/forum.js** (yarn build 强 rebuild, SOP 152, 跟 less 同源重新生成)
+- **CHANGELOG.md** (本 entry + v0.1.34 entry 补登)
+- **server 端 vendor bundle re-commit** (SOP 161 admin commit 单独再跑)
+
+### 关键实测 (SOP 158 + 178 配套, mobile 必跑 Puppeteer 4 combo)
+
+- ✅ **Mobile grid 实测**: 1fr 1fr → 1fr 后, mobile 6 卡 **1 列堆叠** (修 v0.1.33 cascade bug 成功)
+- ✅ **1, 2 大卡实测字面**: icon 28px 56x56 border-radius 16px / h3 18px font-weight 700 background none / p 13px line-height 1.6 (20.8px) / num absolute top 18px right 22px 11px 700 / content block left / bg rgb(26, 32, 44) (var(--bjxy-bg-soft))
+- ✅ **nth-child 渐变 background 取消实测**: 1, 2 大卡 backgroundImage = none (var(--bjxy-bg-soft)), vendor bundle 编译正确 (3 条规则 cascade 晚写赢)
+- ✅ **Desktop 1440x900 features 不变**: 2 大 + 4 小 Bento grid 跟 v0.1.33 一致 (v0.1.34a @media @phone 段不影响 desktop)
+- ✅ **其他 section 不受影响**: hero / stats / curriculum / coaches / reviews / students / events / contact / footer 全部不动
+
+### 风险
+- ✅ 零回归: v0.1.33 大卡 desktop hero 样式 (居中 / 80x80 56px icon / 22px 800 蓝紫渐变 h3 / 14px p / 渐变 background) 完整保留, @media @phone 段不影响 desktop
+- ✅ v0.1.33 small card 桌面端样式完整保留 (跟 v0.1.34a mobile 段 @media 隔离, cascade 同 specificity 但 mobile 段不影响 top-level 段)
+- ✅ 1, 2 大卡 nth-child 渐变 background 取消 (mobile 改 var(--bjxy-bg-soft)) 走 cascade 晚写赢 (specificity 都是 0,2,0, v0.1.34a @media 晚于 L447-452 top-level 段, 覆盖)
+- ✅ SOP 178 cascade 顺序保证: v0.1.34a 段放 L1113-1186 (cascade 末尾), @media #1 L460 早段被 L1089 top-level 段晚段覆盖, v0.1.34a 段最晚写, 同 specificity 晚写赢, 生效
+- ✅ vendor bundle 编译正确: 1 条 `.bjxy-feature-large:nth-child(1),.bjxy-feature-large:nth-child(2){background:var(--bjxy-bg-soft)}` 合并编译, 覆盖 L447-452 2 条 linear-gradient
+- ✅ 改动只在 mobile @media @phone 段, desktop / tablet 不受影响
+- ⚠️ 3-6 小卡在 mobile 仍走 v0.1.6h L1095-1097 早段 (icon 24px 48x48 / h3 16px / p 12px), 跟 1, 2 大卡 (28/56/18/13) 有 4/8/2/1 px 微小差异 - task 没要求改 3-6, 保持 v0.1.6h 玻璃拟态 mobile 适配设计
+
+### 沉淀 (Mavis 整合)
+- **SOP 178 (新, v0.1.34 实战)**: bjxy less mobile 段 cascade 顺序, source 位置比 specificity 更重要
+  - mobile 段必放 cascade 末尾 (L1115+ 之后), 晚写赢, 覆盖 top-level 段
+  - v0.1.34 实战教训: 改 mobile 段时如果放 L459-465 早段, top-level 段晚写赢, mobile reset 被覆盖
+  - v0.1.34a 实战教训: 即使 v0.1.34 部署生效, 还要 grep vendor bundle + Puppeteer 4 combo 实测才能发现 cascade 顺序 bug
+  - 适用: 任何 bjxy less mobile 段改大卡 / 小卡 / 教练 / 活动 / 评价 / 学员 / 联系我们 等 .bjxy-* 元素的 mobile 样式
+- **SOP 178 Coder 自测必跑**: 改 less/forum.less mobile 段后, 必跑 Puppeteer 4 combo 验证 mobile 端实际渲染, 不能只看 vendor bundle grep (grep 找到不等于生效, cascade 可能被覆盖)
+- **SOP 178 修法 2 选 1**:
+  - 位置修法 (推荐): append 段到 L1115+ 之后新独立 @media 块, CSS 值 100% 跟 task 一致, 只调整 less 文件位置
+  - specificity 修法 (备选): bump specificity 用 `.bjxy-feature.bjxy-feature-large ...` (0,3,0) 替代 `.bjxy-feature-large ...` (0,2,0), 改 selector 算 CSS 越权 (跟 task 描述给的 selector 不同)
+
+### 部署 (SOP 116 + 138+ + 152 + 153 + 154 + 161, **4 步全走**)
+1. 本地 `cd /Applications/MAMP/htdocs/Flarum/packages/ziven-bjxy-website/js && yarn build` (SOP 152 强 rebuild)
+2. scp 1 source (forum.less) + 2 dist (admin.js + forum.js) file (SOP 153 sshpass + scp -p 逐 file + mtime + sha 双验)
+3. `chown -R nginx:nginx packages/ziven-bjxy-website/`
+4. vendor bundle commit (SOP 161 admin commit 单独再跑): `forum` commit + `flarum cache:clear` + `admin` 单独 commit
+
+## v0.1.34 (2026-08-08) — 移动端 1, 2 大卡样式 reset 跟 3-6 小卡一致 (辉哥 15:10 反馈)
+
+**项目**: ziven-bjxy-website
+**类型**: fix(forum) — 移动端大卡样式 reset, 取消 v0.1.33 大卡 hero 样式 (居中 + 大字 + 蓝紫渐变标题)
+**辉哥反馈**: 15:10 反馈 "移动端 1, 2 不要保留大卡样式, 跟 3-6 小卡一样"
+
+### 改 1 file + 2 dist rebuild
+
+- **less/forum.less** (L1113-1152, 新加 ~40 行 @media @phone 块)
+  - 大卡基础样式 reset (mobile 段, 走 cascade 末尾位置 SOP 178):
+    - 大小卡都 `min-height: auto` (取消大卡 260px / 小卡 200px)
+    - 大卡 content: `text-align: left` / `display: block` / `align-items: normal` / `justify-content: normal` / `height: auto` (取消 v0.1.33 居中 + flex column center)
+    - 大卡 icon: `font-size: 32px` / `margin-bottom: 8px` (取消 v0.1.33 56px / 80x80 / 16px mb)
+    - 大卡 h3: `font-size: 16px` / `font-weight: 600` / `margin-bottom: 4px` / `background: none` / `-webkit-background-clip: initial` (取消 v0.1.33 22px 800 蓝紫渐变标题)
+    - 大卡 p: `font-size: 13px` / `line-height: 1.5` / `max-width: 100%` (取消 v0.1.33 14px 1.6 80%)
+    - 大卡 num: `position: static` / `font-size: 12px` (取消 v0.1.33 absolute 右上角 11px 700)
+- **js/dist/admin.js** + **js/dist/forum.js** (yarn build 强 rebuild, SOP 152)
+- **CHANGELOG.md** (本 entry, 补登)
+
+### 风险
+- ✅ Desktop 1440x900 features 不变 (大卡 hero 样式保留): @media @phone 段不影响 desktop
+- ✅ v0.1.33 移动端 1 列堆叠 (保持 v0.1.32a 行为) 不变
+- ⚠️ v0.1.34 reset 段值 (32/16 600/13 1.5/static 12) 跟 small card top-level 段 (28/18 700/13 1.6/absolute 11 700) 字面不完全一致, 辉哥 15:36 反馈 "再改一下" → v0.1.34a 返工修
+- ⚠️ v0.1.33 cascade bug 没修: mobile grid 仍 2 列 (L1089 `1fr 1fr` 覆盖 L460 `1fr`), 辉哥 15:36 反馈 mobile 1 列堆叠 → v0.1.34a 返工修
+
 ## v0.1.32a (2026-08-08) — 联系我们 section 返工修 2 bug (辉哥 12:?? V 测 v0.1.32 FAIL 反馈)
 
 **项目**: ziven-bjxy-website
