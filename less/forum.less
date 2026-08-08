@@ -557,17 +557,31 @@
 //   - 之前的 hasDetail 二分逻辑删除, 没字段的字段 (bio/achievements/specialties) JS 三元判断自动隐藏
 //   - alice (uid=5) + bob (uid=6) 之前走简单卡片, 跟 Ziven 详细卡片视觉不一致, 现在统一
 //   - 前端展示一致性 > 后端数据完整性, 用户体验优先 (SOP 155)
+// v0.1.28 改: 教练列表横向 carousel 排列 (辉哥 2026-08-08 10:08 反馈, 10:13 拍板)
+//   - 保留 v0.1.27 卡片样式 (统一详细: 80px 头像 + flex row + 专长/成就/bio, SOP 155 沉淀)
+//   - 容器从 grid 改 flex 横向滚动 + CSS scroll-snap 原生支持 mobile 触屏 + desktop 滚轮/trackpad
+//   - 5 分钟改完, 1 file less 改 3 处, JS 不动 (BjxyPage.jsx 不动)
 .bjxy-coach-grid {
-    display: grid;
-    grid-template-columns: repeat(6, 1fr);
+    display: flex;
+    overflow-x: auto;
+    overflow-y: visible;
+    scroll-snap-type: x mandatory;
+    scroll-padding-left: 32px;
     gap: 16px;
     margin-top: 16px;
+    -webkit-overflow-scrolling: touch;  // iOS 兼容
+    scrollbar-width: thin;
+    scrollbar-color: var(--bjxy-border) transparent;
 }
 .bjxy-coach {
-    // v0.1.5b 修: grid-column 拆 start/end (SOP 79, wikimedia/less.php 编译坑)
-    //   之前 `grid-column: 1 / -1` 被 less 解析成 1 / -1 = -1 (除法), CSS 是 `grid-column: -1` 单值, 浏览器 invalid 不跨整行
-    grid-column-start: 1;
-    grid-column-end: -1;
+    // v0.1.28 改: 删 v0.1.5b grid-column 跨整行 (改 flex 容器后不需), 改 flex 固定宽度 carousel 卡片
+    //   - scroll-snap-align: start 让滑到第 2/3 张时浏览器自动 snap 对齐
+    //   - width 448px: desktop 1440 视口可见 3 张 (3*448 + 2*16 + 64 padding = 1440 几乎满)
+    //   - 不写 min(90vw, 448px): wikimedia/less.php 不支持 min() 跨 vw/px 单位 (new pitfall 159)
+    //     SOP 79 提过 wikimedia/less.php 不支持 grid-column 跨整行解析, 同源坑
+    flex: 0 0 auto;
+    width: 448px;
+    scroll-snap-align: start;
     text-align: left;
     display: flex;
     align-items: flex-start;
@@ -935,7 +949,13 @@ a.bjxy-event-info.bjxy-event-link:hover {
     .bjxy-feature h3 { font-size: 16px; }
     .bjxy-feature p { font-size: 12px; }
     .bjxy-curri-list { grid-template-columns: 1fr; }
-    .bjxy-coach-grid { grid-template-columns: repeat(3, 1fr); }
+    // v0.1.28 改: mobile 1 张满宽 carousel (跟 desktop 一致, 1 行 1 张, 触屏左右滑)
+    //   - mobile section padding 16px, 跟 desktop 32px 区分
+    //   - mobile 1 张满宽 358px: viewport 390 - 32 section padding = 358 内容
+    //   - 不写 min(85vw, 360px): wikimedia/less.php 不支持 min() 跨 vw/px 单位 (new pitfall 159)
+    //     calc() 跨 vw/px 也踩坑, 干脆 mobile fixed 358px (390 mobile 主流视口)
+    .bjxy-coach-grid { scroll-padding-left: 16px; }
+    .bjxy-coach { width: 358px; }
     .bjxy-review-grid { grid-template-columns: 1fr; }
     .bjxy-review-photos { grid-template-columns: repeat(3, 1fr); }
     .bjxy-event-slide { grid-template-columns: 1fr; }
