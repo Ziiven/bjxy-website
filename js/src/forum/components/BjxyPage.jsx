@@ -124,7 +124,7 @@ export default class BjxyPage extends Component {
       // 不需要 Autoplay, 教练列表静态展示
       modules: [Navigation, Pagination],
       loop: true,
-      slidesPerView: 1,
+      slidesPerView: 3,
       spaceBetween: 16,
       pagination: {
         el: vnode.dom.querySelector('.swiper-pagination'),
