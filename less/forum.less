@@ -1124,6 +1124,9 @@ a.bjxy-event-info.bjxy-event-link:hover {
 }
 
 // v0.2.0i 改: 微信缩略图 (A 方案走 40x40 紧凑 flex 布局, 不用 grid)
+// v0.2.0i.d 改 (辉哥 19:06 反馈, "桌面端微信图片展示太小了, 改成 96x96"):
+//   40x40 太小看不清, 改 96x96 让用户能直接扫码
+//   mobile 段 (L2524-2527) 保留 80x80, 不动 (B 方案 + mobile 二维码 hover 放大体验不同)
 .bjxy-contact-wechat-grid {
     display: flex;  // v0.2.0i 改: grid → flex
     gap: 8px;
@@ -1132,8 +1135,8 @@ a.bjxy-event-info.bjxy-event-link:hover {
 }
 .bjxy-contact-wechat-img {
     display: block;
-    width: 40px;   // v0.2.0i 改: aspect-ratio 1 → 40x40 紧凑
-    height: 40px;
+    width: 96px;   // v0.2.0i.d 改: 40px → 96px (辉哥 19:06 反馈, desktop 二维码要能直接看清扫码)
+    height: 96px;
     border-radius: 6px;  // v0.2.0i 改: 4px → 6px
     overflow: hidden;
     border: 1px solid var(--bjxy-border);
