@@ -5,6 +5,7 @@ namespace Ziiven\BjxyWebsite\Api\Controllers;
 use Flarum\Http\RequestUtil;
 use Flarum\Settings\SettingsRepositoryInterface;
 use Flarum\User\User;
+use FoF\UserBio\Formatter\UserBioFormatter;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\RequestHandlerInterface;
@@ -54,7 +55,13 @@ use Laminas\Diactoros\Response\JsonResponse;
  */
 class CoachesController implements RequestHandlerInterface
 {
-    public function __construct(protected SettingsRepositoryInterface $settings) {}
+    public function __construct(
+        protected SettingsRepositoryInterface $settings,
+        // v0.2.0i.c 加: fof-user-bio formatter, 走 unparse() 把 s9e XML 还原 plain text
+        //   前端 s9e.TextFormatter.preview 期望 plain text 输入 (跟 vendor ComposerPostPreview 同模式)
+        //   之前 v0.2.0g.a ~ v0.2.0h 错把 s9e XML 直接喂给前端, s9e 不认识 <t> tag escape 输出字面 `<t><p>...</p></t>`
+        protected UserBioFormatter $userBioFormatter
+    ) {}
 
     public function handle(ServerRequestInterface $request): ResponseInterface
     {
@@ -92,12 +99,20 @@ class CoachesController implements RequestHandlerInterface
                 // v0.2.0f 改: fof-user-bio 写了时, achievements + specialties 强制空 (辉哥 13:21 反馈)
                 //   右侧 info 段只显示 fof user bio 内容, 专长/成就也去掉
                 // v0.2.0g 改: 把 $hasFofUserBio 抽变量, 复用 3 个字段 + 新加 bio_from_fof_user_bio 标记
-                // v0.2.0g.a 改回: 走 user->bio 拿 fof-user-bio formatter 输出 HTML (`<t><p>...</p></t>`)
-                //   之前 v0.2.0g.a 试 getRawOriginal('bio') 拿 raw plain text, 实际 DB 存的就是 formatter 渲染后的 HTML
-                //   fof-user-bio 设计: 用户输入 plain text, vendor formatter 存 HTML 到 DB
-                //   前端走 m.trust(c.bio) 渲染 (跟 v0.2.0d about_desc 同模式 + /u/Ziven bio 页面一致)
-                //   XSS 防护: fof-user-bio vendor formatter 自动 escape 不安全 HTML 标签
+                // v0.2.0g.a 改: 走 user->bio 拿 fof-user-bio formatter 输出 HTML (`<t><p>...</p></t>`)
+                //   前端走 m.trust(c.bio) 渲染 (v0.2.0d about_desc 同模式 + /u/Ziven bio 页面一致)
+                // v0.2.0h 改: 前端走 s9e.TextFormatter.preview (跟 vendor ComposerPostPreview 同模式)
+                //   跟 v0.2.0g.a 冲突: c.bio 是 s9e XML, s9e preview 期望 plain text, s9e 不认识 <t> tag escape 输出字面 `<t><p>...</p></t>`
+                // v0.2.0i.c 改 (辉哥 17:30 反馈, "从 fof user bio 读取时要渲染成 html"):
+                //   服务端走 fof-user-bio formatter->unparse() 把 s9e XML 还原成 plain text
+                //   前端继续走 s9e.TextFormatter.preview (plain text → 重新 parse + render 成 HTML, 跟 ComposerPostPreview 一致)
+                //   XSS 防护: s9e parser 自动 escape 不安全 HTML 标签
+                //   PHP 实验验证 (辉哥 admin user 1 bio):
+                //     DB s9e XML: <t><p>🇨🇳 ...<br/>...</p>\n\n<p>专注...</p></t>
+                //     unparse(): "🇨🇳 ...\n🇨🇳 ...\n🇨🇦 ...\n\n专注..." (plain text)
+                //     前端 s9e preview 重新 parse + render: <p>🇨🇳...<br>\n...</p>\n\n<p>专注...</p> (HTML)
                 $hasFofUserBio = !empty($user->bio);
+                $unparsedBio = $hasFofUserBio ? ($this->userBioFormatter->unparse($user->bio) ?? '') : '';
                 return [
                     'id' => (int) $user->id,
                     'username' => $user->username,
@@ -107,12 +122,10 @@ class CoachesController implements RequestHandlerInterface
                     'avatarUrl' => (!empty($d['photoUrl'])) ? $d['photoUrl'] : $user->avatar_url,
                     'avatarSrcset' => $user->avatar_srcset,
                     // v0.2.0e 改: bio 优先 user.bio (fof-user-bio, /u/<user> 个人页 bio), fallback 到 bjxy_coach_details.bio
-                    // v0.2.0g.a 改回: 走 user->bio 拿 fof-user-bio formatter 输出 HTML (`<t><p>...</p></t>`)
-                    //   之前试 getRawOriginal('bio') / getAttributes() 拿 raw, 实际 DB 存的就是 formatter 渲染后的 HTML
-                    //   fof-user-bio 设计: 用户输入 plain text, vendor formatter 存 HTML 到 DB
-                    //   前端走 m.trust(c.bio) 渲染 (跟 v0.2.0d about_desc 同模式 + /u/Ziven bio 页面一致)
+                    // v0.2.0i.c 改: bio 走 fof-user-bio formatter->unparse() 把 s9e XML 还原 plain text
+                    //   前端 s9e.TextFormatter.preview 拿到 plain text 后正确解析 + 渲染成 HTML (v0.2.0h 设计)
                     //   !empty() 同时检查 null / '' / 0, 让 fof-user-bio 有值时直接 override bjxy 老 bio
-                    'bio' => $hasFofUserBio ? $user->bio : ($d['bio'] ?? ''),
+                    'bio' => $hasFofUserBio ? $unparsedBio : ($d['bio'] ?? ''),
                     'achievements' => $hasFofUserBio ? '' : ($d['achievements'] ?? ''),
                     'specialties' => $hasFofUserBio ? '' : ($d['specialties'] ?? ''),
                     // v0.2.0g 新: bio_from_fof_user_bio 标记, 告诉前端 bio 来源是 fof-user-bio
