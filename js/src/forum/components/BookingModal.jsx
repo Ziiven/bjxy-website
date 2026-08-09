@@ -1,17 +1,22 @@
 // BookingModal.jsx — 预约体验 modal (辉哥 2026-08-09 8:14 反馈, v0.2.0)
 //   v0.2.0b 改造: 实施 A 方案 (店照蓝 hero 主题) + 浅深双模式适配 (辉哥 9:56 反馈)
+//   v0.2.0c 改造: input placeholder 替代 label + 紧凑布局避免 y 轴滚动条 (辉哥 11:20 反馈)
+//     - label 完全删 (字段上方不再有 label, 走 input placeholder 替代)
+//     - 必填字段 placeholder 末尾加 "*" 提示 (如 "请输入您的名字 *")
+//     - 字段间距/padding/字号全面压缩 (form gap 14→10px, padding 28→20px, header padding 36→28px)
+//     - radio 保留 label 包裹 (HTML 原生 pattern), 删字段上方 group label (如 "是否有滑雪基础" label 删)
 //
-// 6 字段表单:
-//   1. 名字 (name) - 必填, max 100
-//   2. 电话 (phone) - 必填, max 50
-//   3. 年龄 (age) - 可选, 1-150
-//   4. 是否有滑雪基础 (has_ski_experience) - 是/否 radio
-//   5. 体验类型 (experience_type) - 单板/双板 radio (跟 server Booking::EXPERIENCE_TYPES 对应)
-//   6. 预约日期 (booking_date) - HTML5 native <input type="date">, 不要时间
+// 6 字段表单 (v0.2.0c 走 placeholder 替代 label):
+//   1. 名字 (name) - 必填, max 100, placeholder: "请输入您的名字 *"
+//   2. 电话 (phone) - 必填, max 50, placeholder: "请输入您的电话 *"
+//   3. 年龄 (age) - 可选, 1-150, placeholder: "年龄 (可选, 如 28)"
+//   4. 是否有滑雪基础 (has_ski_experience) - 是/否 radio (无 group label, radio label 保留)
+//   5. 体验类型 (experience_type) - 单板/双板 radio (无 group label, radio label 保留)
+//   6. 预约日期 (booking_date) - HTML5 native <input type="date">, placeholder: "请选择预约日期 *"
 //
 // A 方案核心要素 (从 general 出的 /tmp/bjxy_booking_modal_designs/A_hero_theme.html 抄):
 //   - 顶部蓝色渐变 header (跟 hero 蓝渐变 #2D7BE5 → #1E5AA8 同款)
-//   - 玻璃感 icon 框 (🎿 56x56, 玻璃感 backdrop-filter)
+//   - 玻璃感 icon 框 (🎿 48x48, 玻璃感 backdrop-filter) [v0.2.0c 缩 56→48]
 //   - 整行宽大圆角提交按钮 (var(--bjxy-blue) 实心 + 蓝色阴影 + 箭头 →)
 //   - 名字+电话 横排 (CSS Grid 1fr 1fr), 其他单列
 //   - radio 圆角胶囊 (有/没有, 单板/双板) + 选中时蓝色背景 var(--bjxy-blue-soft)
@@ -119,15 +124,13 @@ export default class BookingModal extends Modal {
             <div class="BookingModal-Error BookingModal-Error--global">{this.formError}</div>
           ) : null}
 
-          {/* 1+2. 名字 + 电话 横排 (CSS Grid 1fr 1fr) */}
+          {/* 1+2. 名字 + 电话 横排 (CSS Grid 1fr 1fr, v0.2.0c placeholder 替代 label) */}
           <div class="BookingModal-form-row">
             <div class="BookingModal-field">
-              <label class="BookingModal-label">
-                {this._t('field_name', '名字')} <span class="BookingModal-required">*</span>
-              </label>
               <input
                 type="text"
                 class="BookingModal-input"
+                placeholder={this._t('field_name_placeholder', '请输入您的名字 *')}
                 maxlength="100"
                 required
                 value={this.form.name}
@@ -138,12 +141,10 @@ export default class BookingModal extends Modal {
               ) : null}
             </div>
             <div class="BookingModal-field">
-              <label class="BookingModal-label">
-                {this._t('field_phone', '电话')} <span class="BookingModal-required">*</span>
-              </label>
               <input
                 type="tel"
                 class="BookingModal-input"
+                placeholder={this._t('field_phone_placeholder', '请输入您的电话 *')}
                 maxlength="50"
                 required
                 value={this.form.phone}
@@ -155,13 +156,13 @@ export default class BookingModal extends Modal {
             </div>
           </div>
 
-          {/* 3. 年龄 (单列) */}
+          {/* 3. 年龄 (单列, 可选, placeholder 不加 *) */}
           <div class="BookingModal-form-row BookingModal-form-row-full">
             <div class="BookingModal-field">
-              <label class="BookingModal-label">{this._t('field_age', '年龄 (可选)')}</label>
               <input
                 type="number"
                 class="BookingModal-input"
+                placeholder={this._t('field_age_placeholder', '年龄 (可选, 如 28)')}
                 min="1"
                 max="150"
                 value={this.form.age}
@@ -173,10 +174,9 @@ export default class BookingModal extends Modal {
             </div>
           </div>
 
-          {/* 4. 是否有滑雪基础 (是/否 radio 圆角胶囊) */}
+          {/* 4. 是否有滑雪基础 (是/否 radio 圆角胶囊, v0.2.0c 删 group label, radio label 保留) */}
           <div class="BookingModal-form-row BookingModal-form-row-full">
             <div class="BookingModal-field">
-              <label class="BookingModal-label">{this._t('field_has_ski_experience', '是否有滑雪基础')}</label>
               <div class="BookingModal-radio-group">
                 <label class="BookingModal-radio">
                   <input
@@ -202,10 +202,9 @@ export default class BookingModal extends Modal {
             </div>
           </div>
 
-          {/* 5. 体验类型 (单板/双板 radio 圆角胶囊) */}
+          {/* 5. 体验类型 (单板/双板 radio 圆角胶囊, v0.2.0c 删 group label) */}
           <div class="BookingModal-form-row BookingModal-form-row-full">
             <div class="BookingModal-field">
-              <label class="BookingModal-label">{this._t('field_experience_type', '体验类型')}</label>
               <div class="BookingModal-radio-group">
                 <label class="BookingModal-radio">
                   <input
@@ -231,15 +230,13 @@ export default class BookingModal extends Modal {
             </div>
           </div>
 
-          {/* 6. 预约日期 (HTML5 native date picker, 不要时间) */}
+          {/* 6. 预约日期 (HTML5 native date picker, 不要时间, v0.2.0c placeholder 替代 label) */}
           <div class="BookingModal-form-row BookingModal-form-row-full">
             <div class="BookingModal-field">
-              <label class="BookingModal-label">
-                {this._t('field_booking_date', '预约日期')} <span class="BookingModal-required">*</span>
-              </label>
               <input
                 type="date"
                 class="BookingModal-input"
+                placeholder={this._t('field_booking_date_placeholder', '请选择预约日期 *')}
                 required
                 value={this.form.booking_date}
                 oninput={(e) => { this.form.booking_date = e.target.value; }}

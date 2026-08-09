@@ -1980,9 +1980,14 @@ button.swiper-pagination-bullet {
 //   v0.2.0b 改 (辉哥 9:56 反馈): 实施 A 方案 (店照蓝 hero 主题) + 浅深双模式适配
 //     顶部蓝色渐变 header + 玻璃感表单 + 整行宽大圆角提交按钮
 //     radio 圆角胶囊 + 走 var(--bjxy-*) CSS variables 跨浅深模式
+//   v0.2.0c 改 (辉哥 11:20 反馈): input placeholder 替代 label + 紧凑布局避免 y 轴滚动条
+//     label 完全删 (走 input placeholder, 必填字段 placeholder 末尾加 "*" 提示)
+//     字段间距/padding/字号全面压缩 (form gap 14→10px, padding 28→20px, header padding 36→28px)
+//     全面压缩 modal 高度, mobile 390x844 留 ~200px viewport 余量 (避免 iOS Safari 真实滚动)
 //   SOP 178 cascade 顺序: append 到 L1935 末尾 (v0.1.34b 之后), 避免被 mobile 段覆盖
 
 // BookingModal — A 方案 (店照蓝 hero 主题) + 浅深双模式 (辉哥 2026-08-09 9:56 反馈, v0.2.0b)
+//   v0.2.0c 压缩版 (辉哥 11:20 反馈): placeholder 替代 label + 全面压缩布局
 //   顶部蓝色渐变 header (跟 hero section 蓝渐变 #2D7BE5 → #1E5AA8 同款)
 //   玻璃感表单 (var(--bjxy-bg-soft) 浅灰背景, 1px var(--bjxy-border) 边框, 8px 圆角)
 //   整行宽大圆角提交按钮 (var(--bjxy-blue) 实心 + 蓝色阴影 + 箭头 →)
@@ -1993,22 +1998,22 @@ button.swiper-pagination-bullet {
 // vendor Modal 集成 (SOP 126):
 //   - Modal--custom-header 标识: CSS 隐藏 vendor 默认 .Modal-header + .Modal-close
 //   - vendor title() 返空: BookingModal.jsx 覆盖 title() return '' (避免双标题)
-//   - Modal-content 底色透明, 圆角 16px: 让我们 header + form 各自控制
+//   - Modal-content 底色透明, 圆角 14px (v0.2.0c 16→14 配合压缩): 让我们 header + form 各自控制
 
 // ===== BookingModal wrapper (包 header + form) =====
 .BookingModal-wrapper {
     position: relative;
 }
 
-// ===== 顶部蓝色渐变 header (浅深双模式, 主色都是蓝色品牌) =====
+// ===== 顶部蓝色渐变 header (浅深双模式, 主色都是蓝色品牌, v0.2.0c 压缩版) =====
 .BookingModal-header {
     position: relative;
     background: linear-gradient(135deg, var(--bjxy-blue) 0%, var(--bjxy-blue-dark) 100%);
-    padding: 36px 32px 56px;
+    padding: 28px 24px 44px;  // v0.2.0b 36px 32px 56px → 28px 24px 44px
     color: #fff;
     text-align: center;
     overflow: hidden;
-    border-radius: 16px 16px 0 0;  // 跟 wrapper 圆角一致
+    border-radius: 14px 14px 0 0;  // v0.2.0b 16→14 配合压缩
 }
 // 深色模式 header 渐变调亮一点, 跟深色背景对比更强
 [data-theme^="dark"] .BookingModal-header {
@@ -2034,31 +2039,31 @@ button.swiper-pagination-bullet {
     pointer-events: none;
 }
 .BookingModal-icon {
-    width: 56px;
-    height: 56px;
+    width: 48px;  // v0.2.0b 56→48
+    height: 48px;
     background: rgba(255, 255, 255, 0.18);
     border: 1px solid rgba(255, 255, 255, 0.3);
-    border-radius: 16px;
+    border-radius: 14px;  // v0.2.0b 16→14
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 28px;
-    margin: 0 auto 16px;
+    font-size: 24px;  // v0.2.0b 28→24
+    margin: 0 auto 12px;  // v0.2.0b 16→12
     backdrop-filter: blur(10px);
     position: relative;
     z-index: 1;
 }
 .BookingModal-title {
-    font-size: 26px;
+    font-size: 22px;  // v0.2.0b 26→22
     font-weight: 800;
     letter-spacing: -0.3px;
-    margin-bottom: 6px;
+    margin-bottom: 4px;  // v0.2.0b 6→4
     position: relative;
     z-index: 1;
     color: #fff;
 }
 .BookingModal-subtitle {
-    font-size: 13px;
+    font-size: 12px;  // v0.2.0b 13→12
     color: rgba(255, 255, 255, 0.85);
     font-weight: 500;
     position: relative;
@@ -2067,13 +2072,13 @@ button.swiper-pagination-bullet {
 }
 .BookingModal-close {
     position: absolute;
-    top: 14px; right: 14px;
-    width: 32px; height: 32px;
+    top: 12px; right: 12px;  // v0.2.0b 14→12
+    width: 28px; height: 28px;  // v0.2.0b 32→28
     background: rgba(255, 255, 255, 0.15);
     border: none;
     border-radius: 50%;
     color: #fff;
-    font-size: 18px;
+    font-size: 16px;  // v0.2.0b 18→16
     line-height: 1;
     cursor: pointer;
     z-index: 2;
@@ -2085,26 +2090,26 @@ button.swiper-pagination-bullet {
 }
 .BookingModal-close:hover { background: rgba(255, 255, 255, 0.25); }
 
-// ===== 表单区 (跟 header 重叠错位, margin-top: -24px 形成层次) =====
+// ===== 表单区 (跟 header 重叠错位, margin-top: -20px 形成层次, v0.2.0c 压缩版) =====
 //   浅色: 白底 var(--bjxy-bg) #FFFFFF
 //   深色: 深底 var(--bjxy-bg-soft) #1A202C (跟 page body 一致, 不刺眼)
 .BookingModal-form {
-    padding: 28px 32px 24px;
-    margin-top: -24px;
+    padding: 20px 24px 16px;  // v0.2.0b 28px 32px 24px → 20px 24px 16px
+    margin-top: -20px;  // v0.2.0b -24px → -20px (跟 header 重叠量缩)
     background: var(--bjxy-bg);
-    border-radius: 16px 16px 0 0;
+    border-radius: 14px 14px 0 0;  // v0.2.0b 16→14
     position: relative;
     z-index: 2;
     display: flex;
     flex-direction: column;
-    gap: 14px;
+    gap: 10px;  // v0.2.0b 14→10
 }
 
-// ===== form-row (名字+电话 2 列, 其他单列) =====
+// ===== form-row (名字+电话 2 列, 其他单列, v0.2.0c 压缩) =====
 .BookingModal-form-row {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 14px;
+    gap: 10px;  // v0.2.0b 14→10
 }
 .BookingModal-form-row-full {
     grid-template-columns: 1fr;
@@ -2113,21 +2118,14 @@ button.swiper-pagination-bullet {
 .BookingModal-field {
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: 4px;  // v0.2.0b 6→4 (label 删了, gap 缩)
 }
-.BookingModal-label {
-    font-size: 13px;
-    font-weight: 600;
-    color: var(--bjxy-text);
-}
-.BookingModal-required {
-    color: #e53e3e;
-    margin-left: 2px;
-}
+// v0.2.0c: 删 .BookingModal-label + .BookingModal-required (placeholder 替代, 不再渲染 label)
+//   保留 .BookingModal-field 给 input 直接用
 
-// ===== input (浅深双模式, var(--bjxy-bg-soft) 浅灰背景) =====
+// ===== input (浅深双模式, var(--bjxy-bg-soft) 浅灰背景, v0.2.0c 压缩) =====
 .BookingModal-input {
-    padding: 10px 14px;
+    padding: 9px 12px;  // v0.2.0b 10px 14px → 9px 12px
     border: 1px solid var(--bjxy-border);
     border-radius: 8px;
     font-size: 14px;
@@ -2145,12 +2143,13 @@ button.swiper-pagination-bullet {
 }
 .BookingModal-input::placeholder {
     color: var(--bjxy-text-mute);
+    opacity: 1;  // Firefox placeholder 默认 opacity 0.7, 显式设 1
 }
 
-// ===== radio 圆角胶囊 (浅深双模式, 走 var(--bjxy-*) 变量) =====
+// ===== radio 圆角胶囊 (浅深双模式, 走 var(--bjxy-*) 变量, v0.2.0c 压缩) =====
 .BookingModal-radio-group {
     display: flex;
-    gap: 8px;
+    gap: 6px;  // v0.2.0b 8→6
     flex-wrap: wrap;
 }
 .BookingModal-radio {
@@ -2158,8 +2157,8 @@ button.swiper-pagination-bullet {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    gap: 6px;
-    padding: 10px 14px;
+    gap: 4px;  // v0.2.0b 6→4
+    padding: 8px 10px;  // v0.2.0b 10px 14px → 8px 10px
     border: 1px solid var(--bjxy-border);
     border-radius: 8px;
     background: var(--bjxy-bg-soft);
@@ -2172,6 +2171,7 @@ button.swiper-pagination-bullet {
 .BookingModal-radio input {
     cursor: pointer;
     accent-color: var(--bjxy-blue);  // 浅深双模式: 原生 radio 走蓝色
+    margin: 0;  // 重置浏览器默认 margin
 }
 .BookingModal-radio:has(input:checked) {
     border-color: var(--bjxy-blue);
@@ -2180,18 +2180,18 @@ button.swiper-pagination-bullet {
     font-weight: 600;
 }
 
-// ===== 错误提示 (浅深双模式, 跟 var(--bjxy-text) 走) =====
+// ===== 错误提示 (浅深双模式, 跟 var(--bjxy-text) 走, v0.2.0c 压缩) =====
 .BookingModal-Error {
     color: #e53e3e;
-    font-size: 12px;
-    padding: 4px 0;
+    font-size: 11px;  // v0.2.0b 12→11
+    padding: 2px 0;  // v0.2.0b 4px 0 → 2px 0
 }
 .BookingModal-Error--global {
     background: #fff5f5;
     border: 1px solid #feb2b2;
     border-radius: 6px;
-    padding: 10px 12px;
-    margin-bottom: 8px;
+    padding: 8px 10px;  // v0.2.0b 10px 12px → 8px 10px
+    margin-bottom: 6px;  // v0.2.0b 8→6
     color: #c53030;
 }
 // 深色模式全局错误调深
@@ -2201,12 +2201,12 @@ button.swiper-pagination-bullet {
     color: #fc8181;
 }
 
-// ===== 提交 + 取消按钮 (跟 form 区底部对齐, 浅深双模式) =====
+// ===== 提交 + 取消按钮 (跟 form 区底部对齐, 浅深双模式, v0.2.0c 压缩) =====
 .BookingModal-actions {
     display: flex;
     gap: 10px;
-    margin-top: 8px;
-    padding-top: 16px;
+    margin-top: 6px;  // v0.2.0b 8→6
+    padding-top: 12px;  // v0.2.0b 16→12
     border-top: 1px solid var(--bjxy-border);
 }
 // A 方案: 整行宽大圆角提交按钮 (var(--bjxy-blue) 实心 + 蓝色阴影)
@@ -2226,20 +2226,20 @@ button.swiper-pagination-bullet {
     transform: translateY(-1px);
 }
 
-// ===== 成功视图 (浅深双模式, 跟 form 区一致) =====
+// ===== 成功视图 (浅深双模式, 跟 form 区一致, v0.2.0c 压缩) =====
 .BookingModal-success {
     text-align: center;
-    padding: 40px 32px;
+    padding: 32px 24px;  // v0.2.0b 40px 32px → 32px 24px
     color: var(--bjxy-text);
 }
 .BookingModal-success-icon {
-    font-size: 56px;
-    margin-bottom: 16px;
+    font-size: 48px;  // v0.2.0b 56→48
+    margin-bottom: 12px;  // v0.2.0b 16→12
 }
 .BookingModal-success h3 {
-    font-size: 16px;
+    font-size: 15px;  // v0.2.0b 16→15
     color: var(--bjxy-text);
-    margin: 0 0 20px;
+    margin: 0 0 16px;  // v0.2.0b 20→16
     line-height: 1.6;
 }
 .BookingModal-success-actions {
@@ -2257,14 +2257,15 @@ button.swiper-pagination-bullet {
 .Modal--custom-header .Modal-close {
     display: none;
 }
-// Modal-content 圆角 16px 跟 A 方案一致, 背景透明 (让 form 自己控制)
+// Modal-content 圆角 14px 跟 A 方案 v0.2.0c 压缩版一致, 背景透明 (让 form 自己控制)
 //   !important 强制覆盖 vendor .Modal-content { background-color: var(--body-bg) } 半透明白
+//   v0.2.0c: border-radius 16→14, box-shadow 0 24px 60px → 0 16px 40px (压缩)
 .Modal--custom-header .Modal-content {
-    border-radius: 16px;
+    border-radius: 14px;
     background: transparent !important;
     background-color: transparent !important;
     overflow: visible;
-    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.25);
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.22);  // v0.2.0b 0 24px 60px → 0 16px 40px
 }
 // vendor Modal 内边距重置 (A 方案 wrapper 自己控 padding)
 //   !important 覆盖 vendor .Modal-body { background-color: var(--control-bg); padding: 25px 30px }
@@ -2274,20 +2275,20 @@ button.swiper-pagination-bullet {
     background-color: transparent !important;
 }
 
-// mobile 段 (SOP 178: append 到末尾, 不会被 top-level 段覆盖, 跟 v0.1.34b 一致)
+// mobile 段 (SOP 178: append 到末尾, 不会被 top-level 段覆盖, 跟 v0.1.34b 一致, v0.2.0c 压缩版)
 @media (max-width: 768px) {
     .BookingModal-header {
-        padding: 28px 24px 48px;
+        padding: 24px 20px 40px;  // v0.2.0b 28px 24px 48px → 24px 20px 40px
     }
     .BookingModal-title {
-        font-size: 22px;
+        font-size: 20px;  // v0.2.0b 22→20
     }
     .BookingModal-form {
-        padding: 22px 20px 18px;
+        padding: 16px 16px 12px;  // v0.2.0b 22px 20px 18px → 16px 16px 12px
     }
     .BookingModal-form-row {
         grid-template-columns: 1fr;  // 名字+电话 改单列堆叠
-        gap: 12px;
+        gap: 10px;  // v0.2.0b 12→10
     }
     .BookingModal-radio-group {
         flex-direction: row;  // radio 保持横排
