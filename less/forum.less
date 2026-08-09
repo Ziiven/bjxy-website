@@ -839,7 +839,15 @@
     color: var(--bjxy-text-soft);
     margin-top: 8px;
     padding-top: 8px;
-    border-top: 1px dashed var(--bjxy-border);
+    // v0.2.0g 改: 条件式 border-top, 默认没 (fof-user-bio 写时), bjxy 走 bjxy_coach_details 全部字段时才有
+    //   之前 v0.1.0o 加的 1px dashed 分割线是为了分隔 bio 跟 specialties/achievements 段
+    //   现在 fof-user-bio 写了时 specialties/achievements 强制空 (v0.2.0f), 分割线下面没内容, 显得突兀, 隐藏
+    //   没 fof-user-bio 时, 走 bjxy 全部字段 (bio + specialties + achievements), 分割线分隔 bio 有意义, 保留
+    //   嵌套选择器 .bjxy-coach:not(.bjxy-coach--has-fof-user-bio) & 走 vendor wikimedia/less.php 编译
+    //   SOP 178 cascade 顺序: mobile 段没 .bjxy-coach-bio 样式, 不用动
+    .bjxy-coach:not(.bjxy-coach--has-fof-user-bio) & {
+        border-top: 1px dashed var(--bjxy-border);
+    }
     // v0.2.0e 改: bio 走 fof-user-bio (user.bio, plain text + \n), 加 white-space: pre-wrap 让 \n 渲染为换行
     //   之前 bjxy_coach_details.bio 是 admin 手动输入短句, 没 \n 不需要 pre-wrap
     //   现在 fof-user-bio 是 admin 在 /u/<user> 写的完整 bio, 多行 \n 分隔, 必须 pre-wrap 保留换行

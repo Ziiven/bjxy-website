@@ -42,6 +42,15 @@ use Laminas\Diactoros\Response\JsonResponse;
  *   photoUrl + avatar 走 bjxy_coach_details.photoUrl 优先 (不变)
  *   admin 后台 bjxy_coach_details.specialties/achievements 字段照常保存, 但当用户写了 fof-user-bio 时前端不显示
  *   后续如想恢复: 用户删 fof-user-bio (no bio → 走 bjxy 全部)
+ *
+ * v0.2.0g 改: 加 bio_from_fof_user_bio 标记 (辉哥 13:33 反馈)
+ *   "还有个分割线的残留, 如果填了 fof user bio 的话这个分割线也去掉吧"
+ *   行为: 加 'bio_from_fof_user_bio' bool 字段, 告诉前端 bio 来源是 fof-user-bio
+ *         前端走 .bjxy-coach--has-fof-user-bio 修饰符, 配合 less 条件式选择器
+ *         隐藏 .bjxy-coach-bio 的 border-top 分割线 (之前 v0.1.0o 时代加, 分隔 bio 跟 specialties/achievements)
+ *         fof-user-bio 写了时: bio 下面没 specialties/achievements, 分割线没意义, 隐藏
+ *         fof-user-bio 没写时: 走 bjxy 全部字段, 分割线分隔 bio 跟 specialties/achievements 有意义, 保留
+ *   photoUrl + avatar / bio / achievements / specialties 优先级跟 v0.2.0e + v0.2.0f 一致, 不变
  */
 class CoachesController implements RequestHandlerInterface
 {
@@ -82,6 +91,7 @@ class CoachesController implements RequestHandlerInterface
                 $d = $detailsById[(int) $user->id] ?? [];
                 // v0.2.0f 改: fof-user-bio 写了时, achievements + specialties 强制空 (辉哥 13:21 反馈)
                 //   右侧 info 段只显示 fof user bio 内容, 专长/成就也去掉
+                // v0.2.0g 改: 把 $hasFofUserBio 抽变量, 复用 3 个字段 + 新加 bio_from_fof_user_bio 标记
                 $hasFofUserBio = !empty($user->bio);
                 return [
                     'id' => (int) $user->id,
@@ -98,6 +108,11 @@ class CoachesController implements RequestHandlerInterface
                     'bio' => $hasFofUserBio ? $user->bio : ($d['bio'] ?? ''),
                     'achievements' => $hasFofUserBio ? '' : ($d['achievements'] ?? ''),
                     'specialties' => $hasFofUserBio ? '' : ($d['specialties'] ?? ''),
+                    // v0.2.0g 新: bio_from_fof_user_bio 标记, 告诉前端 bio 来源是 fof-user-bio
+                    //   前端走 .bjxy-coach--has-fof-user-bio 修饰符, 配合 less 条件式选择器
+                    //   隐藏 .bjxy-coach-bio 的 border-top 分割线 (v0.1.0o 时代加, 分隔 bio 跟 specialties/achievements)
+                    //   字段名走 snake_case (跟 v0.2.0d bjxy_about_desc 等 server API 一致)
+                    'bio_from_fof_user_bio' => $hasFofUserBio,
                 ];
             }, $ordered);
 
@@ -125,6 +140,7 @@ class CoachesController implements RequestHandlerInterface
         $coaches = $userModels->map(function ($user) use ($detailsById) {
             $d = $detailsById[(int) $user->id] ?? [];
             // v0.2.0f 改: fof-user-bio 写了时, achievements + specialties 强制空 (跟主路径一致, 辉哥 13:21 反馈)
+            // v0.2.0g 改: 跟主路径一致, 加 bio_from_fof_user_bio 标记
             $hasFofUserBio = !empty($user->bio);
             return [
                 'id' => (int) $user->id,
@@ -137,6 +153,8 @@ class CoachesController implements RequestHandlerInterface
                 'bio' => $hasFofUserBio ? $user->bio : ($d['bio'] ?? ''),
                 'achievements' => $hasFofUserBio ? '' : ($d['achievements'] ?? ''),
                 'specialties' => $hasFofUserBio ? '' : ($d['specialties'] ?? ''),
+                // v0.2.0g 新: bio_from_fof_user_bio 标记 (跟主路径一致, 辉哥 13:33 反馈)
+                'bio_from_fof_user_bio' => $hasFofUserBio,
             ];
         })->values()->all();
 

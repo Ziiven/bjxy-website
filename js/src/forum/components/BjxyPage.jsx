@@ -594,7 +594,12 @@ export default class BjxyPage extends Component {
                 this.coaches.map((c, i) => m('div', { class: 'swiper-slide bjxy-coach-slide', key: 'c' + i }, [
                   // v0.1.27 改 (A 方案): 删原来的 detail 二分判断, 所有 coach 统一走详细卡片样式
                   //   没字段的字段 (bio/achievements/specialties) 在下方三元判断自动隐藏, 不显示空白
-                  m('div', { class: 'bjxy-coach' }, [
+                  // v0.2.0g 改: fof-user-bio 写了时, .bjxy-coach 加 bjxy-coach--has-fof-user-bio BEM 修饰符
+                  //   配合 less 条件式选择器 .bjxy-coach:not(.bjxy-coach--has-fof-user-bio) .bjxy-coach-bio { border-top: ... }
+                  //   fof-user-bio 写了时: 隐藏 bio border-top 分割线 (下方没 specialties/achievements 段, 分割线没意义)
+                  //   fof-user-bio 没写时: 保留分割线 (下方有 specialties/achievements 段, 分割线分隔)
+                  //   辉哥 13:33 反馈: "还有个分割线的残留, 如果填了 fof user bio 的话这个分割线也去掉吧"
+                  m('div', { class: 'bjxy-coach' + (c.bio_from_fof_user_bio ? ' bjxy-coach--has-fof-user-bio' : '') }, [
                     // v0.1.36a 改回: 横向布局 (辉哥 22:15 反馈)
                     //   辉哥本意: avatar 单独在左, name + username 跟在 avatar 下方, info 还是在右侧
                     //   v0.1.36 Coder 改成全 vertical 堆叠是错的, 现在拆 .bjxy-coach-left column 包 avatar + meta
