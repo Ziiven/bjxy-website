@@ -105,13 +105,19 @@ export default class BjxyPage extends Component {
       // v0.1.6g: 加 Autoplay module (SOP 90)
       modules: [Navigation, Pagination, Autoplay],
       loop: true,
-      // v0.1.38 改: 响应式 (辉哥 8/9 0:51 反馈)
-      //   移动端 (默认 < 768px) 1 卡, 桌面端 (>= 768px) 2 卡
+      // v0.2.0h 改: 显式分 3 段 viewport (辉哥 14:15 反馈, 跟 v0.1.38 768+ 跳 desktop 2 累计)
+      //   mobile (< 768px) 1, tablet (768-1024) 2, desktop (>= 1024) 2
       //   swiper 11 breakpoints 触发 slidesPerView 切换, 跟 v0.1.30 swiper peek breakpoints 模式一致
+      //   events 段 tablet + desktop 都 2 卡 (跟 v0.1.38 行为不变, 显式分段)
       slidesPerView: 1,
       spaceBetween: 16,
       breakpoints: {
         768: {
+          // v0.2.0h: tablet 768-1024, 2 卡
+          slidesPerView: 2,
+        },
+        1024: {
+          // v0.2.0h: desktop >= 1024, 2 卡 (跟 tablet 一样, 显式分段方便后续单独调整)
           slidesPerView: 2,
         },
       },
@@ -135,13 +141,19 @@ export default class BjxyPage extends Component {
       // 不需要 Autoplay, 教练列表静态展示
       modules: [Navigation, Pagination],
       loop: true,
-      // v0.1.38 改: 响应式 (辉哥 8/9 0:51 反馈)
-      //   移动端 (默认 < 768px) 1 卡, 桌面端 (>= 768px) 3 卡
-      //   v0.1.37 改的 slidesPerView: 3 是 desktop 3 (辉哥当时没说分移动/桌面, 0:51 补明确)
+      // v0.2.0h 改: 显式分 3 段 viewport (辉哥 14:15 反馈, 跟 v0.1.38 768+ 跳 desktop 3 累计)
+      //   mobile (< 768px) 1, tablet (768-1024) 2, desktop (>= 1024) 3
+      //   swiper 11 breakpoints 触发 slidesPerView 切换, 跟 v0.1.30 swiper peek breakpoints 模式一致
+      //   v0.1.38 改的 slidesPerView: 3 是 desktop 3 (768+ 跳 3), v0.2.0h 拆 tablet 2 + desktop 3
       slidesPerView: 1,
       spaceBetween: 16,
       breakpoints: {
         768: {
+          // v0.2.0h: tablet 768-1024, 2 卡 (新加, 之前 v0.1.38 跳 3 视觉太挤)
+          slidesPerView: 2,
+        },
+        1024: {
+          // v0.2.0h: desktop >= 1024, 3 卡 (跟 v0.1.38 行为不变, 显式分段)
           slidesPerView: 3,
         },
       },
@@ -630,12 +642,33 @@ export default class BjxyPage extends Component {
                         m('span', { class: 'bjxy-coach-label' }, '🏆 成就'),
                         m('span', { class: 'bjxy-coach-text' }, c.achievements),
                       ]) : null,
-                      // v0.2.0g.a 改: bio 走 m.trust 渲染 HTML (v0.2.0g Puppeteer 截图实测发现 mojibake 字面)
-                      //   fof-user-bio 用户存 bio 是 vendor formatter 渲染后的 HTML (`<t><p>...</p></t>`),
-                      //   走 m.trust 走 vendor formatter 渲染 (跟 v0.2.0d about_desc 同模式 + /u/Ziven bio 页面一致)
-                      //   XSS 防护: fof-user-bio vendor formatter 自动 escape 不安全 HTML 标签
-                      //   没 fof-user-bio 时 (走 bjxy_coach_details.bio, plain text), m.trust 跟 mithril escape 一样渲染
-                      c.bio ? m('div', { class: 'bjxy-coach-bio' }, m.trust(c.bio)) : null,
+                      // v0.2.0h 改: bio 走 s9e.TextFormatter.preview 渲染 (辉哥 14:15 反馈)
+                      //   走 vendor s9e/TextFormatter 解析 + 渲染 (跟 vendor ComposerPostPreview 同模式)
+                      //   m.trust 走 mithril escape, 不会渲染 s9e 配置的 BBCode / Markdown / emoji 解析
+                      //   s9e.TextFormatter.preview(text, targetElement) 渲染到 targetElement (DOM 渲染, 不返 string)
+                      //   实测 s9e.TextFormatter 只有 preview method, 没 format (走 m.trust + format 不可行)
+                      //   实测 preview 行为: plain text → wrap in <p>...</p>, emoji → twemoji img tag, BBCode → 解析
+                      //   XSS 防护: s9e parser 自动 escape 不安全 HTML 标签 (跟 v0.2.0d about_desc 一致)
+                      //   没 s9e 时 (fallback): 走 dom.textContent 渲染 (跟 mithril escape 等价)
+                      //   onupdate: 重新渲染 (v0.2.0h bio 不变, onupdate 是 mithril 0.x 必加防 stale)
+                      //   onremove: cleanup 避免内存泄漏 (SOP 158 vendor ComposerPostPreview 模式)
+                      c.bio ? m('div', {
+                        class: 'bjxy-coach-bio',
+                        oncreate: ({ dom }) => {
+                          if (typeof s9e !== 'undefined' && s9e.TextFormatter && typeof s9e.TextFormatter.preview === 'function') {
+                            s9e.TextFormatter.preview(c.bio, dom);
+                          } else {
+                            dom.textContent = c.bio;
+                          }
+                        },
+                        onupdate: ({ dom }) => {
+                          if (typeof s9e !== 'undefined' && s9e.TextFormatter && typeof s9e.TextFormatter.preview === 'function') {
+                            s9e.TextFormatter.preview(c.bio, dom);
+                          } else {
+                            dom.textContent = c.bio;
+                          }
+                        },
+                      }) : null,
                     ]),
                   ]),
                 ]))
