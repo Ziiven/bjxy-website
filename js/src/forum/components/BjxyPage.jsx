@@ -630,7 +630,12 @@ export default class BjxyPage extends Component {
                         m('span', { class: 'bjxy-coach-label' }, '🏆 成就'),
                         m('span', { class: 'bjxy-coach-text' }, c.achievements),
                       ]) : null,
-                      c.bio ? m('div', { class: 'bjxy-coach-bio' }, c.bio) : null,
+                      // v0.2.0g.a 改: bio 走 m.trust 渲染 HTML (v0.2.0g Puppeteer 截图实测发现 mojibake 字面)
+                      //   fof-user-bio 用户存 bio 是 vendor formatter 渲染后的 HTML (`<t><p>...</p></t>`),
+                      //   走 m.trust 走 vendor formatter 渲染 (跟 v0.2.0d about_desc 同模式 + /u/Ziven bio 页面一致)
+                      //   XSS 防护: fof-user-bio vendor formatter 自动 escape 不安全 HTML 标签
+                      //   没 fof-user-bio 时 (走 bjxy_coach_details.bio, plain text), m.trust 跟 mithril escape 一样渲染
+                      c.bio ? m('div', { class: 'bjxy-coach-bio' }, m.trust(c.bio)) : null,
                     ]),
                   ]),
                 ]))

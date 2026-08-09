@@ -92,6 +92,11 @@ class CoachesController implements RequestHandlerInterface
                 // v0.2.0f 改: fof-user-bio 写了时, achievements + specialties 强制空 (辉哥 13:21 反馈)
                 //   右侧 info 段只显示 fof user bio 内容, 专长/成就也去掉
                 // v0.2.0g 改: 把 $hasFofUserBio 抽变量, 复用 3 个字段 + 新加 bio_from_fof_user_bio 标记
+                // v0.2.0g.a 改回: 走 user->bio 拿 fof-user-bio formatter 输出 HTML (`<t><p>...</p></t>`)
+                //   之前 v0.2.0g.a 试 getRawOriginal('bio') 拿 raw plain text, 实际 DB 存的就是 formatter 渲染后的 HTML
+                //   fof-user-bio 设计: 用户输入 plain text, vendor formatter 存 HTML 到 DB
+                //   前端走 m.trust(c.bio) 渲染 (跟 v0.2.0d about_desc 同模式 + /u/Ziven bio 页面一致)
+                //   XSS 防护: fof-user-bio vendor formatter 自动 escape 不安全 HTML 标签
                 $hasFofUserBio = !empty($user->bio);
                 return [
                     'id' => (int) $user->id,
@@ -102,9 +107,11 @@ class CoachesController implements RequestHandlerInterface
                     'avatarUrl' => (!empty($d['photoUrl'])) ? $d['photoUrl'] : $user->avatar_url,
                     'avatarSrcset' => $user->avatar_srcset,
                     // v0.2.0e 改: bio 优先 user.bio (fof-user-bio, /u/<user> 个人页 bio), fallback 到 bjxy_coach_details.bio
+                    // v0.2.0g.a 改回: 走 user->bio 拿 fof-user-bio formatter 输出 HTML (`<t><p>...</p></t>`)
+                    //   之前试 getRawOriginal('bio') / getAttributes() 拿 raw, 实际 DB 存的就是 formatter 渲染后的 HTML
+                    //   fof-user-bio 设计: 用户输入 plain text, vendor formatter 存 HTML 到 DB
+                    //   前端走 m.trust(c.bio) 渲染 (跟 v0.2.0d about_desc 同模式 + /u/Ziven bio 页面一致)
                     //   !empty() 同时检查 null / '' / 0, 让 fof-user-bio 有值时直接 override bjxy 老 bio
-                    // v0.2.0f 改: 当 fof-user-bio 写了时, achievements + specialties 强制空 (跟 bio 一起 override bjxy 全部 info 字段)
-                    //   没 fof-user-bio 时, 走 bjxy_coach_details 全部 (bio + achievements + specialties)
                     'bio' => $hasFofUserBio ? $user->bio : ($d['bio'] ?? ''),
                     'achievements' => $hasFofUserBio ? '' : ($d['achievements'] ?? ''),
                     'specialties' => $hasFofUserBio ? '' : ($d['specialties'] ?? ''),
@@ -141,6 +148,7 @@ class CoachesController implements RequestHandlerInterface
             $d = $detailsById[(int) $user->id] ?? [];
             // v0.2.0f 改: fof-user-bio 写了时, achievements + specialties 强制空 (跟主路径一致, 辉哥 13:21 反馈)
             // v0.2.0g 改: 跟主路径一致, 加 bio_from_fof_user_bio 标记
+            // v0.2.0g.a 改: 跟主路径一致, 走 user->bio 拿 formatter 输出 HTML (前端 m.trust 渲染)
             $hasFofUserBio = !empty($user->bio);
             return [
                 'id' => (int) $user->id,
