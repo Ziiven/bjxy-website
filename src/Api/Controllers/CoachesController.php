@@ -34,6 +34,14 @@ use Laminas\Diactoros\Response\JsonResponse;
  *   achievements + specialties 还是 bjxy_coach_details (fof-user-bio 没这俩字段, 走 bjxy 单独配置)
  *   photoUrl + avatar 走 bjxy_coach_details.photoUrl 优先 (v0.1.10 模式不变)
  *   后续如果 fof-user-bio 加 achievements + specialties 字段, 同样逻辑加
+ *
+ * v0.2.0f 改: fof-user-bio 写了时, achievements + specialties 强制空 (辉哥 13:21 反馈)
+ *   "写了 fof user bio 后, 专业教练那块的专长和特长也要去掉, 右侧那块只展示 fof user bio 中的内容"
+ *   行为: fof-user-bio 有 → bio 优先 + achievements/specialties 强制空 (右侧 info 段只显示 fof user bio)
+ *         fof-user-bio 空 → 走 bjxy_coach_details 全部 (bio + achievements + specialties, v0.2.0e 行为)
+ *   photoUrl + avatar 走 bjxy_coach_details.photoUrl 优先 (不变)
+ *   admin 后台 bjxy_coach_details.specialties/achievements 字段照常保存, 但当用户写了 fof-user-bio 时前端不显示
+ *   后续如想恢复: 用户删 fof-user-bio (no bio → 走 bjxy 全部)
  */
 class CoachesController implements RequestHandlerInterface
 {
@@ -72,6 +80,9 @@ class CoachesController implements RequestHandlerInterface
 
             $coaches = array_map(function ($user) use ($detailsById) {
                 $d = $detailsById[(int) $user->id] ?? [];
+                // v0.2.0f 改: fof-user-bio 写了时, achievements + specialties 强制空 (辉哥 13:21 反馈)
+                //   右侧 info 段只显示 fof user bio 内容, 专长/成就也去掉
+                $hasFofUserBio = !empty($user->bio);
                 return [
                     'id' => (int) $user->id,
                     'username' => $user->username,
@@ -82,10 +93,11 @@ class CoachesController implements RequestHandlerInterface
                     'avatarSrcset' => $user->avatar_srcset,
                     // v0.2.0e 改: bio 优先 user.bio (fof-user-bio, /u/<user> 个人页 bio), fallback 到 bjxy_coach_details.bio
                     //   !empty() 同时检查 null / '' / 0, 让 fof-user-bio 有值时直接 override bjxy 老 bio
-                    //   achievements + specialties 走 bjxy_coach_details 不变 (fof-user-bio 没这俩字段)
-                    'bio' => !empty($user->bio) ? $user->bio : ($d['bio'] ?? ''),
-                    'achievements' => $d['achievements'] ?? '',
-                    'specialties' => $d['specialties'] ?? '',
+                    // v0.2.0f 改: 当 fof-user-bio 写了时, achievements + specialties 强制空 (跟 bio 一起 override bjxy 全部 info 字段)
+                    //   没 fof-user-bio 时, 走 bjxy_coach_details 全部 (bio + achievements + specialties)
+                    'bio' => $hasFofUserBio ? $user->bio : ($d['bio'] ?? ''),
+                    'achievements' => $hasFofUserBio ? '' : ($d['achievements'] ?? ''),
+                    'specialties' => $hasFofUserBio ? '' : ($d['specialties'] ?? ''),
                 ];
             }, $ordered);
 
@@ -112,16 +124,19 @@ class CoachesController implements RequestHandlerInterface
 
         $coaches = $userModels->map(function ($user) use ($detailsById) {
             $d = $detailsById[(int) $user->id] ?? [];
+            // v0.2.0f 改: fof-user-bio 写了时, achievements + specialties 强制空 (跟主路径一致, 辉哥 13:21 反馈)
+            $hasFofUserBio = !empty($user->bio);
             return [
                 'id' => (int) $user->id,
                 'username' => $user->username,
                 'displayName' => $user->display_name ?: $user->username,
                 'avatarUrl' => (!empty($d['photoUrl'])) ? $d['photoUrl'] : $user->avatar_url,
                 'avatarSrcset' => $user->avatar_srcset,
-                // v0.2.0e 改: bio 优先 user.bio (fof-user-bio), fallback bjxy_coach_details.bio (跟主路径一致)
-                'bio' => !empty($user->bio) ? $user->bio : ($d['bio'] ?? ''),
-                'achievements' => $d['achievements'] ?? '',
-                'specialties' => $d['specialties'] ?? '',
+                // v0.2.0e 改: bio 优先 user.bio (fof-user-bio), fallback bjxy_coach_details.bio
+                // v0.2.0f 改: fof-user-bio 写了时, achievements + specialties 强制空 (跟主路径一致)
+                'bio' => $hasFofUserBio ? $user->bio : ($d['bio'] ?? ''),
+                'achievements' => $hasFofUserBio ? '' : ($d['achievements'] ?? ''),
+                'specialties' => $hasFofUserBio ? '' : ($d['specialties'] ?? ''),
             ];
         })->values()->all();
 
