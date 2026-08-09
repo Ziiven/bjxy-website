@@ -751,7 +751,7 @@ export default class BjxyPage extends Component {
             m('div', { class: 'bjxy-contact-image-meta' }, [
               m('div', { class: 'bjxy-contact-image-eyebrow' }, 'VISIT US'),
               m('div', { class: 'bjxy-contact-image-title' }, '3 大雪场 · 室内四季恒温'),
-              m('div', { class: 'bjxy-contact-image-sub' }, '覆盖朝阳 / 海淀 / 西城核心区, 营业时间 10:00 - 22:00'),
+              m('div', { class: 'bjxy-contact-image-sub' }, '营业时间 10:00 - 22:00'),
             ]),
           ]),
         ]),

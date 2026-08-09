@@ -2109,6 +2109,26 @@ button.swiper-pagination-bullet {
 //   - Modal-content 底色透明, 圆角 14px (v0.2.0c 16→14 配合压缩): 让我们 header + form 各自控制
 
 // ===== BookingModal wrapper (包 header + form) =====
+#modal {
+  .BookingModal{
+    .BookingModal-radio-group{
+      gap:12px;
+    }
+    .BookingModal-form-row{
+      gap: 15px;
+    }
+    .BookingModal-form{
+      padding: 20px;
+      gap: 15px;
+    }
+    .Modal-content{
+      border:0px;
+        min-height: auto;
+        padding-top: 0px;
+    }
+  }
+}
+
 .BookingModal-wrapper {
     position: relative;
 }
@@ -2478,8 +2498,16 @@ button.swiper-pagination-bullet {
 //   SOP 183 浅深双模式: 全部走 var(--bjxy-*) 跨模式自动切换
 //   断点 max-width: 767px 跟 bjxy @phone 变量 (L11) 保持一致, 768px+ 走 A 方案
 @media (max-width: 767px) {
+    #modal {
+      .BookingModal{
+        .BookingModal-form{
+          height: 100vh;
+        }
+      }
+    }
+
     .bjxy-contact-grid {
-        grid-template-columns: 1fr 1fr;  // v0.2.0i 改: 3 列 → 2 列 (B 方案)
+        grid-template-columns: none;  // v0.2.0i 改: 3 列 → 2 列 (B 方案)
         gap: 12px;  // v0.2.0i.b 改: 16px → 12px (mobile 段间紧凑)
     }
     // B 方案左大图: 移动端显示, 跨 2 列
@@ -2521,7 +2549,7 @@ button.swiper-pagination-bullet {
         font-size: 12px;  // 移动端 label 稍大
     }
     .bjxy-contact-value {
-        font-size: 17px;  // 移动端 value 稍大
+        font-size: 14px;  // 移动端 value 稍大
     }
     // 移动端微信 80x80 (B 方案 80x80, 跟 B_left_image_mobile 一致)
     .bjxy-contact-wechat-img {
