@@ -12,6 +12,8 @@ use Flarum\Extend;
 use Flarum\Frontend\Document;
 use Flarum\Settings\SettingsRepositoryInterface;
 use Psr\Http\Message\ServerRequestInterface;
+use Ziiven\BjxyWebsite\Api\Controllers\CreateBookingController;
+use Ziiven\BjxyWebsite\Api\Controllers\ListBookingsController;
 
 return [
     // 合并所有 forum frontend 配置到一个 Extend\Frontend 实例 (避免 2 个实例互相覆盖)
@@ -170,7 +172,11 @@ return [
         //   前台 BjxyPage.jsx renderFeaturesSection 读这个 setting, 设 .bjxy-feature-mask opacity
         //   0 = 透明遮罩 (背景图全亮), 100 = 全黑遮罩 (背景图全黑)
         //   默认 50, 走 admin '办学特色' tab 顶部数字输入框
-        ->serializeToForum('bjxy_feature_card_overlay_opacity', 'bjxy_feature_card_overlay_opacity'),
+        ->serializeToForum('bjxy_feature_card_overlay_opacity', 'bjxy_feature_card_overlay_opacity')
+        // v0.2.0 (辉哥 2026-08-09 8:14 反馈): 预约体验通知邮箱 (可选, 留空 fallback admin user id=1)
+        //   Booking 提交后 CreateBookingController 走 vendor SendInformationalEmailJob 通知这个邮箱
+        //   admin 配这个 setting 时, 通知收件人不一定是 admin user, 可配独立客服邮箱
+        ->serializeToForum('bjxy_booking_notify_email', 'bjxy_booking_notify_email'),
 
     (new Extend\Frontend('admin'))
         ->js(__DIR__ . '/js/dist/admin.js')
@@ -188,5 +194,10 @@ return [
         ->get('/bjxy/coaches', 'bjxy.coaches', \Ziiven\BjxyWebsite\Api\Controllers\CoachesController::class)
         ->get('/bjxy/coach/{id}', 'bjxy.coach.show', \Ziiven\BjxyWebsite\Api\Controllers\CoachShowController::class)
         // v0.1.4: GroupPickerModal 调这个 API 拿所选 group 的 user 列表
-        ->get('/bjxy/group-users', 'bjxy.group_users', \Ziiven\BjxyWebsite\Api\Controllers\GroupUsersController::class),
+        ->get('/bjxy/group-users', 'bjxy.group_users', \Ziiven\BjxyWebsite\Api\Controllers\GroupUsersController::class)
+        // v0.2.0 (辉哥 2026-08-09 8:14 反馈): 预约体验 modal 提交 + admin 列表
+        //   POST /api/bjxy/bookings 公共接口, 6 字段预约 + 同 IP 1 分钟限流 + 邮件通知 admin
+        //   GET  /api/bjxy/bookings admin 接口, assertAdmin + 分页 20/页
+        ->post('/bjxy/bookings', 'bjxy.bookings.create', CreateBookingController::class)
+        ->get('/bjxy/bookings', 'bjxy.bookings.list', ListBookingsController::class),
 ];

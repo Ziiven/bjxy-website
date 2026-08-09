@@ -3,6 +3,27 @@ extension:
   title: 北极雪屿官网
   description: 滑雪培训官网 (Flarum 2.0 page extension)
 
+forum:
+  # v0.2.0 (辉哥 2026-08-09 8:14 反馈): 预约体验 modal translation
+  booking_modal:
+    title: Book Trial Experience
+    field_name: Name
+    field_phone: Phone
+    field_age: Age (optional)
+    field_has_ski_experience: Has Ski Experience
+    field_experience_type: Experience Type
+    field_booking_date: Booking Date
+    yes: Yes
+    no: No
+    type_single: Single Board
+    type_double: Double Board
+    submit: Submit
+    submitting: Submitting...
+    cancel: Cancel
+    close: Close
+    success: Booking submitted, our staff will contact you soon
+    error_required: Required field is empty
+
 admin:
   settings:
     title: 北极雪屿官网配置
@@ -20,3 +41,15 @@ admin:
     upload_logo: 上传 Logo
     upload_banner: 上传 Banner
     upload_avatar: 上传图片
+  # v0.2.0: Bookings list translation
+  bookings:
+    title: Bookings
+    empty: No bookings yet
+    col_id: ID
+    col_name: Name
+    col_phone: Phone
+    col_age: Age
+    col_has_ski_experience: Has Experience
+    col_experience_type: Experience Type
+    col_booking_date: Booking Date
+    col_created_at: Submitted At

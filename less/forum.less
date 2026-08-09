@@ -152,7 +152,8 @@
     background: var(--bjxy-bg);
     border-bottom: 1px solid var(--bjxy-border);
     position: fixed;
-    width: 100%;
+    left: 0;
+    right: 0;
     top: 0;
     z-index: 100;
     backdrop-filter: blur(8px);
@@ -1932,4 +1933,128 @@ button.swiper-pagination-bullet {
   -webkit-backface-visibility: hidden;
           backface-visibility: hidden;
   overflow: hidden;
+}
+
+// ===== v0.2.0 预约体验 modal + nav-right 预约按钮 (辉哥 2026-08-09 8:14 反馈) =====
+//   bjxy-btn-booking: 跟 bjxy-btn-primary 区分, 加 outline + 强调色 (蓝紫渐变)
+//   BookingModal-*: modal 内部表单样式 (6 字段 + 错误提示 + 成功视图)
+//   SOP 178 cascade 顺序: append 到 L1935 末尾 (v0.1.34b 之后), 避免被 mobile 段覆盖
+
+// nav-right 预约按钮: outline 风格, 跟 primary 蓝区分
+.bjxy-btn-booking {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: #fff;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+}
+.bjxy-btn-booking:hover {
+    background: linear-gradient(135deg, #5568d3 0%, #63408b 100%);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.5);
+    transform: translateY(-1px);
+}
+
+// BookingModal 内部表单 (vendor Modal 包裹外层)
+.BookingModal-form {
+    padding: 16px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+.BookingModal-field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+.BookingModal-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--control-color, #e0e0e0);
+}
+.BookingModal-required {
+    color: #e53e3e;
+    margin-left: 2px;
+}
+.BookingModal-input {
+    padding: 8px 12px;
+    border: 1px solid var(--bjxy-border, #cbd5e0);
+    border-radius: 6px;
+    font-size: 14px;
+    background: var(--bjxy-bg-input, #fff);
+    color: var(--bjxy-text, #333);
+    transition: border-color 0.15s;
+}
+.BookingModal-input:focus {
+    outline: none;
+    border-color: var(--bjxy-blue, #2D7BE5);
+    box-shadow: 0 0 0 3px rgba(45, 123, 229, 0.1);
+}
+.BookingModal-radio-group {
+    display: flex;
+    gap: 16px;
+    padding: 6px 0;
+}
+.BookingModal-radio {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    cursor: pointer;
+    font-size: 14px;
+}
+.BookingModal-radio input {
+    cursor: pointer;
+}
+.BookingModal-Error {
+    color: #e53e3e;
+    font-size: 12px;
+    padding: 4px 0;
+}
+.BookingModal-Error--global {
+    background: #fff5f5;
+    border: 1px solid #feb2b2;
+    border-radius: 6px;
+    padding: 10px 12px;
+    margin-bottom: 8px;
+}
+.BookingModal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 8px;
+    padding-top: 12px;
+    border-top: 1px solid var(--bjxy-border, #e2e8f0);
+}
+.BookingModal-success {
+    text-align: center;
+    padding: 32px 20px;
+}
+.BookingModal-success-icon {
+    font-size: 56px;
+    margin-bottom: 16px;
+}
+.BookingModal-success h3 {
+    font-size: 16px;
+    color: var(--bjxy-text, #333);
+    margin: 0 0 20px;
+    line-height: 1.6;
+}
+.BookingModal-success-actions {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+}
+
+// mobile 段 (SOP 178: append 到末尾, 不会被 top-level 段覆盖)
+@media (max-width: 768px) {
+    .bjxy-btn-booking {
+        font-size: 12px;
+        padding: 6px 12px;
+    }
+    .BookingModal-form {
+        padding: 12px 14px;
+        gap: 12px;
+    }
+    .BookingModal-radio-group {
+        flex-direction: column;
+        gap: 8px;
+    }
 }

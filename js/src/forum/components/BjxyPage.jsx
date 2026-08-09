@@ -17,6 +17,9 @@ import Component from 'flarum/common/Component';
 import Swiper from 'swiper';
 import { Navigation, Pagination, Autoplay } from 'swiper/modules';
 import 'swiper/css';
+// v0.2.0: 预约体验 modal (辉哥 2026-08-09 8:14 反馈)
+//   新按钮触发 app.modal.show(BookingModal), 6 字段表单 + 限流 + 邮件通知 admin
+import BookingModal from './BookingModal';
 
 const DEFAULT_BRAND = '北极雪屿';
 const DEFAULT_SLOGAN = '室内滑雪 · 全国连锁';
@@ -296,6 +299,15 @@ export default class BjxyPage extends Component {
         ),
         m('div', { class: 'bjxy-nav-right' }, [
           m('a', { href: '#contact', class: 'bjxy-btn bjxy-btn-primary' }, s('bjxy_hero_cta_text', '立即咨询')),
+          // v0.2.0: 预约体验按钮 (辉哥 2026-08-09 8:14 反馈)
+          //   跟现有 '立即咨询' (跳 footer 联系) 并存, 不破坏 admin 已配 bjxy_hero_cta_text
+          //   class 加 bjxy-btn-booking 区分, less/forum.less 配套样式
+          //   onclick 弹 BookingModal (vendor Modal), mithril h() 二参 onclick 走 function
+          m('button', {
+            type: 'button',
+            class: 'bjxy-btn bjxy-btn-primary bjxy-btn-booking',
+            onclick: () => { app.modal.show(BookingModal); },
+          }, '预约体验'),
         ]),
       ]),
 

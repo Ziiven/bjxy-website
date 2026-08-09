@@ -117,9 +117,13 @@ const DEFAULT_TAB_ORDER = [
 //   this.activeGlobalTab 状态机控制当前显示哪个全局 tab 的内容
 // v0.1.17 改: 加 'general' tab (辉哥 19:37+ 拍板: "在bjxy后台'全局设置'中新加一个tab，叫'通用设置'")
 //   通用设置里目前放 '显示底部 Tab' 开关, 只在 mobile tab 扩展安装时渲染
+// v0.2.0 改: 加 'bookings' tab (辉哥 2026-08-09 8:14 反馈: 预约体验后台列表)
+//   bookings 走独立 GET /api/bjxy/bookings 接口 (admin assertAdmin), 不存 settings
+//   renderBookingsSection() 拉数据 + 渲染 table, 不走 save() 持久化
 const BJXY_GLOBAL_TABS = [
   { key: 'bg',      icon: '🎨', label: '背景渐变' },
   { key: 'general', icon: '🔧', label: '通用设置' },
+  { key: 'bookings', icon: '📅', label: '用户预约' },
 ];
 
 export default class BjxySettings extends ExtensionPage {
@@ -157,6 +161,15 @@ export default class BjxySettings extends ExtensionPage {
     //   辉哥 19:37+ 拍板: "里面加一个开关叫'显示底部Tab'，默认关闭，这个开关只有安装了mobile tab时才会展示出来，开启状态时，会在bjxy的前端页面，把下方的mobile tab移除"
     //   state: false = 显示 mobile tab (默认), true = 隐藏 mobile tab
     this.showMobileTab = false;
+    // v0.2.0: 预约体验后台列表 state (辉哥 2026-08-09 8:14 反馈)
+    //   走独立 GET /api/bjxy/bookings 接口, 不存 settings, 切到 'bookings' tab 时 load
+    //   bookings: array 预约数据; bookingsLoading: bool loading 状态; bookingsError: string 错误
+    this.bookings = [];
+    this.bookingsLoading = false;
+    this.bookingsError = '';
+    this.bookingsPage = 1;
+    this.bookingsTotal = 0;
+    this.bookingsPerPage = 20;
     this.reviewsSortable = null;
     this.studentsSortable = null;
     // v0.1.8 tab 状态: 跟 ziven-core 1:1 模式, oninit 给初始值, switchTab() 改 + m.redraw()
@@ -183,10 +196,19 @@ export default class BjxySettings extends ExtensionPage {
   // v0.1.14: 全局设置区 tab 切换 (独立状态机, 跟主 activeTab 完全分离)
   //   走独立 .bjxy-global-section 区域, 跟主 10 个可拖 tab 不混
   //   未来加全局 tab: 在 BJXY_GLOBAL_TABS 数组加项 + renderActiveGlobalSection 加 case
+  // v0.2.0 改: 切到 'bookings' tab 时自动调 loadBookings() 拉数据
+  //   原因: mithril 1.x oncreate 只在 element 第一次 insert DOM 时跑, 切 tab 时 element 复用,
+  //   oncreate 不会重跑, 走 switchGlobalTab 主动 trigger 是更稳的方案
   switchGlobalTab(tab) {
     if (this.activeGlobalTab !== tab) {
       this.activeGlobalTab = tab;
       m.redraw();
+      // v0.2.0: 切到 'bookings' tab 时立即拉数据
+      if (tab === 'bookings' && typeof this.loadBookings === 'function') {
+        // 重置 page 1, 重新拉 (走 async + redraw)
+        this.bookingsPage = 1;
+        this.loadBookings();
+      }
     }
   }
 
@@ -266,10 +288,13 @@ export default class BjxySettings extends ExtensionPage {
   //   跟 renderActiveSection() 同款结构, 但走独立全局 section
   //   未来加全局 tab: 加 case + 写新 renderXxxGlobalSection() 方法
   // v0.1.17 改: 加 'general' case (通用设置 tab)
+  // v0.2.0 改: 加 'bookings' case (辉哥 2026-08-09 8:14 反馈预约体验后台列表)
+  //   'bookings' 切到这个 tab 时 oncreate 自动 loadBookings() (admin 刚进 tab 立即拉数据)
   renderActiveGlobalSection() {
     switch (this.activeGlobalTab) {
       case 'bg':         return this.renderBgSection();
       case 'general':    return this.renderGeneralSection();
+      case 'bookings':   return this.renderBookingsSection();
       // 未来: case 'footer':  return this.renderFooterGlobalSection();
       // 未来: case 'seo':     return this.renderSeoGlobalSection();
       // 未来: case 'theme':   return this.renderThemeGlobalSection();
@@ -350,6 +375,151 @@ export default class BjxySettings extends ExtensionPage {
     const cur = this.showMobileTab !== false;
     this.showMobileTab = !cur;
     m.redraw();
+  }
+
+  // v0.2.0: 渲染用户预约列表 section (辉哥 2026-08-09 8:14 反馈)
+  //   走 GET /api/bjxy/bookings 接口, renderBookingsSection oncreate 时 loadBookings() 拉数据
+  //   显示 7 列表格: id / name / phone / age / has_ski_experience / experience_type / booking_date
+  //   + 1 列表格 created_at (提交时间)
+  //   分页: 20/页, 走 this.bookingsPage, 翻页调 loadBookings(newPage)
+  //   state: bookings / bookingsLoading / bookingsError / bookingsPage / bookingsTotal
+  //   不参与 save() 持久化 (独立 API, 不存 settings)
+  renderBookingsSection() {
+    const s = this._tBooking();
+
+    return (
+      <div className="bjxy-section glass-card">
+        {this.sectionHead('📅', '用户预约列表 (预约体验 modal 提交)')}
+        <div className="bjxy-section-content">
+          {this.bookingsLoading ? (
+            <div className="bjxy-bookings-loading">加载中...</div>
+          ) : this.bookingsError ? (
+            <div className="bjxy-bookings-error">❌ {this.bookingsError}</div>
+          ) : this.bookings.length === 0 ? (
+            <div className="bjxy-bookings-empty">📭 {s('empty', '暂无预约')}</div>
+          ) : (
+            <div className="bjxy-bookings-table-wrap">
+              <table className="bjxy-bookings-table">
+                <thead>
+                  <tr>
+                    <th>{s('col_id', 'ID')}</th>
+                    <th>{s('col_name', '名字')}</th>
+                    <th>{s('col_phone', '电话')}</th>
+                    <th>{s('col_age', '年龄')}</th>
+                    <th>{s('col_has_ski_experience', '是否有基础')}</th>
+                    <th>{s('col_experience_type', '体验类型')}</th>
+                    <th>{s('col_booking_date', '预约日期')}</th>
+                    <th>{s('col_created_at', '提交时间')}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {this.bookings.map((b, i) => (
+                    <tr key={b.id || 'b' + i}>
+                      <td>{b.id}</td>
+                      <td>{b.name}</td>
+                      <td>{b.phone}</td>
+                      <td>{b.age !== null && b.age !== undefined ? b.age : '-'}</td>
+                      <td>{b.has_ski_experience ? s('yes', '是') : s('no', '否')}</td>
+                      <td>{b.experience_type_label || b.experience_type}</td>
+                      <td>{b.booking_date || '-'}</td>
+                      <td>{b.created_at || '-'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              <div className="bjxy-bookings-pager">
+                <span>
+                  共 {this.bookingsTotal} 条 · 第 {this.bookingsPage} / {Math.max(1, Math.ceil(this.bookingsTotal / this.bookingsPerPage))} 页
+                </span>
+                <button
+                  type="button"
+                  className="Button"
+                  disabled={this.bookingsPage <= 1}
+                  onclick={() => this.loadBookings(this.bookingsPage - 1)}
+                >
+                  上一页
+                </button>
+                <button
+                  type="button"
+                  className="Button"
+                  disabled={this.bookingsPage * this.bookingsPerPage >= this.bookingsTotal}
+                  onclick={() => this.loadBookings(this.bookingsPage + 1)}
+                >
+                  下一页
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  // v0.2.0: 翻译 helper (跟 BookingModal._t 同款, 但走 admin locale namespace)
+  _tBooking() {
+    return (key, fallback) => {
+      try {
+        const v = app.translator.trans(`ziiven-bjxy-website.admin.bookings.${key}`);
+        if (v && v !== `ziiven-bjxy-website.admin.bookings.${key}`) return v;
+      } catch (e) {}
+      return fallback;
+    };
+  }
+
+  // v0.2.0: 加载预约列表 (page = 1 默认)
+  //   走 GET /api/bjxy/bookings?page[number]=N, server ListBookingsController assertAdmin
+  //   错误处理: 字段错误走 err.responseText 解析 (SOP 175 沉淀, vendor RequestError 没 message)
+  async loadBookings(page) {
+    if (this.bookingsLoading) return;
+    if (page) this.bookingsPage = page;
+    else if (!this.bookingsPage) this.bookingsPage = 1;
+
+    console.log('[bjxy] loadBookings start page=' + this.bookingsPage);
+    this.bookingsLoading = true;
+    this.bookingsError = '';
+    m.redraw();
+
+    try {
+      const r = await app.request({
+        method: 'GET',
+        url: app.forum.attribute('apiUrl') + '/bjxy/bookings',
+        params: { page: { number: this.bookingsPage } },
+      });
+      console.log('[bjxy] loadBookings response:', JSON.stringify(r).substring(0, 300));
+      // v0.2.0: 兼容返回 data / 直接 object 两种风格
+      //   Flarum 2.0 JSON:API 风格一般 {data: [...], meta: {total: N}}
+      //   server ListBookingsController 用 JsonResponse 直接返 {bookings, total, page, perPage}
+      //   app.request 自动解 .data 包, 但要看 vendor 实现
+      const data = r && r.data ? r.data : r;
+      this.bookings = (data && data.bookings) || [];
+      this.bookingsTotal = (data && data.total) || 0;
+      this.bookingsPerPage = (data && data.perPage) || 20;
+      console.log('[bjxy] loadBookings set: count=' + this.bookings.length + ' total=' + this.bookingsTotal);
+    } catch (err) {
+      console.log('[bjxy] loadBookings error:', err.status, err.responseText ? err.responseText.substring(0, 300) : null);
+      let errMsg = '加载预约列表失败';
+      if (err && err.responseText) {
+        try {
+          const parsed = JSON.parse(err.responseText);
+          if (parsed && parsed.errors) {
+            // Flarum JSON:API 错误格式: {errors: [{status, title, detail}]}
+            errMsg = (parsed.errors[0] && (parsed.errors[0].detail || parsed.errors[0].title)) || JSON.stringify(parsed.errors);
+          } else if (parsed && parsed.error) {
+            errMsg = parsed.error;
+          } else {
+            errMsg = err.responseText;
+          }
+        } catch (e) {
+          errMsg = err.responseText;
+        }
+      } else if (err && err.status) {
+        errMsg = `HTTP ${err.status} 错误`;
+      }
+      this.bookingsError = errMsg;
+    } finally {
+      this.bookingsLoading = false;
+      m.redraw();
+    }
   }
 
   // v0.1.9: 初始化 tab bar sortablejs (复用 v0.1.4 GroupPickerModal / v0.1.7 reviews 拖拽模式)

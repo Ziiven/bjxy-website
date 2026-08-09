@@ -1058,3 +1058,76 @@
     color: var(--control-color-soft);
     img { width: 48px; height: 48px; object-fit: cover; border-radius: 4px; border: 1px solid var(--control-color-soft); }
 }
+
+// ===== v0.2.0 用户预约列表 (admin bookings tab, 辉哥 2026-08-09 8:14 反馈) =====
+//   走独立 GET /api/bjxy/bookings 接口, 表格 + 分页
+//   SOP 178 cascade 顺序: append 到 L1060 末尾
+//   重要: .bjxy-section-content 是 grid layout (140px 1fr for form field label+input),
+//     bookings 内部 div 必须 grid-column: 1 / -1 (跨 2 列) 否则 table 挤到 140px 第一列
+.bjxy-bookings-loading,
+.bjxy-bookings-empty {
+    padding: 32px 20px;
+    text-align: center;
+    color: var(--control-color-soft, #888);
+    font-size: 14px;
+    grid-column: 1 / -1;
+}
+.bjxy-bookings-error {
+    padding: 16px 20px;
+    background: #fff5f5;
+    border: 1px solid #feb2b2;
+    border-radius: 8px;
+    color: #c53030;
+    font-size: 13px;
+    grid-column: 1 / -1;
+}
+.bjxy-bookings-table-wrap {
+    overflow-x: auto;
+    border-radius: 8px;
+    border: 1px solid var(--control-color-soft, #e2e8f0);
+    grid-column: 1 / -1;
+}
+.bjxy-bookings-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+    background: var(--control-bg, #fff);
+}
+.bjxy-bookings-table th,
+.bjxy-bookings-table td {
+    padding: 10px 12px;
+    text-align: left;
+    border-bottom: 1px solid var(--control-color-soft, #e2e8f0);
+}
+.bjxy-bookings-table th {
+    background: var(--bjxy-bg-soft, #f7fafc);
+    font-weight: 600;
+    color: var(--control-color, #333);
+    white-space: nowrap;
+}
+.bjxy-bookings-table tr:hover td {
+    background: var(--bjxy-bg-soft, #f7fafc);
+}
+.bjxy-bookings-pager {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    background: var(--bjxy-bg-soft, #f7fafc);
+    border-top: 1px solid var(--control-color-soft, #e2e8f0);
+    font-size: 13px;
+    color: var(--control-color-soft, #888);
+    grid-column: 1 / -1;
+}
+.bjxy-bookings-pager button {
+    margin-left: 8px;
+}
+@media (max-width: 768px) {
+    .bjxy-bookings-table {
+        font-size: 11px;
+    }
+    .bjxy-bookings-table th,
+    .bjxy-bookings-table td {
+        padding: 6px 8px;
+    }
+}

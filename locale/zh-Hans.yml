@@ -3,6 +3,27 @@ extension:
   title: 北极雪屿官网
   description: 滑雪培训官网 (Flarum 2.0 page extension)
 
+forum:
+  # v0.2.0 (辉哥 2026-08-09 8:14 反馈): 预约体验 modal 翻译
+  booking_modal:
+    title: 预约体验
+    field_name: 名字
+    field_phone: 电话
+    field_age: 年龄 (可选)
+    field_has_ski_experience: 是否有滑雪基础
+    field_experience_type: 体验类型
+    field_booking_date: 预约日期
+    yes: 是
+    no: 否
+    type_single: 单板体验
+    type_double: 双板体验
+    submit: 提交预约
+    submitting: 提交中...
+    cancel: 取消
+    close: 关闭
+    success: 预约提交成功, 我们工作人员会尽快联系您
+    error_required: 请填写必填字段
+
 admin:
   settings:
     title: 北极雪屿官网配置
@@ -20,3 +41,15 @@ admin:
     upload_logo: 上传 Logo
     upload_banner: 上传 Banner
     upload_avatar: 上传图片
+  # v0.2.0: 预约体验后台列表翻译
+  bookings:
+    title: 用户预约列表
+    empty: 暂无预约
+    col_id: ID
+    col_name: 名字
+    col_phone: 电话
+    col_age: 年龄
+    col_has_ski_experience: 是否有基础
+    col_experience_type: 体验类型
+    col_booking_date: 预约日期
+    col_created_at: 提交时间
