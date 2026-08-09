@@ -28,6 +28,12 @@ use Laminas\Diactoros\Response\JsonResponse;
  *   现在用 User::query()->whereIn() 拿 model, 走 User::getAvatarUrlAttribute() accessor
  *   (resolve(Factory::class)->disk('flarum-avatars')->url($value)) 自动拼完整 URL
  *   顺手也拿 srcset (2x/3x) 让 Retina 屏幕显示更清晰
+ *
+ * v0.2.0e 改: bio 字段优先 fof-user-bio (user->bio, 辉哥 13:01 反馈, 跟 v0.2.0d 装 fof-user-bio 配套)
+ *   优先级: fof-user-bio users.bio (admin 在 /u/Ziven 写的 bio) > bjxy_coach_details.bio (admin 在 bjxy 后台设的)
+ *   achievements + specialties 还是 bjxy_coach_details (fof-user-bio 没这俩字段, 走 bjxy 单独配置)
+ *   photoUrl + avatar 走 bjxy_coach_details.photoUrl 优先 (v0.1.10 模式不变)
+ *   后续如果 fof-user-bio 加 achievements + specialties 字段, 同样逻辑加
  */
 class CoachesController implements RequestHandlerInterface
 {
@@ -74,7 +80,10 @@ class CoachesController implements RequestHandlerInterface
                     //   user->avatar_url 走 vendor User::getAvatarUrlAttribute() accessor, 自动拼 https://geek.ski/assets/avatars/<filename>
                     'avatarUrl' => (!empty($d['photoUrl'])) ? $d['photoUrl'] : $user->avatar_url,
                     'avatarSrcset' => $user->avatar_srcset,
-                    'bio' => $d['bio'] ?? '',
+                    // v0.2.0e 改: bio 优先 user.bio (fof-user-bio, /u/<user> 个人页 bio), fallback 到 bjxy_coach_details.bio
+                    //   !empty() 同时检查 null / '' / 0, 让 fof-user-bio 有值时直接 override bjxy 老 bio
+                    //   achievements + specialties 走 bjxy_coach_details 不变 (fof-user-bio 没这俩字段)
+                    'bio' => !empty($user->bio) ? $user->bio : ($d['bio'] ?? ''),
                     'achievements' => $d['achievements'] ?? '',
                     'specialties' => $d['specialties'] ?? '',
                 ];
@@ -109,7 +118,8 @@ class CoachesController implements RequestHandlerInterface
                 'displayName' => $user->display_name ?: $user->username,
                 'avatarUrl' => (!empty($d['photoUrl'])) ? $d['photoUrl'] : $user->avatar_url,
                 'avatarSrcset' => $user->avatar_srcset,
-                'bio' => $d['bio'] ?? '',
+                // v0.2.0e 改: bio 优先 user.bio (fof-user-bio), fallback bjxy_coach_details.bio (跟主路径一致)
+                'bio' => !empty($user->bio) ? $user->bio : ($d['bio'] ?? ''),
                 'achievements' => $d['achievements'] ?? '',
                 'specialties' => $d['specialties'] ?? '',
             ];

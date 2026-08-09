@@ -840,6 +840,11 @@
     margin-top: 8px;
     padding-top: 8px;
     border-top: 1px dashed var(--bjxy-border);
+    // v0.2.0e 改: bio 走 fof-user-bio (user.bio, plain text + \n), 加 white-space: pre-wrap 让 \n 渲染为换行
+    //   之前 bjxy_coach_details.bio 是 admin 手动输入短句, 没 \n 不需要 pre-wrap
+    //   现在 fof-user-bio 是 admin 在 /u/<user> 写的完整 bio, 多行 \n 分隔, 必须 pre-wrap 保留换行
+    //   mithril escape 不会动 \n, 浏览器默认 white-space: normal 不换行, 必须 pre-wrap
+    white-space: pre-wrap;
 }
 
 // v0.1.31 删: swiper 左右导航箭头 (辉哥 11:48 反馈, 留蓝点分页器 + 滑动功能)
