@@ -2477,16 +2477,20 @@ button.swiper-pagination-bullet {
 @media (max-width: 767px) {
     .bjxy-contact-grid {
         grid-template-columns: 1fr 1fr;  // v0.2.0i 改: 3 列 → 2 列 (B 方案)
-        gap: 16px;  // 移动端稍紧
+        gap: 12px;  // v0.2.0i.b 改: 16px → 12px (mobile 段间紧凑)
     }
     // B 方案左大图: 移动端显示, 跨 2 列
     .bjxy-contact-image {
         display: block;  // v0.2.0i 改: desktop 隐藏 → mobile 显示
         grid-column: 1 / -1;  // 跨 2 列
     }
+    // v0.2.0i.a 改: 大图内 padding 缩小 (辉哥 16:22 反馈, "左侧的 padding 有点太多了吧")
+    //   v0.2.0i.a 24→16 还没到位, v0.2.0i.b 继续 16→12 (跟 .bjxy-contact-segment 段间 padding-left 12px 一致)
+    //   减 grid gap 16→12 同步减段间距离, 视觉更紧凑
     .bjxy-contact-image-inner {
         min-height: 200px;  // 移动端高度 (跟 B_left_image_mobile 一致)
         aspect-ratio: auto;  // 移动端不用 aspect-ratio
+        padding: 12px;  // v0.2.0i.b 改: 16px → 12px (跟 .bjxy-contact-segment 段间 padding-left 一致)
     }
     .bjxy-contact-image-mock::after {
         font-size: 64px;  // 移动端 ⛰ emoji 缩小
