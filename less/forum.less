@@ -35,6 +35,29 @@
 // ====================================================================
 
 // ===== Light theme (默认) =====
+//   v0.2.0b: 复制 CSS variables 到 :root 兜底, 让 modal (在 .bjxy-page 外) 也能读取
+:root {
+    --bjxy-blue: #2D7BE5;
+    --bjxy-blue-dark: #1E5AA8;
+    --bjxy-blue-light: #5A8FD8;
+    --bjxy-blue-soft: #E0EBF8;
+    --bjxy-text: #1A202C;
+    --bjxy-text-soft: #4A5568;
+    --bjxy-text-mute: #718096;
+    --bjxy-border: #EDF2F7;
+    --bjxy-bg: #FFFFFF;
+    --bjxy-bg-soft: #F7FAFC;
+    --bjxy-text-inverse: #FFFFFF;
+    --bjxy-shadow: 0 8px 30px rgba(11, 36, 71, 0.08);
+    // v0.1.0ab: footer 背景 + 文字 永远深底白字, 浅深双版一致
+    //   之前用 var(--bjxy-text) 当背景, 浅色下 #1A202C OK, 深色下变 #E2E8F0 (白色), 跟深色页面不搭
+    --bjxy-footer-bg: #1A202C;
+    --bjxy-footer-color: #FFFFFF;
+    // v0.1.0ac: footer 渐变底部 = .bjxy-page-bg 渐变起始色 (默认 #3a87fe)
+    //   footer 自身 background 渐变到起始色, 跟 viewport 底部 .bjxy-page-bg 起始色无缝衔接
+    //   修 footer 跟 viewport 底部之间 50px 空隙 (.bjxy-page-bg fixed 永远覆盖 viewport)
+    --bjxy-footer-gradient-end: #3a87fe;
+}
 .bjxy-page {
     --bjxy-blue: #2D7BE5;
     --bjxy-blue-dark: #1E5AA8;
@@ -77,6 +100,21 @@
     --bjxy-footer-color: #FFFFFF;
     // v0.1.0ac: footer 渐变底部 = .bjxy-page-bg 渐变起始色 (深色默认 #0F1419)
     --bjxy-footer-gradient-end: #0F1419;
+}
+// v0.2.0b: 复制到 :root[data-theme^=dark] 兜底, 让 modal 在 dark 模式读到正确 var
+[data-theme^="dark"] {
+    --bjxy-blue: #5A8FD8;
+    --bjxy-blue-dark: #2D7BE5;
+    --bjxy-blue-light: #7BC8FF;
+    --bjxy-blue-soft: #1E3D78;
+    --bjxy-text: #E2E8F0;
+    --bjxy-text-soft: #A0AEC0;
+    --bjxy-text-mute: #718096;
+    --bjxy-border: #2D3748;
+    --bjxy-bg: #0F1419;
+    --bjxy-bg-soft: #1A202C;
+    --bjxy-text-inverse: #1A202C;
+    --bjxy-shadow: 0 8px 30px rgba(0, 0, 0, 0.5);
 }
 
 // ===== 基础 =====
@@ -2220,14 +2258,20 @@ button.swiper-pagination-bullet {
     display: none;
 }
 // Modal-content 圆角 16px 跟 A 方案一致, 背景透明 (让 form 自己控制)
+//   !important 强制覆盖 vendor .Modal-content { background-color: var(--body-bg) } 半透明白
 .Modal--custom-header .Modal-content {
     border-radius: 16px;
-    background: transparent;
+    background: transparent !important;
+    background-color: transparent !important;
     overflow: visible;
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.25);
 }
 // vendor Modal 内边距重置 (A 方案 wrapper 自己控 padding)
+//   !important 覆盖 vendor .Modal-body { background-color: var(--control-bg); padding: 25px 30px }
 .Modal--custom-header .Modal-body {
-    padding: 0;
+    padding: 0 !important;
+    background: transparent !important;
+    background-color: transparent !important;
 }
 
 // mobile 段 (SOP 178: append 到末尾, 不会被 top-level 段覆盖, 跟 v0.1.34b 一致)
