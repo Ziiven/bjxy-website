@@ -741,20 +741,38 @@ export default class BjxyPage extends Component {
     return m('section', { class: 'bjxy-section', id: 'contact', key: 'sec-contact' }, [
       m('div', { class: 'bjxy-sub' }, 'CONTACT'),
       m('h2', null, '联系我们'),
+      m('p', { class: 'bjxy-section-desc' }, '有任何问题, 欢迎随时联系, 我们 24 小时内回复'),
       m('div', { class: 'bjxy-contact-grid' }, [
-        // 地址 (多地址, 每个地址一个卡片, 跟 reviews 列表一样)
-        ...addresses.map((addr, i) => m('div', { class: 'bjxy-contact-item', key: 'addr-' + i }, [
-          m('div', { class: 'bjxy-contact-label' }, '📍 地址 #' + (i + 1)),
-          m('div', { class: 'bjxy-contact-value' }, addr),
-        ])),
-        // 电话 (单值保留) — 修 v0.1.32.1: 加 key 'phone' 修 mithril "vnodes must either all have keys or none"
-        m('div', { class: 'bjxy-contact-item', key: 'phone' }, [
-          m('div', { class: 'bjxy-contact-label' }, '📞 电话'),
+        // v0.2.0i 新加: B 方案左大图 (mobile only, desktop 默认 display: none)
+        //   蓝渐变 + ⛰ emoji 占位 + meta 段 (跟 B_left_image.html 一致)
+        m('div', { class: 'bjxy-contact-image', key: 'image' }, [
+          m('div', { class: 'bjxy-contact-image-inner' }, [
+            m('div', { class: 'bjxy-contact-image-mock' }),
+            m('div', { class: 'bjxy-contact-image-meta' }, [
+              m('div', { class: 'bjxy-contact-image-eyebrow' }, 'VISIT US'),
+              m('div', { class: 'bjxy-contact-image-title' }, '3 大雪场 · 室内四季恒温'),
+              m('div', { class: 'bjxy-contact-image-sub' }, '覆盖朝阳 / 海淀 / 西城核心区, 营业时间 10:00 - 22:00'),
+            ]),
+          ]),
+        ]),
+        // v0.2.0i 改: 段从 .bjxy-contact-item 卡片 → .bjxy-contact-segment 扁平段 (辉哥 15:12 反馈, 不要卡片式)
+        //   地址 (多地址, 段内多行, 跟 A_flat_list_desktop 一致)
+        m('div', { class: 'bjxy-contact-segment', key: 'address' }, [
+          m('div', { class: 'bjxy-contact-label' }, '地址 · ADDRESS'),
+          m('div', { class: 'bjxy-contact-value' },
+            addresses.length > 0
+              ? addresses.map((addr, i) => m('span', { class: 'bjxy-contact-value-item', key: 'addr-' + i }, addr))
+              : m('span', { class: 'bjxy-contact-value-item' }, '敬请期待')
+          ),
+        ]),
+        // 电话 (单值保留)
+        m('div', { class: 'bjxy-contact-segment', key: 'phone' }, [
+          m('div', { class: 'bjxy-contact-label' }, '电话 · PHONE'),
           m('div', { class: 'bjxy-contact-value' }, s('bjxy_contact_phone', '400-888-8888')),
         ]),
-        // 微信 (多图, 3 列缩略图墙, 跟 reviews photos 风格)
-        wechatImages.length > 0 ? m('div', { class: 'bjxy-contact-item bjxy-contact-wechat', key: 'wechat' }, [
-          m('div', { class: 'bjxy-contact-label' }, '💬 微信'),
+        // 微信 (多图, 走 40x40 thumbnail 紧凑 flex 布局)
+        wechatImages.length > 0 ? m('div', { class: 'bjxy-contact-segment bjxy-contact-wechat', key: 'wechat' }, [
+          m('div', { class: 'bjxy-contact-label' }, '微信 · WECHAT'),
           m('div', { class: 'bjxy-contact-wechat-grid' },
             wechatImages.map((url, i) => m('a', {
               class: 'bjxy-contact-wechat-img',

@@ -1070,48 +1070,140 @@ a.bjxy-event-info.bjxy-event-link:hover {
 .bjxy-event-swiper .swiper-pagination-bullet-active { background: var(--bjxy-blue); }
 
 // ===== 联系我们 =====
-// v0.1.32 改: 4 列 → 3 列 (地址+电话+微信, 邮箱删, 辉哥 11:48 反馈)
-//   - 地址: 多地址卡片 (可能 1-3 个), 每个占 1 列
-//   - 电话: 1 个卡片
-//   - 微信: 多图卡片, 占 1 列
+// v0.2.0i 改 (辉哥 2026-08-09 15:12 反馈, v0.1.32 卡片式返工):
+//   - 删 .bjxy-contact-item 卡片样式 (辉哥"不要做成卡片式的")
+//   - 桌面端 (默认) A 方案: 扁平列表式 (3 列 + vertical divider + 微信 40x40 thumbnail)
+//   - 移动端 (< 768) B 方案: 左大图右信息 (2 列 + 大图跨 2 列 + 3 段信息垂直堆叠)
+//   - 浅深双模式: 走 var(--bjxy-*) 跨模式 CSS variables (SOP 183)
+//   移动端 mobile @media 段必放 L2378 之后 (SOP 178: cascade 顺序, 避免被 top-level 段覆盖)
 .bjxy-contact-grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    gap: 12px;
-    margin-top: 16px;
+    gap: 24px;  // v0.2.0i 改: 12px → 24px (A 方案段间距更宽, 不用卡片背景)
+    margin-top: 24px;  // v0.2.0i 改: 16px → 24px
 }
-.bjxy-contact-item {
-    padding: 18px;
-    background: var(--bjxy-bg-soft);
-    border-radius: 8px;
-    border: 1px solid var(--bjxy-border);
+// v0.2.0i 新加: 段替代 .bjxy-contact-item 卡片样式 (辉哥 15:12 反馈, "不要做成卡片式的")
+.bjxy-contact-segment {
+    padding: 0 0 0 24px;  // A 方案段间留 24px + 配合 vertical divider
+    background: none;  // 不用卡片 background
+    border: none;  // 不用卡片 border
+    border-radius: 0;  // 不用卡片 border-radius
+    text-align: left;
+    position: relative;
+}
+// A 方案段间 vertical divider (1px var(--bjxy-border), 跨浅深双模式自动切换)
+.bjxy-contact-segment + .bjxy-contact-segment {
+    border-left: 1px solid var(--bjxy-border);
+}
+// 第一段不需要左 padding + divider
+.bjxy-contact-segment:first-child {
+    padding-left: 0;
+    border-left: none;
 }
 .bjxy-contact-label {
-    font-size: 10px;
+    font-size: 11px;  // v0.2.0i 改: 10px → 11px (A 方案稍大)
     color: var(--bjxy-text-mute);
     text-transform: uppercase;
     letter-spacing: 1.5px;
-    margin-bottom: 6px;
+    margin-bottom: 8px;  // v0.2.0i 改: 6px → 8px
+    font-weight: 600;  // v0.2.0i 改: 加 weight 600 增强
 }
-.bjxy-contact-value { font-size: 14px; font-weight: 600; color: var(--bjxy-text); word-break: break-all; }
+.bjxy-contact-value {
+    font-size: 16px;  // v0.2.0i 改: 14px → 16px (A 方案值更大)
+    font-weight: 600;
+    color: var(--bjxy-text);
+    word-break: break-all;
+    line-height: 1.6;  // v0.2.0i 改: 加 line-height 1.6
+}
+.bjxy-contact-value-item {
+    display: block;  // v0.2.0i 新加: 多地址每条占一行 (跟 A_flat_list_desktop 一致)
+    margin-bottom: 4px;
+}
+.bjxy-contact-value-item:last-child {
+    margin-bottom: 0;
+}
 
-// v0.1.32 加: 微信多图网格 (跟 reviews photos 风格一致, 3 列缩略图墙)
+// v0.2.0i 改: 微信缩略图 (A 方案走 40x40 紧凑 flex 布局, 不用 grid)
 .bjxy-contact-wechat-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 6px;
+    display: flex;  // v0.2.0i 改: grid → flex
+    gap: 8px;
     margin-top: 4px;
+    flex-wrap: wrap;
 }
 .bjxy-contact-wechat-img {
     display: block;
-    aspect-ratio: 1;
-    border-radius: 4px;
+    width: 40px;   // v0.2.0i 改: aspect-ratio 1 → 40x40 紧凑
+    height: 40px;
+    border-radius: 6px;  // v0.2.0i 改: 4px → 6px
     overflow: hidden;
     border: 1px solid var(--bjxy-border);
     transition: transform 0.15s;
 }
 .bjxy-contact-wechat-img:hover { transform: scale(1.05); }
 .bjxy-contact-wechat-img img { width: 100%; height: 100%; object-fit: cover; }
+
+// v0.2.0i 新加: B 方案左大图 (mobile only, desktop 默认 display: none)
+//   蓝渐变 + ⛰ emoji 占位 (B_left_image.html 设计)
+//   mobile @media 段会改 grid-column: 1 / -1 跨 2 列
+.bjxy-contact-image {
+    display: none;  // v0.2.0i 改: 默认 desktop 隐藏 (B 方案仅 mobile)
+}
+.bjxy-contact-image-inner {
+    width: 100%;
+    aspect-ratio: 4/3;
+    background: linear-gradient(135deg, var(--bjxy-blue-dark) 0%, var(--bjxy-blue) 60%, var(--bjxy-blue-light) 100%);
+    border-radius: 12px;
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    padding: 24px;
+    color: #fff;
+}
+.bjxy-contact-image-mock {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background:
+        linear-gradient(135deg, transparent 0%, transparent 30%, rgba(255, 255, 255, 0.05) 30%, rgba(255, 255, 255, 0.05) 32%, transparent 32%),
+        linear-gradient(45deg, transparent 0%, transparent 60%, rgba(255, 255, 255, 0.04) 60%, rgba(255, 255, 255, 0.04) 62%, transparent 62%),
+        radial-gradient(circle at 20% 30%, rgba(255, 255, 255, 0.08) 0%, transparent 30%),
+        radial-gradient(circle at 80% 70%, rgba(255, 255, 255, 0.06) 0%, transparent 30%);
+}
+.bjxy-contact-image-mock::after {
+    content: "⛰";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 96px;
+    opacity: 0.25;
+    font-family: "Apple Color Emoji", "Segoe UI Emoji", sans-serif;
+}
+.bjxy-contact-image-meta {
+    position: relative;
+    z-index: 1;
+}
+.bjxy-contact-image-eyebrow {
+    font-size: 11px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    font-weight: 700;
+    opacity: 0.8;
+    margin-bottom: 6px;
+}
+.bjxy-contact-image-title {
+    font-size: 20px;
+    font-weight: 700;
+    line-height: 1.3;
+    margin-bottom: 6px;
+}
+.bjxy-contact-image-sub {
+    font-size: 13px;
+    opacity: 0.85;
+    line-height: 1.6;
+}
 
 // ===== Footer =====
 .bjxy-footer {
@@ -2374,5 +2466,59 @@ button.swiper-pagination-bullet {
         h2 { font-size: 18px; }
         h3 { font-size: 16px; }
         h4, h5, h6 { font-size: 15px; }
+    }
+}
+
+// v0.2.0i 联系我们 mobile 段 (辉哥 2026-08-09 15:12 反馈)
+//   移动端 < 768: B 方案 (左大图右信息, 2 列 + 大图跨 2 列 + 3 段信息垂直堆叠)
+//   SOP 178 cascade: 必放末尾, 不会被 top-level 段覆盖
+//   SOP 183 浅深双模式: 全部走 var(--bjxy-*) 跨模式自动切换
+//   断点 max-width: 767px 跟 bjxy @phone 变量 (L11) 保持一致, 768px+ 走 A 方案
+@media (max-width: 767px) {
+    .bjxy-contact-grid {
+        grid-template-columns: 1fr 1fr;  // v0.2.0i 改: 3 列 → 2 列 (B 方案)
+        gap: 16px;  // 移动端稍紧
+    }
+    // B 方案左大图: 移动端显示, 跨 2 列
+    .bjxy-contact-image {
+        display: block;  // v0.2.0i 改: desktop 隐藏 → mobile 显示
+        grid-column: 1 / -1;  // 跨 2 列
+    }
+    .bjxy-contact-image-inner {
+        min-height: 200px;  // 移动端高度 (跟 B_left_image_mobile 一致)
+        aspect-ratio: auto;  // 移动端不用 aspect-ratio
+    }
+    .bjxy-contact-image-mock::after {
+        font-size: 64px;  // 移动端 ⛰ emoji 缩小
+    }
+    .bjxy-contact-image-title {
+        font-size: 18px;  // 移动端标题缩小
+    }
+    // B 方案右信息: 段间 vertical divider 改 horizontal divider
+    .bjxy-contact-segment {
+        grid-column: 1 / -1;  // 每段也跨 2 列
+        padding: 12px 0;  // 段内 padding
+        border-left: none !important;  // 不用 vertical divider
+    }
+    .bjxy-contact-segment + .bjxy-contact-segment {
+        border-left: none;  // 不用 vertical divider
+        padding-left: 12px;  // 段内 padding
+    }
+    .bjxy-contact-segment {
+        border-bottom: 1px solid var(--bjxy-border);  // 段间 horizontal divider
+    }
+    .bjxy-contact-segment:last-child {
+        border-bottom: none;
+    }
+    .bjxy-contact-label {
+        font-size: 12px;  // 移动端 label 稍大
+    }
+    .bjxy-contact-value {
+        font-size: 17px;  // 移动端 value 稍大
+    }
+    // 移动端微信 80x80 (B 方案 80x80, 跟 B_left_image_mobile 一致)
+    .bjxy-contact-wechat-img {
+        width: 80px;
+        height: 80px;
     }
 }
