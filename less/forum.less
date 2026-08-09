@@ -285,9 +285,9 @@
 // ===== Hero (左文 + 右产品 mock) =====
 .bjxy-hero {
     display: grid;
-    grid-template-columns: 1fr 1.2fr;
+    grid-template-columns: 1.2fr 1fr;
     gap: 48px;
-    padding: 32px 0px 0px 0px;
+    padding: 32px 0px 20px 0px;
     align-items: center;
     max-width: 1280px;
     margin: 0 auto;
@@ -1255,7 +1255,7 @@ a.bjxy-event-info.bjxy-event-link:hover {
 @media @phone {
     .bjxy-nav { padding: 12px 16px; }
     .bjxy-nav-links { display: none; }
-    .bjxy-hero { grid-template-columns: 1fr; gap: 24px; padding: 10px 16px; }
+    .bjxy-hero { grid-template-columns: 1fr; gap: 24px; padding: 10px 16px 24px 16px; }
     .bjxy-hero-text h1 { font-size: 32px; }
     .bjxy-section { padding: 32px 16px; }
     .bjxy-feature-grid { grid-template-columns: 1fr 1fr; }
@@ -2427,7 +2427,8 @@ button.swiper-pagination-bullet {
 // admin 走 textareaField 输 HTML, 前端 m.trust() 渲染, 加 .bjxy-about-desc 调样式
 // child selectors 覆盖 admin 输的 h1-h6/p/ul/ol/li/a/strong/em/code/pre/blockquote
 .bjxy-about-desc {
-    color: var(--bjxy-text);
+    margin-top: 20px;
+    color: var(--bjxy-text-soft);
     line-height: 1.7;
     font-size: 15px;
     // 块级元素
@@ -2537,7 +2538,7 @@ button.swiper-pagination-bullet {
     }
     .bjxy-contact-segment + .bjxy-contact-segment {
         border-left: none;  // 不用 vertical divider
-        padding-left: 12px;  // 段内 padding
+        // padding-left: 12px;  // 段内 padding
     }
     .bjxy-contact-segment {
         border-bottom: 1px solid var(--bjxy-border);  // 段间 horizontal divider

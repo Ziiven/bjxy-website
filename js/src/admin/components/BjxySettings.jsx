@@ -474,7 +474,7 @@ export default class BjxySettings extends ExtensionPage {
     if (page) this.bookingsPage = page;
     else if (!this.bookingsPage) this.bookingsPage = 1;
 
-    console.log('[bjxy] loadBookings start page=' + this.bookingsPage);
+    // console.log('[bjxy] loadBookings start page=' + this.bookingsPage);
     this.bookingsLoading = true;
     this.bookingsError = '';
     m.redraw();
@@ -485,7 +485,7 @@ export default class BjxySettings extends ExtensionPage {
         url: app.forum.attribute('apiUrl') + '/bjxy/bookings',
         params: { page: { number: this.bookingsPage } },
       });
-      console.log('[bjxy] loadBookings response:', JSON.stringify(r).substring(0, 300));
+      // console.log('[bjxy] loadBookings response:', JSON.stringify(r).substring(0, 300));
       // v0.2.0: 兼容返回 data / 直接 object 两种风格
       //   Flarum 2.0 JSON:API 风格一般 {data: [...], meta: {total: N}}
       //   server ListBookingsController 用 JsonResponse 直接返 {bookings, total, page, perPage}
@@ -494,9 +494,9 @@ export default class BjxySettings extends ExtensionPage {
       this.bookings = (data && data.bookings) || [];
       this.bookingsTotal = (data && data.total) || 0;
       this.bookingsPerPage = (data && data.perPage) || 20;
-      console.log('[bjxy] loadBookings set: count=' + this.bookings.length + ' total=' + this.bookingsTotal);
+      // console.log('[bjxy] loadBookings set: count=' + this.bookings.length + ' total=' + this.bookingsTotal);
     } catch (err) {
-      console.log('[bjxy] loadBookings error:', err.status, err.responseText ? err.responseText.substring(0, 300) : null);
+      // console.log('[bjxy] loadBookings error:', err.status, err.responseText ? err.responseText.substring(0, 300) : null);
       let errMsg = '加载预约列表失败';
       if (err && err.responseText) {
         try {
@@ -542,7 +542,7 @@ export default class BjxySettings extends ExtensionPage {
         this.tabOrder.splice(e.newIndex, 0, moved);
         // m.redraw() 立即重渲, 同步 this.activeTab 对应的 active class
         m.redraw();
-        console.log('[bjxy] tab order changed:', this.tabOrder.join(' → '));
+        // console.log('[bjxy] tab order changed:', this.tabOrder.join(' → '));
       },
     });
   }

@@ -750,7 +750,7 @@ export default class BjxyPage extends Component {
             m('div', { class: 'bjxy-contact-image-mock' }),
             m('div', { class: 'bjxy-contact-image-meta' }, [
               m('div', { class: 'bjxy-contact-image-eyebrow' }, 'VISIT US'),
-              m('div', { class: 'bjxy-contact-image-title' }, '3 大雪场 · 室内四季恒温'),
+              m('div', { class: 'bjxy-contact-image-title' }, '大型滑雪模拟机 · 室内四季恒温'),
               m('div', { class: 'bjxy-contact-image-sub' }, '营业时间 10:00 - 22:00'),
             ]),
           ]),
