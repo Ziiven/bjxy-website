@@ -2294,3 +2294,72 @@ button.swiper-pagination-bullet {
         flex-direction: row;  // radio 保持横排
     }
 }
+
+// ===== v0.2.0d bjxy_about_desc HTML 渲染样式 (辉哥 11:55 反馈) =====
+// admin 走 textareaField 输 HTML, 前端 m.trust() 渲染, 加 .bjxy-about-desc 调样式
+// child selectors 覆盖 admin 输的 h1-h6/p/ul/ol/li/a/strong/em/code/pre/blockquote
+.bjxy-about-desc {
+    color: var(--bjxy-text);
+    line-height: 1.7;
+    font-size: 15px;
+    // 块级元素
+    h1, h2, h3, h4, h5, h6 {
+        color: var(--bjxy-text);
+        margin: 16px 0 8px;
+        font-weight: 700;
+    }
+    h1 { font-size: 24px; }
+    h2 { font-size: 20px; }
+    h3 { font-size: 18px; }
+    h4, h5, h6 { font-size: 16px; }
+    p { margin: 0 0 12px; }
+    ul, ol { margin: 0 0 12px 24px; }
+    li { margin-bottom: 4px; }
+    // inline 元素
+    a {
+        color: var(--bjxy-blue);
+        text-decoration: none;
+        border-bottom: 1px solid transparent;
+        transition: border-color 0.15s;
+    }
+    a:hover { border-bottom-color: var(--bjxy-blue); }
+    strong { font-weight: 700; }
+    em { font-style: italic; }
+    // code 块
+    code {
+        background: var(--bjxy-bg-soft);
+        padding: 1px 6px;
+        border-radius: 3px;
+        font-size: 0.9em;
+        font-family: 'Monaco', 'Menlo', monospace;
+    }
+    pre {
+        background: var(--bjxy-bg-soft);
+        padding: 12px;
+        border-radius: 6px;
+        overflow-x: auto;
+        code {
+            background: transparent;
+            padding: 0;
+        }
+    }
+    // 引用
+    blockquote {
+        border-left: 3px solid var(--bjxy-blue);
+        padding-left: 12px;
+        color: var(--bjxy-text-soft);
+        margin: 0 0 12px;
+    }
+}
+
+// v0.2.0d bjxy-about-desc mobile 段 (SOP 178 cascade 顺序, mobile 段 append 到末尾, 避免被覆盖)
+@media (max-width: 768px) {
+    .bjxy-about-desc {
+        font-size: 14px;
+        line-height: 1.6;
+        h1 { font-size: 20px; }
+        h2 { font-size: 18px; }
+        h3 { font-size: 16px; }
+        h4, h5, h6 { font-size: 15px; }
+    }
+}

@@ -422,7 +422,11 @@ export default class BjxyPage extends Component {
     return m('section', { class: 'bjxy-section', id: 'about', key: 'sec-about' }, [
       m('div', { class: 'bjxy-sub' }, s('bjxy_about_sub', 'ABOUT US')),
       m('h2', null, s('bjxy_about_title', '关于北极雪屿')),
-      m('p', null, s('bjxy_about_desc', '北极雪屿室内滑雪成立于 2024 年, 专注滑雪领域的全国连锁机构...')),
+      // v0.2.0d (辉哥 11:55 反馈): bjxy_about_desc 支持 HTML 渲染
+      // admin 走 textareaField (不变, 支持输入 HTML), 前端用 m.trust() 渲染 HTML
+      // 改 <p> → <div> 是因为 m.trust 可能包含多行 HTML (h1/h2/ul 等), p 不能嵌套块级元素
+      // 加 .bjxy-about-desc class 方便 less 调样式 + XSS 防护走 admin 权限 (有 bjxy_about_desc 字段写入权限的人 = admin user)
+      m('div', { class: 'bjxy-about-desc' }, m.trust(s('bjxy_about_desc', '北极雪屿室内滑雪成立于 2024 年, 专注滑雪领域的全国连锁机构...'))),
       m('div', { class: 'bjxy-stats' }, [
         m('div', { class: 'bjxy-stat' }, [m('div', { class: 'bjxy-stat-num' }, s('bjxy_about_stat_1_num', '10+')), m('div', { class: 'bjxy-stat-label' }, s('bjxy_about_stat_1_label', '年教学经验'))]),
         m('div', { class: 'bjxy-stat' }, [m('div', { class: 'bjxy-stat-num' }, s('bjxy_about_stat_2_num', '50+')), m('div', { class: 'bjxy-stat-label' }, s('bjxy_about_stat_2_label', '专业教练'))]),
