@@ -731,8 +731,10 @@ export default class BjxySettings extends ExtensionPage {
           {this.field('副标题', 'bjxy_hero_subtitle', '专注滑雪领域的全国连锁机构...')}
           {this.fileField('浅色模式 banner', 'bjxy_hero_banner_light', '1920×600 推荐')}
           {this.fileField('深色模式 banner', 'bjxy_hero_banner_dark', '1920×600 推荐')}
-          {this.field('CTA 文字', 'bjxy_hero_cta_text', '立即咨询')}
-          {this.field('CTA 链接', 'bjxy_hero_cta_link', '#contact')}
+          // v0.2.0a 改: 按钮现在弹 BookingModal (辉哥 9:28 反馈)
+          //   CTA 文字默认值 '立即咨询' → '预约体验' (admin 改过的不动)
+          //   CTA 链接 字段删了 (前端 button 不读 href, 留着让 admin 困惑)
+          {this.field('CTA 文字', 'bjxy_hero_cta_text', '预约体验')}
         </div>
       </div>
     );

@@ -90,7 +90,9 @@ return [
         ->serializeToForum('bjxy_hero_banner_light', 'bjxy_hero_banner_light')
         ->serializeToForum('bjxy_hero_banner_dark', 'bjxy_hero_banner_dark')
         ->serializeToForum('bjxy_hero_cta_text', 'bjxy_hero_cta_text')
-        ->serializeToForum('bjxy_hero_cta_link', 'bjxy_hero_cta_link')
+        // v0.2.0a 删: bjxy_hero_cta_link serializeToForum (辉哥 9:28 反馈)
+        //   CTA 按钮现在弹 BookingModal (jsx <button onclick>), 不读 href 字段
+        //   留 settings 表里的已存值不删, 前端不再 serialize 出去, 不会污染 forum.attributes
         ->serializeToForum('bjxy_about_sub', 'bjxy_about_sub')
         ->serializeToForum('bjxy_about_title', 'bjxy_about_title')
         ->serializeToForum('bjxy_about_desc', 'bjxy_about_desc')

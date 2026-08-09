@@ -298,16 +298,16 @@ export default class BjxyPage extends Component {
           }).filter(Boolean)
         ),
         m('div', { class: 'bjxy-nav-right' }, [
-          m('a', { href: '#contact', class: 'bjxy-btn bjxy-btn-primary' }, s('bjxy_hero_cta_text', '立即咨询')),
-          // v0.2.0: 预约体验按钮 (辉哥 2026-08-09 8:14 反馈)
-          //   跟现有 '立即咨询' (跳 footer 联系) 并存, 不破坏 admin 已配 bjxy_hero_cta_text
-          //   class 加 bjxy-btn-booking 区分, less/forum.less 配套样式
-          //   onclick 弹 BookingModal (vendor Modal), mithril h() 二参 onclick 走 function
+          // v0.2.0a 改: 改造现有 CTA 按钮, onclick 弹 BookingModal (辉哥 9:28 反馈)
+          //   辉哥本意: 利用现有可后台配的 'bjxy_hero_cta_text' 按钮 (之前跳 #contact footer), 改成弹 modal
+          //   改法: <a href="#contact"> → <button type="button" onclick={app.modal.show(BookingModal)}>
+          //   配套: 删 v0.2.0 新加的 '预约体验' 独立按钮 (辉哥不要并存, 走单按钮模式)
+          //   后台 bjxy_hero_cta_text 默认 '立即咨询' → '预约体验' (admin 改过的不动)
           m('button', {
             type: 'button',
-            class: 'bjxy-btn bjxy-btn-primary bjxy-btn-booking',
+            class: 'bjxy-btn bjxy-btn-primary',
             onclick: () => { app.modal.show(BookingModal); },
-          }, '预约体验'),
+          }, s('bjxy_hero_cta_text', '预约体验')),
         ]),
       ]),
 
