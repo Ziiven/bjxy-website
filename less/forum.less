@@ -850,7 +850,7 @@
 }
 .bjxy-coach-bio {
     font-size: 13px;
-    line-height: 1.7;
+    line-height: 1.5;  // v0.2.0h.b 改 (辉哥 23:18 反馈, Puppeteer 实测): 1.7 → 1.5 跟 fof UserBio-content 一致
     color: var(--bjxy-text-soft);
     margin-top: 8px;
     padding-top: 8px;
@@ -868,6 +868,24 @@
     //   现在 fof-user-bio 是 admin 在 /u/<user> 写的完整 bio, 多行 \n 分隔, 必须 pre-wrap 保留换行
     //   mithril escape 不会动 \n, 浏览器默认 white-space: normal 不换行, 必须 pre-wrap
     white-space: pre-wrap;
+    // v0.2.0h.b 改 (辉哥 23:18 反馈, Puppeteer 实测): bio 段间对齐 fof UserBio-content
+    //   改前实测 (SOP 211 实测验证, 不盲信 Mavis 调研):
+    //     bjxy .bjxy-coach-bio: fontSize 13px, lineHeight 22.1px (1.7), <p> lineHeight 23.8px
+    //     fof  .UserBio-content: fontSize 14px, lineHeight 21px (1.5), <p> lineHeight 21px
+    //     两者 <p> marginTop/marginBottom 都是 UA default 0 / 10px, 完全一致
+    //     真实视觉差别来自 line-height: bjxy 23.8px vs fof 21px, 段间紧贴度差 2.8px
+    //   Mavis 调研说"UA default p { margin: 1em 0 }" 是错的, 实测 margin: 0 0 10px 0
+    //   Mavis 调研说"改 <p> margin: 0" 也是错的, margin 已为 0, 改完没变化
+    //   正确修法: 改容器 line-height 1.7 → 1.5 (跟 fof 1.5 一致)
+    //   ⚠️ v0.2.0h.b 第二轮修: 只改 container line-height 不够!
+    //     Puppeteer 实测 <p> lineHeight 还是 23.8px — 根因是 bjxy 自己的 .bjxy-section p { line-height: 1.7 } (less/forum.less L386-391)
+    //     .bjxy-coach 嵌在 .bjxy-section 内, <p> 继承 .bjxy-section p 的 1.7 覆盖 container 的 1.5
+    //     修法: 显式 > p { line-height: inherit } 让 <p> 拿 container 的 1.5, 不被 .bjxy-section p 覆盖
+    > p {
+        line-height: inherit;  // 1.5 来自 container, 不被 .bjxy-section p { line-height: 1.7 } 覆盖
+        // margin 不动 — UA default 0/10px 跟 fof 一致, 没必要改
+    }
+    // fontSize 13px (bjxy) vs 14px (fof) 保留差异 — 13px 是 bjxy 风格, 辉哥没说要改
 }
 
 // v0.1.31 删: swiper 左右导航箭头 (辉哥 11:48 反馈, 留蓝点分页器 + 滑动功能)
