@@ -2141,6 +2141,58 @@ button.swiper-pagination-bullet {
         min-height: auto;
         padding-top: 0px;
     }
+    // v0.2.0h.b 改 (辉哥 23:18 反馈, Puppeteer 实测 + vendor 源码调研): BookingModal 顶部对齐
+    //   ⚠️ 第一轮修错: 改 .Modal-backdrop { align-items: flex-start; padding-top: 40px } — Puppeteer 实测无效
+    //     根因 (vendor/flarum/core/js/src/common/components/ModalManager.tsx L43-58):
+    //       #modal > .ModalManager (内含 .BookingModal) + .Modal-backdrop (sibling, 内部空, 只有 LoadingIndicator)
+    //     .BookingModal 不在 .Modal-backdrop 内, 改 backdrop 的 align-items 不会影响 modal 位置
+    //   真实 DOM 关系 (Puppeteer dump 确认):
+    //     #modal
+    //       .ModalManager (position: fixed, inset: 0, overflow-y: auto)  ← .BookingModal 的真正父元素
+    //         .BookingModal (position: relative)
+    //         .ModalManager-invisibleBackdrop
+    //       .Modal-backdrop.backdrop (position: fixed, inset: 0, display: flex)  ← 跟 .ModalManager 平级, 内部空
+    //   vendor 居中真正机制 (vendor/flarum/core/less/common/Modal.less L237-243 @tablet-up):
+    //     .Modal { width: 100%; max-width: 600px; margin: 120px auto } ← 居中靠 margin auto
+    //   vendor mobile (vendor/flarum/core/less/common/Modal.less L202-216 @phone):
+    //     .Modal { margin: 0; top: 100dvh } 起始, .in { top: 0 } 终止 (从底部滑入到顶部)
+    //   修法: 改 .BookingModal 自身 margin (desktop) / top (mobile) — 不影响其他 modal (log-out / confirm / request error 走各自 className, 不是 .BookingModal)
+  }
+  // v0.2.0h.b 改 (辉哥 23:18 反馈, 真实修法): 改 .BookingModal 自身 margin/top, 不再改 .Modal-backdrop (改 backdrop 没用)
+  //   desktop: 覆盖 vendor .Modal { margin: 120px auto } → margin: 40px auto 120px (顶部 40px, 底部 120px)
+  //   mobile: 覆盖 vendor @phone .Modal.in { top: 0 } → top: 40px (顶部 40px 滑入)
+  //   :has(.BookingModal) 限定只在 BookingModal 打开时改 — 不影响其他 modal
+  //   ⚠️ 必加 !important: vendor desktop 端在 @media @tablet-up 内 .Modal { margin: 120px auto } — media query 内的 rule 永远比外面优先
+  //   不加 !important, vendor @tablet-up 段在 bjxy extension 之后编译, 还是会覆盖
+  //   ⚠️ v0.2.0h.b 第二轮修: .BookingModal.in { top: 40px } 必包在 @media @phone 内 — desktop 不加 top offset (用 margin-top 40 顶部对齐)
+  //     第一轮: 桌面端 modal rect.top = 120 (期望 80) — 根因 top: 40px 在 desktop 也生效, 多加了 40px offset
+  //     修法: 把 .BookingModal.in { top } 移到 @media @phone 段, desktop 不动
+  //   ⚠️ v0.2.0h.b 第三轮修: 之前把 @media @phone 写在 #modal { } 内编译成 "#modal #modal:has(...)" 双前缀, 不命中
+  //     修法: 写在 #modal 块外, 用裸 :has(.BookingModal) 即可
+  &:has(.BookingModal) {
+    .BookingModal {
+      margin: 40px auto 120px !important;  // !important 覆盖 vendor @tablet-up .Modal { margin: 120px auto }
+    }
+    // ModalManager 是 modal 真正的 flex parent (position: fixed; inset: 0; overflow: auto), 内部 scroll
+    //   mobile 模式 modal 高度 100dvh = viewport 100%, 超过视口需要 ModalManager scroll, padding-top 不会影响 scroll 容器内 absolute 元素 (modal)
+    //   desktop 模式 modal 高度 < viewport, padding-top 让 modal 顶部从 40px 开始 (跟 margin-top 40 双重确认, 实测不冲突)
+    .ModalManager {
+      padding-top: 40px;
+    }
+  }
+  // 移动端: 覆盖 vendor @phone .Modal.in { top: 0 } → top: 40px (顶部 40px 滑入)
+  //   必包在 @media @phone 段, desktop 不加 top offset (用 margin-top 40 顶部对齐)
+  //   写在 #modal 块外, 避免 less 编译成 #modal #modal 双前缀
+  //   :has(.BookingModal) 限定不影响其他 modal
+  //   !important 覆盖 vendor @phone .Modal.in { top: 0 } (vendor media query 内的 rule, 永远比外面优先)
+}
+
+// 移动端: 覆盖 vendor @phone .Modal.in { top: 0 } → top: 40px
+//   写在 #modal 块外, 避免 less 编译成 #modal #modal 双前缀 (第三轮修)
+//   必加 !important: vendor @phone 段永远比外面优先
+@media @phone {
+  #modal:has(.BookingModal) .BookingModal.in {
+    top: 40px !important;
   }
 }
 
