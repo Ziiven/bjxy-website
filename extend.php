@@ -58,9 +58,19 @@ return [
             $ogPort = $request->getUri()->getPort();
             $ogPortPart = ($ogPort && !in_array($ogPort, [80, 443], true)) ? ':' . $ogPort : '';
             $ogUrl = $ogScheme . '://' . $ogHost . $ogPortPart . '/bjxy';
-            // 1) og:site_name override (跟 vendor fof-seo setMetaPropertyTag('og:site_name', '极客雪域') 重复)
-            //   浏览器 last wins, 取我的 bjxy brandName, 让微信知道这是 bjxy brand site 不是论坛
-            $document->head[] = '<meta property="og:site_name" content="' . htmlspecialchars($brandName, ENT_QUOTES) . '">';
+            // 1) og:site_name 挪到下面 ->content($cb, -100) 段 (v0.2.0h.a 修, 辉哥 2026-08-10 V 测 V1 P0)
+            //   根因: vendor fof-seo PageListener L198 setMetaPropertyTag('og:site_name', '极客雪域'),
+            //         内部 L287 foreach 把 og:* 一次性 push 到 $document->head[]
+            //         (fof-seo extend.php 用 ->content(PageListener::class) 没传 priority, 默认 0)
+            //         而 route callback 在 vendor ForumServiceProvider L162-164 强制 priority=100
+            //         populate() 按 priority DESC 排序 (Frontend.php L51), 我 route 100 先 push
+            //         og:site_name=北极雪屿 到 head[], fof-seo priority 0 后 push og:site_name=极客雪域
+            //         最后 makeHead() L358 array_merge($head, $this->head) 末尾覆盖 → "极客雪域" 胜出
+            //   修法: 把 og:site_name 挪到 ->content($cb, -100) 段, 比 fof-seo priority 0 更后跑
+            //         fof-seo 先 push "极客雪域" → 我后 push "北极雪屿" → last wins = "北极雪屿" ✓
+            //   其他 7 个 og/twitter meta 保留在 route callback, 它们没跟 fof-seo 冲突
+            //   (fof-seo PageListener L198-205 只 set og:site_name/og:type/twitter:card 这 3 个,
+            //   og:title/description/image/url + twitter:title/description/image 都是我独家, 不会冲突)
             // 2) og:title
             $document->head[] = '<meta property="og:title" content="' . htmlspecialchars($ogTitle, ENT_QUOTES) . '">';
             // 3) og:description
@@ -117,7 +127,19 @@ return [
 
             $document->payload['bjxyCurriculum'] = ['boards' => $boards];
             $document->payload['bjxyFeatures'] = $decode('bjxy_features_json', \Ziiven\BjxyWebsite\CurriculumData::getFeatures());
-        }),
+        })
+        // v0.2.0h.a 修 (辉哥 2026-08-10 V 测 V1 P0): og:site_name 挪到 priority -100 的 content callback
+        //   让它比 vendor fof/seo PageListener priority 0 更后跑, last wins = bjxy brandName
+        //   (route callback 在 vendor ForumServiceProvider L162-164 强制 priority=100, 比 fof-seo 0 大, 先跑, 被覆盖)
+        //   详细根因 + 修法见上面 route callback 里 og:site_name 那段的注释
+        //   XSS 防护: htmlspecialchars(..., ENT_QUOTES) 包裹 (跟 route callback 其他 meta 保持一致风格)
+        //   读 bjxy_brand_name setting (跟 '品牌信息' tab 配置联动), 留空 fallback 到默认 '北极雪屿'
+        ->content(function (Document $document) {
+            /** @var SettingsRepositoryInterface $settings */
+            $settings = app(SettingsRepositoryInterface::class);
+            $brandName = $settings->get('bjxy_brand_name') ?: '北极雪屿';
+            $document->head[] = '<meta property="og:site_name" content="' . htmlspecialchars($brandName, ENT_QUOTES) . '">';
+        }, -100),
 
     // v0.1.0l 修: 把 bjxy_* settings 序列化到 forum API document attributes
     //   之前 BjxyPage 走 app.forum.attribute('bjxy_*') 但 bjxy settings 不在 vendor forum.attributes
