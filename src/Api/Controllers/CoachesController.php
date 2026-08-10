@@ -103,16 +103,28 @@ class CoachesController implements RequestHandlerInterface
                 //   前端走 m.trust(c.bio) 渲染 (v0.2.0d about_desc 同模式 + /u/Ziven bio 页面一致)
                 // v0.2.0h 改: 前端走 s9e.TextFormatter.preview (跟 vendor ComposerPostPreview 同模式)
                 //   跟 v0.2.0g.a 冲突: c.bio 是 s9e XML, s9e preview 期望 plain text, s9e 不认识 <t> tag escape 输出字面 `<t><p>...</p></t>`
-                // v0.2.0i.c 改 (辉哥 17:30 反馈, "从 fof user bio 读取时要渲染成 html"):
-                //   服务端走 fof-user-bio formatter->unparse() 把 s9e XML 还原成 plain text
-                //   前端继续走 s9e.TextFormatter.preview (plain text → 重新 parse + render 成 HTML, 跟 ComposerPostPreview 一致)
-                //   XSS 防护: s9e parser 自动 escape 不安全 HTML 标签
-                //   PHP 实验验证 (辉哥 admin user 1 bio):
+                // v0.2.0h (返工) 改 (辉哥 2026-08-10 19:00 反馈, bio 渲染跟 fof user bio 不一致):
+                //   之前 v0.2.0i.c 走 server-side unparse() 拿 plain text, 然后前端 s9e.TextFormatter.preview() 重新 parse + render
+                //   跟 /u/Ziven 个人页 fof user bio 走的 server-side pre-rendered safe HTML (`<t>...</t>`) 模式不同时机, 视觉有差
+                //   (s9e.TextFormatter.preview 会重新 wrap <p> + 加 <br>, 跟 vendor render 输出在 emoji twemoji img 位置 / <br/> 闭合方式有差)
+                //   现在改成: server 端直接走 UserBioFormatter->parse() + ->render() 拿 safe HTML (跟 fof user bio 同模式)
+                //   前端 m.trust(c.bioHtml) 渲染, 跟 /u/<user> bio 页面完全一致
+                //
+                //   兼容性: bjxy 字段时 $d['bio'] 是 plain text (admin 在 bjxy 后台设的, 不是 s9e XML)
+                //   也走 parse + render — plain text parse 出来是 <r><p>...</p></r>, render 出来 <p>...</p> 跟 fof user bio 模式一致
+                //   XSS 防护: UserBioFormatter 走 vendor s9e parser, 自动 escape 不安全 HTML 标签
+                //
+                //   实测 (辉哥 admin user 1 bio):
                 //     DB s9e XML: <t><p>🇨🇳 ...<br/>...</p>\n\n<p>专注...</p></t>
-                //     unparse(): "🇨🇳 ...\n🇨🇳 ...\n🇨🇦 ...\n\n专注..." (plain text)
-                //     前端 s9e preview 重新 parse + render: <p>🇨🇳...<br>\n...</p>\n\n<p>专注...</p> (HTML)
+                //     server 端: unparse → "🇨🇳 ...\n🇨🇳 ...\n🇨🇦 ...\n\n专注..." → parse → render → <p>🇨🇳...<br/>\n...</p>\n\n<p>专注...</p>
+                //     跟 /u/Ziven bio 页面 fof user bio 渲染的 innerHTML 完全一致 (DOM tree 比对: <p> / <br/> / img.emoji 数量 + textContent 一致)
                 $hasFofUserBio = !empty($user->bio);
-                $unparsedBio = $hasFofUserBio ? ($this->userBioFormatter->unparse($user->bio) ?? '') : '';
+                $plainBio = $hasFofUserBio ? ($this->userBioFormatter->unparse($user->bio) ?? '') : ($d['bio'] ?? '');
+                $bioHtml = '';
+                if ($plainBio !== '') {
+                    $xml = $this->userBioFormatter->parse($plainBio);
+                    $bioHtml = $this->userBioFormatter->render($xml);
+                }
                 return [
                     'id' => (int) $user->id,
                     'username' => $user->username,
@@ -122,10 +134,12 @@ class CoachesController implements RequestHandlerInterface
                     'avatarUrl' => (!empty($d['photoUrl'])) ? $d['photoUrl'] : $user->avatar_url,
                     'avatarSrcset' => $user->avatar_srcset,
                     // v0.2.0e 改: bio 优先 user.bio (fof-user-bio, /u/<user> 个人页 bio), fallback 到 bjxy_coach_details.bio
-                    // v0.2.0i.c 改: bio 走 fof-user-bio formatter->unparse() 把 s9e XML 还原 plain text
-                    //   前端 s9e.TextFormatter.preview 拿到 plain text 后正确解析 + 渲染成 HTML (v0.2.0h 设计)
+                    // v0.2.0h (返工) 改: bio 走 plain text (供前端展示用, 其他场景如 alert/notification 可读 plain)
                     //   !empty() 同时检查 null / '' / 0, 让 fof-user-bio 有值时直接 override bjxy 老 bio
-                    'bio' => $hasFofUserBio ? $unparsedBio : ($d['bio'] ?? ''),
+                    'bio' => $plainBio,
+                    // v0.2.0h (返工) 新: bioHtml, server-side pre-rendered safe HTML
+                    //   前端 m.trust(c.bioHtml) 渲染, 跟 /u/Ziven 个人页 fof user bio 渲染模式完全一致
+                    'bioHtml' => $bioHtml,
                     'achievements' => $hasFofUserBio ? '' : ($d['achievements'] ?? ''),
                     'specialties' => $hasFofUserBio ? '' : ($d['specialties'] ?? ''),
                     // v0.2.0g 新: bio_from_fof_user_bio 标记, 告诉前端 bio 来源是 fof-user-bio
@@ -162,7 +176,14 @@ class CoachesController implements RequestHandlerInterface
             // v0.2.0f 改: fof-user-bio 写了时, achievements + specialties 强制空 (跟主路径一致, 辉哥 13:21 反馈)
             // v0.2.0g 改: 跟主路径一致, 加 bio_from_fof_user_bio 标记
             // v0.2.0g.a 改: 跟主路径一致, 走 user->bio 拿 formatter 输出 HTML (前端 m.trust 渲染)
+            // v0.2.0h (返工) 改 (辉哥 2026-08-10 19:00 反馈, 跟主路径一致): server-side parse + render 拿 safe HTML
             $hasFofUserBio = !empty($user->bio);
+            $plainBio = $hasFofUserBio ? ($this->userBioFormatter->unparse($user->bio) ?? '') : ($d['bio'] ?? '');
+            $bioHtml = '';
+            if ($plainBio !== '') {
+                $xml = $this->userBioFormatter->parse($plainBio);
+                $bioHtml = $this->userBioFormatter->render($xml);
+            }
             return [
                 'id' => (int) $user->id,
                 'username' => $user->username,
@@ -171,7 +192,10 @@ class CoachesController implements RequestHandlerInterface
                 'avatarSrcset' => $user->avatar_srcset,
                 // v0.2.0e 改: bio 优先 user.bio (fof-user-bio), fallback bjxy_coach_details.bio
                 // v0.2.0f 改: fof-user-bio 写了时, achievements + specialties 强制空 (跟主路径一致)
-                'bio' => $hasFofUserBio ? $user->bio : ($d['bio'] ?? ''),
+                // v0.2.0h (返工) 改: 走 plain text (前端展示用)
+                'bio' => $plainBio,
+                // v0.2.0h (返工) 新: bioHtml, server-side pre-rendered safe HTML (跟主路径一致)
+                'bioHtml' => $bioHtml,
                 'achievements' => $hasFofUserBio ? '' : ($d['achievements'] ?? ''),
                 'specialties' => $hasFofUserBio ? '' : ($d['specialties'] ?? ''),
                 // v0.2.0g 新: bio_from_fof_user_bio 标记 (跟主路径一致, 辉哥 13:33 反馈)

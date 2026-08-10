@@ -653,33 +653,17 @@ export default class BjxyPage extends Component {
                         m('span', { class: 'bjxy-coach-label' }, '🏆 成就'),
                         m('span', { class: 'bjxy-coach-text' }, c.achievements),
                       ]) : null,
-                      // v0.2.0h 改: bio 走 s9e.TextFormatter.preview 渲染 (辉哥 14:15 反馈)
-                      //   走 vendor s9e/TextFormatter 解析 + 渲染 (跟 vendor ComposerPostPreview 同模式)
-                      //   m.trust 走 mithril escape, 不会渲染 s9e 配置的 BBCode / Markdown / emoji 解析
-                      //   s9e.TextFormatter.preview(text, targetElement) 渲染到 targetElement (DOM 渲染, 不返 string)
-                      //   实测 s9e.TextFormatter 只有 preview method, 没 format (走 m.trust + format 不可行)
-                      //   实测 preview 行为: plain text → wrap in <p>...</p>, emoji → twemoji img tag, BBCode → 解析
-                      //   XSS 防护: s9e parser 自动 escape 不安全 HTML 标签 (跟 v0.2.0d about_desc 一致)
-                      //   没 s9e 时 (fallback): 走 dom.textContent 渲染 (跟 mithril escape 等价)
-                      //   onupdate: 重新渲染 (v0.2.0h bio 不变, onupdate 是 mithril 0.x 必加防 stale)
-                      //   onremove: cleanup 避免内存泄漏 (SOP 158 vendor ComposerPostPreview 模式)
-                      c.bio ? m('div', {
+                      // v0.2.0h (返工) 改 (辉哥 2026-08-10 19:00 反馈, bio 渲染跟 fof user bio 不一致):
+                      //   之前 v0.2.0h (第一次) 走 oncreate + onupdate client-side s9e.TextFormatter.preview (跟 ComposerPostPreview 同模式)
+                      //   跟 fof user bio /u/Ziven 走的 server-side pre-rendered safe HTML (m.trust 渲染) 不同时机, 视觉有差
+                      //   (s9e preview 重新 wrap <p> + 加 <br> 位置跟 vendor render 不完全一致, emoji twemoji img 位置也有差)
+                      //   现在改成 server 端预渲染 (CoachesController 加 bioHtml 字段), 前端 m.trust(c.bioHtml) 直接拿 safe HTML
+                      //   跟 /u/Ziven 个人页 fof user bio 渲染模式完全一致 (DOM tree <p> / <br> / img.emoji 数量 + textContent 一致)
+                      //   XSS 防护: bioHtml 已经过 UserBioFormatter->render() (s9e parser 自动 escape 不安全 HTML 标签), 跟 v0.2.0d about_desc 一致
+                      //   c.bio 字段保留 (API 仍返 plain text) 供后续可能用 (如 alert / notification / search)
+                      c.bioHtml ? m('div', {
                         class: 'bjxy-coach-bio',
-                        oncreate: ({ dom }) => {
-                          if (typeof s9e !== 'undefined' && s9e.TextFormatter && typeof s9e.TextFormatter.preview === 'function') {
-                            s9e.TextFormatter.preview(c.bio, dom);
-                          } else {
-                            dom.textContent = c.bio;
-                          }
-                        },
-                        onupdate: ({ dom }) => {
-                          if (typeof s9e !== 'undefined' && s9e.TextFormatter && typeof s9e.TextFormatter.preview === 'function') {
-                            s9e.TextFormatter.preview(c.bio, dom);
-                          } else {
-                            dom.textContent = c.bio;
-                          }
-                        },
-                      }) : null,
+                      }, m.trust(c.bioHtml)) : null,
                     ]),
                   ]),
                 ]))
