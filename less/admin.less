@@ -895,8 +895,33 @@
 // v0.1.17: 通用设置区样式 (全局设置区第 2 个 tab)
 //   显示 '显示底部 Tab' 开关, 走横向 flex 布局 (info 左, control 右)
 //   复用 .bjxy-visibility-toggle-btn / .bjxy-visibility-toggle-knob (跟 section toggle 视觉一致)
+// v0.2.0i 加 (辉哥 2026-08-11 06:45 反馈): 加 .bjxy-general-field 样式, 限流次数 input 字段
+//   跟 .bjxy-general-toggle 风格一致 (玻璃风 + 圆角 12px + 12-14px 字号)
+//   input 走 vendor FormControl (.FormControl) + 限宽, 数字 input 视觉跟文字 input 一致
 .bjxy-general-content {
     padding: 4px 0 0 0;
+}
+.bjxy-general-field {
+    padding: 16px 20px;
+    background: rgba(255, 255, 255, 0.04);
+    border-radius: 12px;
+    border: 1px solid var(--bjxy-glass-border);
+}
+.bjxy-general-field-label {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--bjxy-text-primary);
+    margin-bottom: 4px;
+    display: block;
+}
+.bjxy-general-field-hint {
+    font-size: 12px;
+    color: var(--bjxy-text-secondary);
+    line-height: 1.5;
+    margin-bottom: 12px;
+}
+.bjxy-general-field-input {
+    max-width: 120px;
 }
 .bjxy-general-toggle {
     display: flex;

@@ -96,9 +96,15 @@ class CreateBookingController implements RequestHandlerInterface
             throw new ValidationException($errors);
         }
 
-        // 2) 限流: 同 IP 1 分钟 1 条
+        // 2) 限流: 同 IP 1 分钟 N 次 (辉哥 2026-08-11 06:45 反馈, v0.2.0i 改可配置)
+        //   之前 v0.1.5 硬编码 "1 分钟 1 次" (SOP 126), 辉哥想放开限制
+        //   改: 读 bjxy_booking_rate_limit_per_minute setting (默认 3, 范围 1-60, admin 通用设置 tab 可改)
+        //   防御: 设 0 负数 fallback 3 (跟 extend.php serializeToForum default 一致)
         //   拿 client IP: 优先 X-Forwarded-For (Flarum 反代场景), fallback REMOTE_ADDR
         $ipAddress = $this->getClientIp($request);
+
+        $rateLimitPerMinute = (int) $this->settings->get('bjxy_booking_rate_limit_per_minute', 3);
+        if ($rateLimitPerMinute < 1) $rateLimitPerMinute = 3;
 
         $oneMinuteAgo = Carbon::now()->subMinute();
         $recentCount = Booking::query()
@@ -106,9 +112,12 @@ class CreateBookingController implements RequestHandlerInterface
             ->where('created_at', '>', $oneMinuteAgo)
             ->count();
 
-        if ($recentCount > 0) {
+        // v0.2.0i 改: > 改 >= (硬编码时 > 0 实际是 1 次, 可配置时 >= N 是 N 次, 跟硬编码行为兼容)
+        //   硬编码 1 次时: recentCount >= 1 (即 > 0) 触发限流, 跟原逻辑等价
+        //   可配置 N 次时: recentCount >= N 触发限流, 允许 N-1 次正常提交
+        if ($recentCount >= $rateLimitPerMinute) {
             throw new ValidationException([
-                'rate_limited' => '1 分钟内同 IP 已提交过预约, 请稍后再试',
+                'rate_limited' => "1 分钟内同 IP 最多可提交 {$rateLimitPerMinute} 次, 请稍后再试",
             ]);
         }
 

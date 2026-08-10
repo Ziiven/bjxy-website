@@ -245,6 +245,14 @@ return [
         //   Booking 提交后 CreateBookingController 走 vendor SendInformationalEmailJob 通知这个邮箱
         //   admin 配这个 setting 时, 通知收件人不一定是 admin user, 可配独立客服邮箱
         ->serializeToForum('bjxy_booking_notify_email', 'bjxy_booking_notify_email')
+        // v0.2.0i (辉哥 2026-08-11 06:45 反馈): 立即预约 IP 限流可配置 (每 IP 1 分钟 N 次, 默认 3)
+        //   之前 v0.1.5 硬编码 "1 分钟 1 次" (SOP 126), 辉哥想放开限制
+        //   走 vendor Extend\Settings::serializeToForum 4 参数模式 (跟 ziven-dress-up seedreamMaxFileSize 一致)
+        //   第 3 参数 'intval' 强转 int (避免 admin 存成 string 4 → server 拿到 '4' 字符串, 4 > 3 误判)
+        //   第 4 参数 3 = server-side default, server 没这 key 时 fallback 3
+        //   防御: 设 0 / 负数时 server-side 仍 fallback 3 (见 CreateBookingController L99-101)
+        //   范围: admin 通用设置 input 限 1-60, 实际生效由 server-side int < 1 fallback 兜底
+        ->serializeToForum('bjxy_booking_rate_limit_per_minute', 'bjxy_booking_rate_limit_per_minute', 'intval', 3)
         // v0.2.0g (辉哥 2026-08-10 7:40 反馈): 10 个 section tab 名称 (全局设置的 3 个 tab 除外)
         //   辉哥: "让每个 section 中的 tab 名字都可以修改, 比如'专业教练'改成'教练团队', 前端 title 跟后端 tab 名保持一致"
         //   key 跟 BJXY_TABS 一一对应 (brand/hero/about/events/features/curriculum/coach/reviews/contact/footer)

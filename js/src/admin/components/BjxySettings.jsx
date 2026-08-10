@@ -161,6 +161,11 @@ export default class BjxySettings extends ExtensionPage {
     //   辉哥 19:37+ 拍板: "里面加一个开关叫'显示底部Tab'，默认关闭，这个开关只有安装了mobile tab时才会展示出来，开启状态时，会在bjxy的前端页面，把下方的mobile tab移除"
     //   state: false = 显示 mobile tab (默认), true = 隐藏 mobile tab
     this.showMobileTab = false;
+    // v0.2.0i 加 (辉哥 2026-08-11 06:45 反馈): 立即预约 IP 限流次数 state
+    //   默认 3 次/分钟/IP, 跟 extend.php serializeToForum default 一致
+    //   admin 通用设置 tab input 字段可改, 范围 1-60 (input min/max 限制)
+    //   防御: 设 0 负数 server-side fallback 3 (见 CreateBookingController L99-101)
+    this.bookingRateLimitPerMinute = 3;
     // v0.2.0: 预约体验后台列表 state (辉哥 2026-08-09 8:14 反馈)
     //   走独立 GET /api/bjxy/bookings 接口, 不存 settings, 切到 'bookings' tab 时 load
     //   bookings: array 预约数据; bookingsLoading: bool loading 状态; bookingsError: string 错误
@@ -311,6 +316,12 @@ export default class BjxySettings extends ExtensionPage {
   //     - 走 /api (forum API) 拿 custom-tab-items, 长度 > 0 = 扩展装了
   //     - 这是 acpl-mobile-tab 通过 RegisterForumTabItems 注册的
   //     - 装上时 custom-tab-items API 至少 1 个 item (默认几个)
+  //
+  // v0.2.0i 改 (辉哥 2026-08-11 06:45 反馈): 拆 renderGeneralSection, 限流字段永远显示
+  //   之前 mobile tab 没装时整段返 empty UI, 限流字段也没机会渲染
+  //   修法: 限流 input 字段独立渲染 (跟 mobile tab 无关, 永远显示)
+  //         mobile tab 开关按需渲染 (没装 mobile tab 扩展时显示 hint 而不是隐藏)
+  //   防御: server-side 也 fallback 3 (见 CreateBookingController L99-101)
   renderGeneralSection() {
     // 检测 mobile tab 扩展是否安装 (走 custom-tab-items store)
     // app.store 在 oninit 之前可能没初始化, try/catch 防止报错
@@ -325,47 +336,79 @@ export default class BjxySettings extends ExtensionPage {
       mobileTabInstalled = false;
     }
 
-    if (!mobileTabInstalled) {
-      return (
-        <div className="bjxy-general-empty">
-          <p>🔧 通用设置</p>
-          <p className="bjxy-general-empty-hint">
-            通用开关会在安装 mobile tab 扩展 (acpl-mobile-tab) 后显示。
-            <br />
-            当前 server 未检测到 mobile tab 扩展 ({mobileTabCount} 个 custom-tab-items)。
-          </p>
-        </div>
-      );
-    }
-
     const on = this.showMobileTab !== false;  // 默认 false (隐藏 mobile tab = 显示, 默认 on)
     // 等等: 辉哥说"默认关闭" + "开启状态时...把下方的mobile tab移除"
     //   开关 on = 移除 mobile tab (隐藏), off = 显示 mobile tab
     //   this.showMobileTab = true = 隐藏 mobile tab (开关 ON)
     //   this.showMobileTab = false = 显示 mobile tab (开关 OFF, 默认)
+
+    // v0.2.0i 改: 限流次数 input 值走 this.bookingRateLimitPerMinute (state), 改即 redraw
+    //   防御: parseInt + 1-60 range 限制, 0 负数 fallback 3 (跟 server-side 一致)
+    const rl = this.bookingRateLimitPerMinute;
     return (
       <div className="bjxy-general-content">
-        <label className={`bjxy-general-toggle ${on ? 'on' : 'off'}`}>
-          <div className="bjxy-general-toggle-info">
-            <div className="bjxy-general-toggle-label">显示底部 Tab</div>
-            <div className="bjxy-general-toggle-hint">
-              开启后, bjxy 前端页面 (geek.ski/bjxy) 会把下方的 mobile tab 移除。
-              <br />
-              当前 server 检测到 <strong>{mobileTabCount}</strong> 个 mobile tab item。
-            </div>
+        {/* v0.2.0i 加: 限流次数 input 字段 (永远显示, 跟 mobile tab 无关) */}
+        <div className="bjxy-general-field">
+          <label className="bjxy-general-field-label">预约限流次数/分钟</label>
+          <div className="bjxy-general-field-hint">
+            每 IP 1 分钟内最多可提交 N 次预约 (默认 3, 范围 1-60)。
+            <br />
+            设为 0 时自动 fallback 到 3 (防御, 避免误关限流)。
+            <br />
+            当前生效: <strong>{rl}</strong> 次/分钟/IP
           </div>
-          <div className="bjxy-general-toggle-control">
-            <span className="bjxy-general-toggle-state">{on ? '已开启' : '已关闭'}</span>
-            <button
-              type="button"
-              className="bjxy-visibility-toggle-btn"
-              onclick={(e) => { e.preventDefault(); this.toggleShowMobileTab(); }}
-              aria-pressed={on}
-            >
-              <span className="bjxy-visibility-toggle-knob" />
-            </button>
+          <input
+            type="number"
+            min="1"
+            max="60"
+            step="1"
+            className="FormControl bjxy-general-field-input"
+            value={rl}
+            onchange={(e) => {
+              const v = parseInt(e.target.value, 10);
+              // 1-60 范围限制, 0 负数 fallback 3
+              if (!isNaN(v) && v >= 1 && v <= 60) {
+                this.bookingRateLimitPerMinute = v;
+              } else {
+                this.bookingRateLimitPerMinute = 3;
+              }
+              m.redraw();
+            }}
+          />
+        </div>
+
+        {/* v0.1.17 保留: mobile tab 开关 (没装 mobile tab 扩展时显示 hint 提示安装) */}
+        {mobileTabInstalled ? (
+          <div className="bjxy-general-field" style={{ marginTop: '16px' }}>
+            <label className={`bjxy-general-toggle ${on ? 'on' : 'off'}`}>
+              <div className="bjxy-general-toggle-info">
+                <div className="bjxy-general-toggle-label">显示底部 Tab</div>
+                <div className="bjxy-general-toggle-hint">
+                  开启后, bjxy 前端页面 (geek.ski/bjxy) 会把下方的 mobile tab 移除。
+                  <br />
+                  当前 server 检测到 <strong>{mobileTabCount}</strong> 个 mobile tab item。
+                </div>
+              </div>
+              <div className="bjxy-general-toggle-control">
+                <span className="bjxy-general-toggle-state">{on ? '已开启' : '已关闭'}</span>
+                <button
+                  type="button"
+                  className="bjxy-visibility-toggle-btn"
+                  onclick={(e) => { e.preventDefault(); this.toggleShowMobileTab(); }}
+                  aria-pressed={on}
+                >
+                  <span className="bjxy-visibility-toggle-knob" />
+                </button>
+              </div>
+            </label>
           </div>
-        </label>
+        ) : (
+          <div className="bjxy-general-empty-hint" style={{ marginTop: '16px' }}>
+            💡 "显示底部 Tab" 开关在安装 mobile tab 扩展 (acpl-mobile-tab) 后显示。
+            <br />
+            当前 server 未检测到 mobile tab 扩展 ({mobileTabCount} 个 custom-tab-items)。
+          </div>
+        )}
       </div>
     );
   }
@@ -1337,6 +1380,13 @@ export default class BjxySettings extends ExtensionPage {
       //   '1' / 'true' = true (隐藏 mobile tab)
       const mtabV = this.data['bjxy_show_mobile_tab'];
       this.showMobileTab = (mtabV === '1' || mtabV === 'true' || mtabV === true);
+      // v0.2.0i 加 (辉哥 2026-08-11 06:45 反馈): 读预约限流次数
+      //   server 没这 key / 0 负数 时 fallback 3 (跟 server-side default 一致, 防御)
+      //   serializeToForum 'intval' callback 把 setting 强转 int, 但 this.data 是 string (raw 序列化)
+      //   仍然 parseInt 一遍防御 (跟 bjxy_events_autoplay_ms 模式一致)
+      const rlV = this.data['bjxy_booking_rate_limit_per_minute'];
+      const rlN = parseInt(rlV, 10);
+      this.bookingRateLimitPerMinute = (!isNaN(rlN) && rlN > 0 && rlN <= 60) ? rlN : 3;
       // v0.1.9: 读 bjxy_section_order_json 同步 tab 顺序
       //   防御: 解析失败 / 不是数组 / 数组里 key 跟 BJXY_TABS 不匹配时 fallback 到默认
       // v0.1.12 改: 兼容旧 11 个 key 数组 (含 'bg'), filter 掉 'bg' 后用剩下 10 个
@@ -1743,6 +1793,11 @@ export default class BjxySettings extends ExtensionPage {
     // v0.1.17: '显示底部 Tab' 开关持久化 (前台 BjxyPage.jsx 读这个 setting 决定是否 hide nav.MobileTab)
     //   '1' = 隐藏 mobile tab, '0' = 显示 mobile tab (默认, 跟辉哥说的 '默认关闭' 一致)
     payload.bjxy_show_mobile_tab = this.showMobileTab ? '1' : '0';
+    // v0.2.0i 加 (辉哥 2026-08-11 06:45 反馈): 预约限流次数持久化
+    //   防御: parseInt + 1-60 range 限制, 0 负数 fallback 3 (跟 server-side 一致)
+    //   跟 payload.bjxy_events_autoplay_ms 同款 range check pattern
+    const rlN = parseInt(this.bookingRateLimitPerMinute, 10);
+    payload.bjxy_booking_rate_limit_per_minute = (!isNaN(rlN) && rlN >= 1 && rlN <= 60) ? String(rlN) : '3';
     // v0.1.33 改 (辉哥 14:38 反馈): 办学特色背景遮罩不透明度持久化 (0-100, 默认 50)
     payload.bjxy_feature_card_overlay_opacity = this.data.bjxy_feature_card_overlay_opacity || '50';
     // v0.1.33 改: filter 条件放宽, 允许只填 bgImageUrl 也保留 (避免新增 '只换背景图' 场景被 filter 掉)
