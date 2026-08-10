@@ -2205,15 +2205,12 @@ button.swiper-pagination-bullet {
   //   !important 覆盖 vendor @phone .Modal.in { top: 0 } (vendor media query 内的 rule, 永远比外面优先)
 }
 
-// 移动端: 覆盖 vendor @phone .Modal.in { top: 0 } → top: 40px
-//   写在 #modal 块外, 避免 less 编译成 #modal #modal 双前缀 (第三轮修)
-//   必加 !important: vendor @phone 段永远比外面优先
-@media @phone {
-  #modal:has(.BookingModal) .BookingModal.in {
-    top: 40px !important;
-  }
-}
-
+// 移动端: v0.2.0h.c 删 (辉哥 V 测 V3 P1 fix, 双标 top 跟 margin-top 40 叠加 → 120px)
+//   v0.2.0h.b 第三轮加的 @media @phone { .BookingModal.in { top: 40px !important } }
+//   实际跟 :has(.BookingModal) 段 .BookingModal { margin: 40px auto 120px } 双重叠加 (mobile 也吃 margin 段, 段不分 media)
+//   mobile 视觉变成 40 ModalManager padding + 40 modal margin + 40 modal top (relative) = 120, 期望 80 跟 desktop 一致
+//   Option B 修法 (oncreate 强制 ModalManager.scrollTop=0) 已能修 v0.2.0h.b P1 (-239 → ?), 删 mobile top 段让 modal 顶部 = 80
+//   vendor @phone .Modal.in { top: 0 } 不再被覆盖, modal 顶部 = 0 + margin 40 = 40 (modal 内部位置), 加 ModalManager padding 40 = 80 视觉
 .BookingModal-wrapper {
     position: relative;
 }

@@ -65,6 +65,47 @@ export default class BookingModal extends Modal {
     this.formError = '';    // 通用错误 (rate_limited / 网络异常)
   }
 
+  // v0.2.0h.c 改 (辉哥 V 测 V3 抓 P1, mobile modal 顶部对齐):
+  //   现象: Puppeteer 实测 mobile 390x844 modal.boundingClientRect().top = -239 (头部完全滚到 viewport 之外)
+  //   根因 (SOP 218 实战沉淀):
+  //     vendor ModalManager 是 overflow-y:auto 的 scrollable container
+  //     mobile 长 modal (height 1002 > viewport 844) 触发 ModalManager scroll
+  //     ModalManager 默认 scroll-end 行为: scrollTop = scrollHeight - clientHeight = 359
+  //     modal 自身 position:relative + top:40px + margin-top:40px (v0.2.0h.b less 改的) = 视觉 80px
+  //     但 ModalManager scrollTop=359 把 modal 顶部 scroll 走了, 实际视觉 -239
+  //     Coder v0.2.0h.b 改的 less .BookingModal.in { top: 40px !important } 在 modal 自身, 被 ModalManager scrollTop 抵消
+  //     ⚠️ 二次根因 (v0.2.0h.c debug 实战): vendor ModalManager.tsx L133-134 focus trap.activate() 也会改 scrollTop
+  //        focus-trap 库 activate 时 focus 第一个 focusable 元素, 浏览器自动 scrollIntoView 让它可见
+  //        BookingModal 第一个 focusable 元素是底部 input, 把 ModalManager 滚到 359
+  //        只在 oncreate 设一次 scrollTop=0 不够 — focus trap 跑完又滚回去
+  //   修法 (Option B 干净, V 测 V3 建议 + 实测可行):
+  //     oncreate 设一次 (element mount 完立即) + onready rAF 设第二次 (animateShow transitionend 完, focus trap activate 完)
+  //     两次兜底, 确保最终 scrollTop=0
+  //     长 modal 用户可手动滚 (不锁 overflow, 不影响其他 modal — 只对 .BookingModal 生效)
+  //   不采用:
+  //     A. .ModalManager:has(.BookingModal) { overflow: hidden } — 长 modal 截断
+  //     C. modal position: fixed — 跟 vendor 冲突
+  //     D. hook vendor ModalManager.onShow — 复杂, 改 vendor 路径
+  oncreate(vnode) {
+    super.oncreate(vnode);
+    this._scrollManagerToTop();
+  }
+
+  // v0.2.0h.c 加 (兜底): animateShow transitionend 后 (Modal.tsx L184) 触发, 此时 focus trap 已 activate
+  //   再设一次 scrollTop=0, 防止 focus trap 把 ModalManager 滚回去
+  onready() {
+    super.onready();
+    // rAF 后再设, 等 focus trap 跑完所有 focus 操作
+    requestAnimationFrame(() => this._scrollManagerToTop());
+  }
+
+  _scrollManagerToTop() {
+    const manager = this.element && this.element.parentNode;
+    if (manager && manager.classList && manager.classList.contains('ModalManager')) {
+      manager.scrollTop = 0;
+    }
+  }
+
   // 翻译 helper
   _t(key, fallback) {
     try {
