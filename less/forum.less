@@ -849,11 +849,22 @@
     word-break: break-word;
 }
 .bjxy-coach-bio {
-    font-size: 13px;
+    // v0.2.0h.d 改 (辉哥 2026-08-11 01:11 反馈, V 测 V4 漏报): mobile 端 bjxy-coach-bio 容器跟 fof UserBio-content 视觉对齐
+    //   V 测 V4 报告说 "lineHeight/fontSize/margin 三项 0 差" 但辉哥说 mobile 视觉还是不同. 真实差异在 container (不是 <p> 元素), V 测 V4 漏报
+    //   Mavis grep less 找到 4 个差异 (SOP 211 实战 — 不盲信 V 测 / Mavis 调研, 必实测验证):
+    //     1. container font-size 13px vs 14px (虽然 <p> 元素继承 14px 一致, 但 container 字号差)
+    //     2. container margin-top 8px + padding-top 8px = 16px 上间距 vs fof 父 margin-top 20px + .UserBio-content 0 padding
+    //     3. white-space: pre-wrap vs fof normal — bjxy 保留 \n 但 s9e render 出来 <p> 段间已有 \n\n, pre-wrap 重复渲染
+    //     4. 没有 border-radius 圆角 vs fof .UserBio 有 var(--border-radius) — 视觉边缘圆角差异
+    //   最可能的主因: 第 2 点 (container 上间距 16px vs 20px 差 4px) + 第 3 点 (pre-wrap 跟 normal 段间视觉差)
+    //   修法: 改容器 fontSize 13 → 14 / 删 margin-top 8px + padding-top 8px / 删 white-space: pre-wrap (3 个差异)
+    //   border-radius 差异 (第 4 点) 暂时保留 — fof 圆角是 parent .UserBio 控制的, bjxy .bjxy-coach-bio 没父级包圆角容器, 加 border-radius 自己也是矩形效果, 等辉哥反馈再说
+    font-size: 14px;  // v0.2.0h.d 改: 13 → 14 跟 fof UserBio-content 一致
     line-height: 1.5;  // v0.2.0h.b 改 (辉哥 23:18 反馈, Puppeteer 实测): 1.7 → 1.5 跟 fof UserBio-content 一致
     color: var(--bjxy-text-soft);
-    margin-top: 8px;
-    padding-top: 8px;
+    // v0.2.0h.d 改: 删 margin-top 8px + padding-top 8px (合计 16px 上间距)
+    //   之前是为了跟 specialties/achievements 段分隔, 现在 v0.2.0f fof-user-bio 写了时强制空这两个段
+    //   分割由父 .bjxy-coach-info 容器处理, 不需要 bjxy-coach-bio 自身再 margin
     // v0.2.0g 改: 条件式 border-top, 默认没 (fof-user-bio 写时), bjxy 走 bjxy_coach_details 全部字段时才有
     //   之前 v0.1.0o 加的 1px dashed 分割线是为了分隔 bio 跟 specialties/achievements 段
     //   现在 fof-user-bio 写了时 specialties/achievements 强制空 (v0.2.0f), 分割线下面没内容, 显得突兀, 隐藏
@@ -863,11 +874,11 @@
     .bjxy-coach:not(.bjxy-coach--has-fof-user-bio) & {
         border-top: 1px dashed var(--bjxy-border);
     }
-    // v0.2.0e 改: bio 走 fof-user-bio (user.bio, plain text + \n), 加 white-space: pre-wrap 让 \n 渲染为换行
-    //   之前 bjxy_coach_details.bio 是 admin 手动输入短句, 没 \n 不需要 pre-wrap
-    //   现在 fof-user-bio 是 admin 在 /u/<user> 写的完整 bio, 多行 \n 分隔, 必须 pre-wrap 保留换行
-    //   mithril escape 不会动 \n, 浏览器默认 white-space: normal 不换行, 必须 pre-wrap
-    white-space: pre-wrap;
+    // v0.2.0h.d 删 white-space: pre-wrap — 跟 fof UserBio-content (默认 normal) 一致
+    //   bioHtml 走 s9e render 输出 <p> 段 + <br/> 行内换行 (s9e TextFormatter + Litedown markdown, vendor/fof/user-bio/src/Formatter/UserBioFormatter.php)
+    //   浏览器渲染 HTML 标签, 用 white-space: normal (默认) 也会按 HTML 标签语义渲染, pre-wrap 对已渲染 HTML 标签多余
+    //   实测 bioHtml 数据: <p>段1<br/>\n<br/>\n段2<br/></p>\n\n<p>段3</p> — <p> 自动 block, <br/> 换行, 段间浏览器自动换行
+    //   之前 v0.2.0e 加 pre-wrap 是基于 v0.2.0f 之前 plain text 路径 (bio 字段 raw \n), v0.2.0f 改 s9e 预渲染 bioHtml 后 pre-wrap 已多余
     // v0.2.0h.b 改 (辉哥 23:18 反馈, Puppeteer 实测): bio 段间对齐 fof UserBio-content
     //   改前实测 (SOP 211 实测验证, 不盲信 Mavis 调研):
     //     bjxy .bjxy-coach-bio: fontSize 13px, lineHeight 22.1px (1.7), <p> lineHeight 23.8px
@@ -885,7 +896,6 @@
         line-height: inherit;  // 1.5 来自 container, 不被 .bjxy-section p { line-height: 1.7 } 覆盖
         // margin 不动 — UA default 0/10px 跟 fof 一致, 没必要改
     }
-    // fontSize 13px (bjxy) vs 14px (fof) 保留差异 — 13px 是 bjxy 风格, 辉哥没说要改
 }
 
 // v0.1.31 删: swiper 左右导航箭头 (辉哥 11:48 反馈, 留蓝点分页器 + 滑动功能)
