@@ -178,7 +178,24 @@ return [
         // v0.2.0 (辉哥 2026-08-09 8:14 反馈): 预约体验通知邮箱 (可选, 留空 fallback admin user id=1)
         //   Booking 提交后 CreateBookingController 走 vendor SendInformationalEmailJob 通知这个邮箱
         //   admin 配这个 setting 时, 通知收件人不一定是 admin user, 可配独立客服邮箱
-        ->serializeToForum('bjxy_booking_notify_email', 'bjxy_booking_notify_email'),
+        ->serializeToForum('bjxy_booking_notify_email', 'bjxy_booking_notify_email')
+        // v0.2.0g (辉哥 2026-08-10 7:40 反馈): 10 个 section tab 名称 (全局设置的 3 个 tab 除外)
+        //   辉哥: "让每个 section 中的 tab 名字都可以修改, 比如'专业教练'改成'教练团队', 前端 title 跟后端 tab 名保持一致"
+        //   key 跟 BJXY_TABS 一一对应 (brand/hero/about/events/features/curriculum/coach/reviews/contact/footer)
+        //   全局设置 3 个 tab (背景渐变/通用设置/用户预约) 不参与, 它们在 .bjxy-global-section 独立区
+        //   后台 BjxySettings.jsx 每个 section 内容顶部加 text input, 默认值 = BJXY_TABS[i].label
+        //   前端 BjxyPage.jsx 6 个 h2 (about/events/features/curriculum/coach/reviews/contact) 优先读
+        //   app.forum.attribute('bjxy_section_label_<key>'), fallback 保留原 hardcode 文案
+        ->serializeToForum('bjxy_section_label_brand', 'bjxy_section_label_brand')
+        ->serializeToForum('bjxy_section_label_hero', 'bjxy_section_label_hero')
+        ->serializeToForum('bjxy_section_label_about', 'bjxy_section_label_about')
+        ->serializeToForum('bjxy_section_label_events', 'bjxy_section_label_events')
+        ->serializeToForum('bjxy_section_label_features', 'bjxy_section_label_features')
+        ->serializeToForum('bjxy_section_label_curriculum', 'bjxy_section_label_curriculum')
+        ->serializeToForum('bjxy_section_label_coach', 'bjxy_section_label_coach')
+        ->serializeToForum('bjxy_section_label_reviews', 'bjxy_section_label_reviews')
+        ->serializeToForum('bjxy_section_label_contact', 'bjxy_section_label_contact')
+        ->serializeToForum('bjxy_section_label_footer', 'bjxy_section_label_footer'),
 
     (new Extend\Frontend('admin'))
         ->js(__DIR__ . '/js/dist/admin.js')

@@ -394,10 +394,11 @@ export default class BjxyPage extends Component {
       case 'hero':       return this.renderHeroSection(s);
       case 'about':      return this.renderAboutSection(s);
       case 'events':     return this.renderEventsSection(events, s);
-      case 'features':   return this.renderFeaturesSection(visibleFeatures);
-      case 'curriculum': return this.renderCurriculumSection(curriculum);
+      // v0.2.0g 改 (辉哥 2026-08-10 7:40 反馈): 3 个 renderSection 都加 s 参数 (s() helper 用来读 bjxy_section_label_*)
+      case 'features':   return this.renderFeaturesSection(visibleFeatures, s);
+      case 'curriculum': return this.renderCurriculumSection(curriculum, s);
       case 'coach':      return this.renderCoachSection(s);
-      case 'reviews':    return this.renderReviewsSection(reviews);
+      case 'reviews':    return this.renderReviewsSection(reviews, s);
       case 'contact':    return this.renderContactSection(s);
       default: return null;
     }
@@ -433,7 +434,9 @@ export default class BjxyPage extends Component {
   renderAboutSection(s) {
     return m('section', { class: 'bjxy-section', id: 'about', key: 'sec-about' }, [
       m('div', { class: 'bjxy-sub' }, s('bjxy_about_sub', 'ABOUT US')),
-      m('h2', null, s('bjxy_about_title', '关于北极雪屿')),
+      // v0.2.0g 改 (辉哥 2026-08-10 7:40 反馈): h2 改读 bjxy_section_label_about, 跟后台 '关于我们' tab 联动
+      //   之前用 bjxy_about_title 单独字段, 现在统一走 bjxy_section_label_<key> 跟其他 5 个 section 一致
+      m('h2', null, s('bjxy_section_label_about', '关于北极雪屿')),
       // v0.2.0d (辉哥 11:55 反馈): bjxy_about_desc 支持 HTML 渲染
       // admin 走 textareaField (不变, 支持输入 HTML), 前端用 m.trust() 渲染 HTML
       // 改 <p> → <div> 是因为 m.trust 可能包含多行 HTML (h1/h2/ul 等), p 不能嵌套块级元素
@@ -453,7 +456,8 @@ export default class BjxyPage extends Component {
   renderEventsSection(events, s) {
     return m('section', { class: 'bjxy-section bjxy-section-alt', id: 'events', key: 'sec-events' }, [
       m('div', { class: 'bjxy-sub' }, 'EVENTS'),
-      m('h2', null, '活动展示'),
+      // v0.2.0g 改 (辉哥 2026-08-10 7:40 反馈): h2 改读 bjxy_section_label_events, 跟后台 '活动展示' tab 联动
+      m('h2', null, s('bjxy_section_label_events', '活动展示')),
       events.length > 0
         ? m('div', { class: 'bjxy-event-swiper swiper', oncreate: (vnode) => this.initSwiper(vnode) }, [
             m('div', { class: 'swiper-wrapper' },
@@ -534,12 +538,14 @@ export default class BjxyPage extends Component {
   //   移动端保持 1 列堆叠 (less @phone media query)
   //   每条支持背景图 + 黑色遮罩层 (opacity 走 bjxy_feature_card_overlay_opacity setting, 默认 0.5)
   //   有背景图时文字改白 (黑遮罩后深色文字看不清)
-  renderFeaturesSection(visibleFeatures) {
+  renderFeaturesSection(visibleFeatures, s) {
     const overlayOpacity = parseInt(app.forum.attribute('bjxy_feature_card_overlay_opacity') || '50', 10) / 100;
     return m('section', { class: 'bjxy-section bjxy-section-alt bjxy-features-glass', id: 'features', key: 'sec-features' }, [
       m('div', { class: 'bjxy-section-head' }, [
         m('div', { class: 'bjxy-features-eyebrow' }, 'Why Choose Us'),
-        m('h2', null, '为什么选择北极雪屿'),
+        // v0.2.0g 改 (辉哥 2026-08-10 7:40 反馈): h2 改读 bjxy_section_label_features
+        //   之前是 hardcode '为什么选择北极雪屿' 跟后台 '办学特色' tab 不一致, 现在同步
+        m('h2', null, s('bjxy_section_label_features', '办学特色')),
         m('p', { class: 'bjxy-features-sub' }, '从环境到教练, 从课程到装备, 每一个细节都为你精心准备'),
       ]),
       m('div', { class: 'bjxy-feature-grid' }, visibleFeatures.map((f, i) => m('div', {
@@ -565,10 +571,13 @@ export default class BjxyPage extends Component {
 
   // 教学体系
   // v0.1.0s 改: boards 数组任意多类型
-  renderCurriculumSection(curriculum) {
+  renderCurriculumSection(curriculum, s) {
     return m('section', { class: 'bjxy-section bjxy-section-alt', id: 'curriculum', key: 'sec-curriculum' }, [
       m('div', { class: 'bjxy-sub' }, 'CURRICULUM'),
-      m('h2', null, curriculum.boards.reduce((sum, b) => sum + b.levels.length, 0) + ' 级教学体系'),
+      // v0.2.0g 改 (辉哥 2026-08-10 7:40 反馈): h2 改读 bjxy_section_label_curriculum
+      //   整个 string 都可改 (因为带数字 <n> 级教学体系, 整个写进 setting 更简单)
+      //   fallback 保留数字 + '级教学体系' 跟之前一致 (跟 tab '教学体系' 配套)
+      m('h2', null, s('bjxy_section_label_curriculum', curriculum.boards.reduce((sum, b) => sum + b.levels.length, 0) + ' 级教学体系')),
       m('div', { class: 'bjxy-curri-tabs' }, [
         curriculum.boards.map((b, i) => m('div', {
           class: 'bjxy-curri-tab' + (this.activeBoard === i ? ' active' : ''),
@@ -596,7 +605,9 @@ export default class BjxyPage extends Component {
   renderCoachSection(s) {
     return m('section', { class: 'bjxy-section', id: 'coach', key: 'sec-coach' }, [
       m('div', { class: 'bjxy-sub' }, 'COACHES'),
-      m('h2', null, '专业教练'),
+      // v0.2.0g 改 (辉哥 2026-08-10 7:40 反馈): h2 改读 bjxy_section_label_coach
+      //   之前 hardcode '专业教练', 辉哥本意可以改成 '教练团队' 等
+      m('h2', null, s('bjxy_section_label_coach', '专业教练')),
       this.loadingCoaches
         ? m('p', null, '加载中...')
         : this.coaches.length === 0
@@ -680,10 +691,11 @@ export default class BjxyPage extends Component {
 
   // 评价
   // v0.1.6a: 大众点评风格 评价+图片
-  renderReviewsSection(reviews) {
+  renderReviewsSection(reviews, s) {
     return m('section', { class: 'bjxy-section bjxy-section-alt', id: 'reviews', key: 'sec-reviews' }, [
       m('div', { class: 'bjxy-sub' }, 'REVIEWS'),
-      m('h2', null, '学员评价'),
+      // v0.2.0g 改 (辉哥 2026-08-10 7:40 反馈): h2 改读 bjxy_section_label_reviews
+      m('h2', null, s('bjxy_section_label_reviews', '学员评价')),
       reviews.length > 0
         ? m('div', { class: 'bjxy-review-grid' }, reviews.map((r, i) => {
             const photos = Array.isArray(r.photos) ? r.photos : (r.photoUrl ? [r.photoUrl] : []);
@@ -740,7 +752,8 @@ export default class BjxyPage extends Component {
     })();
     return m('section', { class: 'bjxy-section', id: 'contact', key: 'sec-contact' }, [
       m('div', { class: 'bjxy-sub' }, 'CONTACT'),
-      m('h2', null, '联系我们'),
+      // v0.2.0g 改 (辉哥 2026-08-10 7:40 反馈): h2 改读 bjxy_section_label_contact
+      m('h2', null, s('bjxy_section_label_contact', '联系我们')),
       m('p', { class: 'bjxy-section-desc' }, '有任何问题, 欢迎随时联系, 我们 24 小时内回复'),
       m('div', { class: 'bjxy-contact-grid' }, [
         // v0.2.0i 新加: B 方案左大图 (mobile only, desktop 默认 display: none)

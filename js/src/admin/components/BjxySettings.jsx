@@ -579,6 +579,30 @@ export default class BjxySettings extends ExtensionPage {
     ]);
   }
 
+  // v0.2.0g 改 (辉哥 2026-08-10 7:40 反馈): section tab 名称编辑
+  //   走 bjxy_section_label_<key> setting, 跟前端 h2 共享, 后台改名字前端立即同步
+  //   跟普通 field() 不同: input 视觉跟 tab label 风格一致, 提示用户这个跟前端联动
+  //   key = section key (brand/hero/about/events/features/curriculum/coach/reviews/contact/footer)
+  //   defaultValue = BJXY_TABS 中对应的 label (跟后台 tab 显示名一致)
+  sectionLabelField(key, defaultValue) {
+    const settingKey = 'bjxy_section_label_' + key;
+    const s = this._s();
+    return m('div', { class: 'BjxyField-row BjxyField-row--section-label' }, [
+      m('div', { class: 'BjxyField-label' }, [
+        m('span', null, 'Section Tab 名称'),
+        m('span', { class: 'BjxyField-hint' }, '前台 '),
+        m('code', null, '<h2>'),
+        m('span', { class: 'BjxyField-hint' }, ' 标题 + 后台 tab 显示名同步 (留空 fallback 到默认)'),
+      ]),
+      m('input', {
+        class: 'BjxyField-input',
+        value: (this.data[settingKey] != null ? this.data[settingKey] : (s(settingKey) || '')) || defaultValue,
+        placeholder: defaultValue,
+        oninput: (e) => { this.data[settingKey] = e.target.value; },
+      }),
+    ]);
+  }
+
   // v0.1.0m 颜色选择器: 走 vendor ColorPreviewInput (跨浏览器一致)
   colorField(label, key, defaultColor) {
     const s = this._s();
@@ -689,6 +713,8 @@ export default class BjxySettings extends ExtensionPage {
       <div className="bjxy-section glass-card">
         {this.sectionHead('🏔', '品牌信息 (全局)', null, 'brand')}
         <div className="bjxy-section-content">
+          {/* v0.2.0g: section tab 名称编辑 (跟前端 brand 段联动, brand 段没显式 h2 但 section 顺序由 tabOrder 决定) */}
+          {this.sectionLabelField('brand', '品牌信息')}
           {this.field('品牌名', 'bjxy_brand_name', '北极雪屿')}
           {this.field('品牌副标', 'bjxy_brand_slogan', '室内滑雪 · 全国连锁')}
           {this.fileField('Logo 图片', 'bjxy_brand_logo_url', 'logo.svg / png (走 ziven-core COS)')}
@@ -727,6 +753,8 @@ export default class BjxySettings extends ExtensionPage {
       <div className="bjxy-section glass-card">
         {this.sectionHead('🖼', 'Hero 区域', null, 'hero')}
         <div className="bjxy-section-content">
+          {/* v0.2.0g: section tab 名称编辑 (跟前端 hero 段联动, hero 段没显式 h2 但 section 顺序由 tabOrder 决定) */}
+          {this.sectionLabelField('hero', 'Hero 区域')}
           {this.field('主标题', 'bjxy_hero_title', '探索极致的滑雪体验。')}
           {this.field('副标题', 'bjxy_hero_subtitle', '专注滑雪领域的全国连锁机构...')}
           {this.fileField('浅色模式 banner', 'bjxy_hero_banner_light', '1920×600 推荐')}
@@ -746,6 +774,8 @@ export default class BjxySettings extends ExtensionPage {
       <div className="bjxy-section glass-card">
         {this.sectionHead('📖', '关于我们', null, 'about')}
         <div className="bjxy-section-content">
+          {/* v0.2.0g: section tab 名称编辑 (跟前端 about 段 h2 联动, 取代 bjxy_about_title) */}
+          {this.sectionLabelField('about', '关于我们')}
           {this.field('小标题', 'bjxy_about_sub', 'ABOUT US')}
           {this.field('主标题', 'bjxy_about_title', '关于北极雪屿')}
           {this.textareaField('描述', 'bjxy_about_desc', '北极雪屿室内滑雪成立于 2024 年...')}
@@ -768,6 +798,8 @@ export default class BjxySettings extends ExtensionPage {
       <div className="bjxy-section glass-card">
         {this.sectionHead('✨', '办学特色 (6 个卡片)', null, 'features')}
         <div className="bjxy-section-content">
+          {/* v0.2.0g: section tab 名称编辑 (跟前端 features 段 h2 联动) */}
+          {this.sectionLabelField('features', '办学特色')}
           {/* v0.1.33 改: 背景遮罩不透明度设置 (0-100, 整数, 默认 50) */}
           {this.field('背景遮罩不透明度 (0-100)', 'bjxy_feature_card_overlay_opacity', '50', 'number')}
           <div className="BjxyField-array BjxyField-features">
@@ -820,6 +852,8 @@ export default class BjxySettings extends ExtensionPage {
       <div className="bjxy-section glass-card">
         {this.sectionHead('📚', '教学体系 (' + this.boards.length + ' 种类型 / 共 ' + this.boards.reduce((s, b) => s + b.levels.length, 0) + ' 级)', null, 'curriculum')}
         <div className="bjxy-section-content">
+          {/* v0.2.0g: section tab 名称编辑 (跟前端 curriculum 段 h2 联动, 整个 string 可改) */}
+          {this.sectionLabelField('curriculum', '教学体系')}
           {this.boards.map((board, bi) => m('div', { class: 'BjxyField-board', key: 'board' + bi }, [
             m('div', { class: 'BjxyField-board-head' }, [
               m('input', {
@@ -867,6 +901,8 @@ export default class BjxySettings extends ExtensionPage {
       <div className="bjxy-section glass-card">
         {this.sectionHead('👥', '教练展示', null, 'coach')}
         <div className="bjxy-section-content">
+          {/* v0.2.0g: section tab 名称编辑 (跟前端 coach 段 h2 联动, 辉哥 7:40 反馈: '专业教练' 改 '教练团队') */}
+          {this.sectionLabelField('coach', '教练展示')}
           <div className="BjxyField-label">选择用户组 (多选)</div>
           <div className="BjxyField-group-select">
             {this.allGroups.length === 0 ? <div className="BjxyField-hint">加载中...</div> : null}
@@ -899,6 +935,8 @@ export default class BjxySettings extends ExtensionPage {
       <div className="bjxy-section glass-card">
         {this.sectionHead('💬', '学员评价 (结构化 JSON, 多图)', null, 'reviews')}
         <div className="bjxy-section-content">
+          {/* v0.2.0g: section tab 名称编辑 (跟前端 reviews 段 h2 联动) */}
+          {this.sectionLabelField('reviews', '学员评价')}
           <div
             className="BjxyField-array BjxyField-array-wide BjxyField-sortable"
             oncreate={(vnode) => this.initSortable(vnode, 'reviews')}
@@ -986,6 +1024,8 @@ export default class BjxySettings extends ExtensionPage {
       <div className="bjxy-section glass-card">
         {this.sectionHead('🎯', '活动展示 (swiper 轮播多图)', null, 'events')}
         <div className="bjxy-section-content">
+          {/* v0.2.0g: section tab 名称编辑 (跟前端 events 段 h2 联动) */}
+          {this.sectionLabelField('events', '活动展示')}
           {/* v0.1.6g: 活动 swiper 自动轮播间隔设置 */}
           <div className="BjxyField-row">
             <div className="BjxyField-label">轮播间隔 (毫秒)</div>
@@ -1093,6 +1133,8 @@ export default class BjxySettings extends ExtensionPage {
       <div className="bjxy-section glass-card">
         {this.sectionHead('📞', '联系我们', null, 'contact')}
         <div className="bjxy-section-content">
+          {/* v0.2.0g: section tab 名称编辑 (跟前端 contact 段 h2 联动) */}
+          {this.sectionLabelField('contact', '联系我们')}
           {/* 电话 (单值保留) */}
           {this.field('电话', 'bjxy_contact_phone', '400-888-8888')}
 
@@ -1159,6 +1201,8 @@ export default class BjxySettings extends ExtensionPage {
       <div className="bjxy-section glass-card">
         {this.sectionHead('🦶', '页脚 / 备案号', null, 'footer')}
         <div className="bjxy-section-content">
+          {/* v0.2.0g: section tab 名称编辑 (跟前端 footer 段联动, footer 没显式 h2 但可改) */}
+          {this.sectionLabelField('footer', '页脚 / 备案')}
           {this.field('ICP 备案号', 'bjxy_icp_number', '2026xxxxxx')}
           {this.field('公安备案号', 'bjxy_police_number', '11010102000000')}
           {this.field('网安链接', 'bjxy_police_link', 'http://www.beian.gov.cn/portal/registerSystemInfo')}

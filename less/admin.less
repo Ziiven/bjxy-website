@@ -302,6 +302,23 @@
 .BjxyField-row {
     display: contents;
 }
+// v0.2.0g 改 (辉哥 2026-08-10 7:40 反馈): section label field 加视觉区分
+//   上方 margin-top 20 + border-top 1px 虚线 (跟其他 field 视觉分隔, 强调这个是特殊联动字段)
+//   .BjxyField-hint 用 muted color + 10px 字号, 提示用户这个跟前端 h2 联动
+.BjxyField-row--section-label {
+    display: contents;
+    margin-top: 20px;
+    padding-top: 16px;
+    border-top: 1px dashed var(--bjxy-glass-border);
+    .BjxyField-label {
+        font-weight: 600;
+        color: var(--bjxy-text-primary);
+    }
+    .BjxyField-input {
+        font-weight: 600;
+        background: rgba(45, 123, 229, 0.08);
+    }
+}
 .BjxyField-label {
     font-size: 12px;
     padding-top: 7px;
