@@ -677,9 +677,24 @@
     border: 1px solid var(--bjxy-border);
     border-radius: 8px;
     position: relative;
-    transition: all 0.2s;
+    // v0.2.0h (返工) 改 (辉哥 2026-08-10 19:00 反馈, 教学卡片简单 :hover 改 scroll 动画):
+    //   之前 all 0.2s + :hover { border-color; translateY(-2px) } 是简单 hover 效果
+    //   现在改 scroll 动画: 卡片默认 opacity: 0.5, 进入 viewport 50% 时加 .bjxy-level-card--visible
+    //   (JS IntersectionObserver 加, 见 BjxyPage.jsx renderCurriculumSection)
+    //   CSS transition 跟 .bjxy-level-card--visible 配合: 边框蓝色 + opacity 1, 0.4s ease 平滑过渡
+    //   退出 viewport 50% 时移除 .bjxy-level-card--visible, CSS transition 反向平滑 (border-color + opacity 回 0.5)
+    transition: border-color 0.4s ease, opacity 0.4s ease;
+    opacity: 0.5;
 }
-.bjxy-level-card:hover { border-color: var(--bjxy-blue-light); transform: translateY(-2px); }
+// v0.2.0h (返工) 删: 原 .bjxy-level-card:hover { border-color; transform: translateY(-2px); }
+//   跟新 scroll 动画冲突 (hover 时同时有 :hover 蓝边 + 滚动蓝边, 视觉混乱)
+//   现在卡片视觉反馈完全靠 IntersectionObserver + .bjxy-level-card--visible
+// v0.2.0h (返工) 新: 滚动进入视口时给卡片加的 visible 修饰符 (跟 BEM 风格)
+//   CSS selector .bjxy-level-card--visible 单独样式, 不依赖 :hover 状态
+.bjxy-level-card--visible {
+    border-color: var(--bjxy-blue-light);
+    opacity: 1;
+}
 .bjxy-level-num {
     position: absolute;
     top: 8px;

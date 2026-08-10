@@ -571,6 +571,35 @@ export default class BjxyPage extends Component {
 
   // 教学体系
   // v0.1.0s 改: boards 数组任意多类型
+  // v0.2.0h (返工) 改 (辉哥 2026-08-10 19:00 反馈, 教学卡片简单 :hover 改 scroll 动画):
+  //   之前 :hover 触发蓝边 + translateY, 辉哥要"随着下面下拉, 每个卡片边框逐一展示/消失"
+  //   改: IntersectionObserver 监听 .bjxy-level-card, 进入 viewport 50% 时 add .bjxy-level-card--visible
+  //   (border-color 蓝 + opacity 1, 0.4s ease 过渡), 退出时 remove (回 opacity 0.5)
+  //   关键 SOP 158: onremove cleanup observer.disconnect() 避免内存泄漏 (card DOM 被 mithril 移除后 observer 还引用)
+  //   tab 切换 activeBoard: mithril 复用 .bjxy-curri-list 容器, 但 children (cards) 全换, onupdate 重 observe 新 cards
+  //   跟 .bjxy-coach-swiper (v0.1.30 peek) 模式不同 — curriculum cards 是 grid 不是 carousel
+  setupLevelObserver(dom) {
+    if (!dom) return;
+    if (dom._levelObserver) {
+      dom._levelObserver.disconnect();
+      dom._levelObserver = null;
+    }
+    const cards = dom.querySelectorAll('.bjxy-level-card');
+    if (cards.length === 0) return;
+    // rootMargin '0px 0px -50% 0px' = 视口底部 50% 收缩 (卡片进入 viewport 顶部 50% 区域才触发)
+    // threshold 0 = 卡片跟 rootMargin 重叠就触发 (默认)
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('bjxy-level-card--visible');
+        } else {
+          entry.target.classList.remove('bjxy-level-card--visible');
+        }
+      });
+    }, { rootMargin: '0px 0px -50% 0px', threshold: 0 });
+    cards.forEach(card => observer.observe(card));
+    dom._levelObserver = observer;
+  }
   renderCurriculumSection(curriculum, s) {
     return m('section', { class: 'bjxy-section bjxy-section-alt', id: 'curriculum', key: 'sec-curriculum' }, [
       m('div', { class: 'bjxy-sub' }, 'CURRICULUM'),
@@ -585,7 +614,21 @@ export default class BjxyPage extends Component {
           key: 'tab' + i,
         }, b.name + ' (' + b.levels.length + ' 级)')),
       ]),
-      m('div', { class: 'bjxy-curri-list' },
+      // v0.2.0h (返工) 改: .bjxy-curri-list 加 oncreate/onupdate/onremove 管理 IntersectionObserver
+      //   oncreate 初次渲染时 observe 当前 activeBoard 的所有 cards
+      //   onupdate 每次 activeBoard 切换 (mitthril re-render) 时 disconnect 老的 + observe 新的
+      //   onremove 卸载时 cleanup observer.disconnect() 防内存泄漏 (SOP 158 模式)
+      m('div', {
+        class: 'bjxy-curri-list',
+        oncreate: ({ dom }) => this.setupLevelObserver(dom),
+        onupdate: ({ dom }) => this.setupLevelObserver(dom),
+        onremove: ({ dom }) => {
+          if (dom && dom._levelObserver) {
+            dom._levelObserver.disconnect();
+            dom._levelObserver = null;
+          }
+        },
+      },
         (curriculum.boards[this.activeBoard] ? curriculum.boards[this.activeBoard].levels : []).map((l, i) => m('div', { class: 'bjxy-level-card', key: 'c' + i }, [
           m('div', { class: 'bjxy-level-num' }, 'Lv ' + (i + 1)),
           m('div', { class: 'bjxy-level-lvl' }, l.level || ''),
