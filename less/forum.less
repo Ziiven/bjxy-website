@@ -792,8 +792,8 @@
     flex-shrink: 0;  // 防止被 info 挤压
 }
 .bjxy-coach-avatar {
-    width: 80px;
-    height: 80px;
+    width: 64px;
+    height: 64px;
     border-radius: 50%;
     background: linear-gradient(135deg, var(--bjxy-blue), var(--bjxy-blue-light));
     margin: 0;
@@ -1216,16 +1216,6 @@ a.bjxy-event-info.bjxy-event-link:hover {
         linear-gradient(45deg, transparent 0%, transparent 60%, rgba(255, 255, 255, 0.04) 60%, rgba(255, 255, 255, 0.04) 62%, transparent 62%),
         radial-gradient(circle at 20% 30%, rgba(255, 255, 255, 0.08) 0%, transparent 30%),
         radial-gradient(circle at 80% 70%, rgba(255, 255, 255, 0.06) 0%, transparent 30%);
-}
-.bjxy-contact-image-mock::after {
-    content: "⛰";
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    font-size: 96px;
-    opacity: 0.25;
-    font-family: "Apple Color Emoji", "Segoe UI Emoji", sans-serif;
 }
 .bjxy-contact-image-meta {
     position: relative;
@@ -2612,7 +2602,7 @@ button.swiper-pagination-bullet {
     //   v0.2.0i.a 24→16 还没到位, v0.2.0i.b 继续 16→12 (跟 .bjxy-contact-segment 段间 padding-left 12px 一致)
     //   减 grid gap 16→12 同步减段间距离, 视觉更紧凑
     .bjxy-contact-image-inner {
-        min-height: 200px;  // 移动端高度 (跟 B_left_image_mobile 一致)
+        // min-height: 200px;  // 移动端高度 (跟 B_left_image_mobile 一致)
         aspect-ratio: auto;  // 移动端不用 aspect-ratio
         padding: 12px;  // v0.2.0i.b 改: 16px → 12px (跟 .bjxy-contact-segment 段间 padding-left 一致)
     }
