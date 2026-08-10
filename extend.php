@@ -33,6 +33,50 @@ return [
             $brandName = $settings->get('bjxy_brand_name') ?: '北极雪屿';
             $brandSlogan = $settings->get('bjxy_brand_slogan') ?: '室内滑雪 · 全国连锁';
             $document->title = $brandName . ' · ' . $brandSlogan;
+            // v0.2.0h (返工) 新 (辉哥 2026-08-10 19:00 反馈, og meta 微信分享卡):
+            //   之前 /bjxy 路由只 set $document->title, 微信爬虫抓到的 og:* 是论坛 default (极客雪域 + ZivenSki 描述)
+            //   不是 bjxy 品牌, 微信分享卡显示不专业
+            //   改: server-side 拼 6+1 个 meta 标签 push 到 $document->head[] (Flarum Document L101)
+            //   vendor Document->makeHead() 末尾 implode("\n", array_merge($head, $this->head)) 把我的 head 拼到 head 末尾
+            //   实际 /bjxy 页面 vendor fof-seo 2.0 已 set og:site_name=极客雪域 + og:type=website + twitter:card=summary_large_image
+            //   (fof-seo PageListener L198-205), 我再 push og:site_name=brandName 跟 vendor 重复 — HTML spec meta 标签 last wins, 浏览器取我的
+            //   字段值:
+            //     - og:title / twitter:title = brandName + ' · ' + brandSlogan (跟 $document->title 一致, 但 og:title 不带 vendor 自动拼的 ' - 极客雪域')
+            //     - og:description / twitter:description = heroSubtitle (有值时, 跟 Hero 段一致) OR heroTitle fallback
+            //     - og:image / twitter:image = brandLogoUrl (有值时, 没值就跳过 image, 微信爬虫会用 page 缺省 image)
+            //     - og:url = dynamic request scheme + host + '/bjxy' (跟当前访问 URL 一致, 让微信知道原页面在哪)
+            //   XSS 防护: 全部 htmlspecialchars(..., ENT_QUOTES) 包裹, slogan / title 可能含 " / ' (后台 admin 输入)
+            $heroSubtitle = $settings->get('bjxy_hero_subtitle') ?: '';
+            $heroTitle = $settings->get('bjxy_hero_title') ?: $brandSlogan;
+            $brandLogo = $settings->get('bjxy_brand_logo_url') ?: '';
+            $ogTitle = $brandName . ' · ' . $brandSlogan;
+            $ogDescription = $heroSubtitle ?: $heroTitle;
+            // og:url 拼成 scheme://host[:port]/bjxy (跟当前 request 一致, 不带 query string)
+            //   包含 port: local MAMP port=8844, prod port=443, 都需要正确带 (port 非 default 80/443 时显式带)
+            $ogScheme = $request->getUri()->getScheme();
+            $ogHost = $request->getUri()->getHost();
+            $ogPort = $request->getUri()->getPort();
+            $ogPortPart = ($ogPort && !in_array($ogPort, [80, 443], true)) ? ':' . $ogPort : '';
+            $ogUrl = $ogScheme . '://' . $ogHost . $ogPortPart . '/bjxy';
+            // 1) og:site_name override (跟 vendor fof-seo setMetaPropertyTag('og:site_name', '极客雪域') 重复)
+            //   浏览器 last wins, 取我的 bjxy brandName, 让微信知道这是 bjxy brand site 不是论坛
+            $document->head[] = '<meta property="og:site_name" content="' . htmlspecialchars($brandName, ENT_QUOTES) . '">';
+            // 2) og:title
+            $document->head[] = '<meta property="og:title" content="' . htmlspecialchars($ogTitle, ENT_QUOTES) . '">';
+            // 3) og:description
+            $document->head[] = '<meta property="og:description" content="' . htmlspecialchars($ogDescription, ENT_QUOTES) . '">';
+            // 4) og:url
+            $document->head[] = '<meta property="og:url" content="' . htmlspecialchars($ogUrl, ENT_QUOTES) . '">';
+            // 5) og:image (有 logo 时才加, 没 logo 跳过让微信爬虫用 page 缺省 image)
+            if ($brandLogo) {
+                $document->head[] = '<meta property="og:image" content="' . htmlspecialchars($brandLogo, ENT_QUOTES) . '">';
+                // 6) twitter:image
+                $document->head[] = '<meta name="twitter:image" content="' . htmlspecialchars($brandLogo, ENT_QUOTES) . '">';
+            }
+            // 7) twitter:title
+            $document->head[] = '<meta name="twitter:title" content="' . htmlspecialchars($ogTitle, ENT_QUOTES) . '">';
+            // 8) twitter:description
+            $document->head[] = '<meta name="twitter:description" content="' . htmlspecialchars($ogDescription, ENT_QUOTES) . '">';
             return $document;
         })
         // v0.1.0r 修: 教学体系 + 特色 从 settings 读用户配置, fallback 用 CurriculumData 默认
