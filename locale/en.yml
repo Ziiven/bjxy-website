@@ -41,6 +41,11 @@ admin:
     upload_logo: 上传 Logo
     upload_banner: 上传 Banner
     upload_avatar: 上传图片
+  # v0.2.0i.h (辉哥 2026-08-11 21:43 反馈): admin 论坛首页 radio 新增 /bjxy 选项 label
+  #   vendor BasicsPage.homePageItems() 初始只 add allDiscussions
+  #   js/src/admin/index.js 走 app.beforeMount + setSetting 注入这个选项
+  #   Flarum 论坛首页 setting = default_route, 选 /bjxy 后 / 走 bjxy route handler
+  home_page_option: bjxy 官网
   # v0.2.0: Bookings list translation
   bookings:
     title: Bookings
