@@ -84,7 +84,10 @@ class CoachesController implements RequestHandlerInterface
             //   之前用 DB::table() 拿裸 avatar_url 拼错 URL (https://geek.ski<filename> 不是 https://geek.ski/assets/avatars/<filename>)
             $userModels = User::query()
                 ->whereIn('id', $userIds)
-                ->where('is_email_confirmed', 1)
+                // v0.2.0i.g 改 (辉哥 2026-08-11 08:35 反馈): 删 ->where('is_email_confirmed', 1) 过滤
+                //   v0.2.0i.a B1 方案改了 GroupUsersController (modal 那条), 但漏改 CoachesController (前台列表这条)
+                //   配套: modal 选 5 个 user (含 unconfirmed 废账号 hyw/dsl), 前台也得显示 5 个, 不能 modal 选 5 显示 3
+                //   废账号由 admin 自行在 bjxy_coach_user_ids 设置时不勾选即可 (跟 v0.2.0i.a 注释风格一致)
                 ->get()
                 ->keyBy('id');
 
@@ -167,7 +170,8 @@ class CoachesController implements RequestHandlerInterface
                     ->from('group_user')
                     ->whereIn('group_id', $ids);
             })
-            ->where('is_email_confirmed', 1)
+            // v0.2.0i.g 改 (辉哥 2026-08-11 08:35 反馈): 删 ->where('is_email_confirmed', 1) 过滤 (fallback 路径, 跟主路径一致)
+            //   之前 v0.1.4 加这个过滤是防 admin 误创建的废账号, 现在改设计 modal 显示全部 user, admin 自行勾选/取消
             ->orderBy('id')
             ->get();
 

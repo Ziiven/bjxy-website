@@ -772,7 +772,12 @@
     text-align: left;
     display: flex;
     flex-direction: row;  // v0.1.36a 改回: column → row (辉哥 22:15 反馈)
-    align-items: flex-start;
+    align-items: stretch;  // v0.2.0i.g 改 (辉哥 2026-08-11 08:35 反馈): flex-start → stretch
+    //   辉哥本意: "fof bio 改了, 卡片高度自动跟最高的一致, 不需要额外改"
+    //   flex-start: 左 .bjxy-coach-left (avatar+meta) 跟右 .bjxy-coach-info 各自顶部对齐, 高度 = 自身内容
+    //   stretch: 左 + 右都被拉到 .bjxy-coach 高度 (= slide 高度 = wrapper 高度 = 最高 slide 高度)
+    //   已有 .bjxy-coach-swiper .swiper-wrapper { align-items: stretch } (L747-749) + .bjxy-coach-slide { height: auto } 配合
+    //   效果: 所有 slide 高度统一 = 最高那张, bio 短 slide 内 bjxy-coach-info 被拉伸, .bjxy-coach-bio { flex: 1 } 撑满剩余空间, 视觉自然
     gap: 16px;  // v0.1.36a 改回: 0 → 16px (跟 v0.1.27 一致)
     padding: 16px;
     background: var(--bjxy-bg-soft);
@@ -818,6 +823,8 @@
 .bjxy-coach-info {
     flex: 1;
     min-width: 0;
+    display: flex;  // v0.2.0i.g 改: 父 .bjxy-coach 改 align-items: stretch, .bjxy-coach-info 也变 flex container
+    flex-direction: column;  // v0.2.0i.g 改: column 让内部 .bjxy-coach-bio 可 flex: 1 占满 info 容器剩余空间 (短 bio slide 视觉自然)
 }
 .bjxy-coach-name {
     font-size: 16px;
@@ -849,6 +856,12 @@
     word-break: break-word;
 }
 .bjxy-coach-bio {
+    // v0.2.0i.g 改 (辉哥 2026-08-11 08:35 反馈): 卡片高度自动统一 (辉哥本意: fof bio 改了, 高度自动跟最高的一致)
+    //   父 .bjxy-coach-info (新加 display: flex / flex-direction: column) 是 flex container, .bjxy-coach-bio 是 flex item
+    //   flex: 1 = flex-grow: 1; flex-shrink: 1; flex-basis: 0% — 占满 .bjxy-coach-info 剩余空间
+    //   短 bio slide 内 bio 段被拉伸, 视觉上 bio 段下方留白自然填满 (跟最高 slide 等高)
+    //   改了 fof user bio 高度变了, CSS 自动重算, 不用动代码 (满足辉哥"自动"要求)
+    flex: 1;
     // v0.2.0h.d 改 (辉哥 2026-08-11 01:11 反馈, V 测 V4 漏报): mobile 端 bjxy-coach-bio 容器跟 fof UserBio-content 视觉对齐
     //   V 测 V4 报告说 "lineHeight/fontSize/margin 三项 0 差" 但辉哥说 mobile 视觉还是不同. 真实差异在 container (不是 <p> 元素), V 测 V4 漏报
     //   Mavis grep less 找到 4 个差异 (SOP 211 实战 — 不盲信 V 测 / Mavis 调研, 必实测验证):
