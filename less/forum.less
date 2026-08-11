@@ -2213,7 +2213,10 @@ button.swiper-pagination-bullet {
       //   改后 (v0.2.0h.f): margin: -40px auto 120px !important;     // 顶部上移 40, 底部 120
       //   实际桌面顶部变化 = 80px (-40 - 40 = -80, 加上 vendor margin 120 抵消一部分, 净位移待 Puppeteer 实测)
       //   mobile 不动: v0.2.0h.c 删了 mobile @media 段, 走 Option B (oncreate+onready+rAF ModalManager scrollTop=0) 修 P1
-      margin: -40px auto 120px !important;  // !important 覆盖 vendor @tablet-up .Modal { margin: 120px auto }
+
+      @media (max-width: 768px) {
+        margin: -40px auto 120px !important;  // !important 覆盖 vendor @tablet-up .Modal { margin: 120px auto }
+      }
     }
     // ModalManager 是 modal 真正的 flex parent (position: fixed; inset: 0; overflow: auto), 内部 scroll
     //   mobile 模式 modal 高度 100dvh = viewport 100%, 超过视口需要 ModalManager scroll, padding-top 不会影响 scroll 容器内 absolute 元素 (modal)
