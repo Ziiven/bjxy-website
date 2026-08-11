@@ -2667,3 +2667,24 @@ button.swiper-pagination-bullet {
         height: 80px;
     }
 }
+
+// v0.2.0i.i 新 (辉哥 2026-08-12 07:42 反馈): bjxy 官网桌面端 sidebar 收起 + display:none
+//   配合 BjxyPage.jsx oninit/onremove 动态加/移 body.App-sidebar-aura-collapsed class
+//   桌面端彻底隐藏 sidebar + toggle button + App-content 延展到 viewport 全宽
+//   mobile 不动: @media (min-width: 992px) 限定
+//   关键: 用 body.App-sidebar-aura-collapsed 选择器, 不是裸 .App-sidebar-aura, 避免误伤其他论坛路径 (/d /u /all)
+//   配合 vendor 折叠机制: vendor 已经有 body.App-sidebar-aura-collapsed .App-content { margin-left: 0 } (vendor less L442, "9. 桌面端 App-content 跟 sidebar 延展" 段),
+//     但 vendor 走 .App-sidebar-aura { transform: translateX(-100%) } 不 display:none (vendor 折叠 transform 动画, vendor less L490)
+//   修法: bjxy 加 display: none !important 覆盖 vendor transform, 彻底隐藏
+//   关键: 加 !important 因为 vendor 折叠机制用 transform (优先级比 bjxy display 晚跑的 cascade 不一定高)
+@media (min-width: 992px) {
+    body.App-sidebar-aura-collapsed .App-sidebar-aura {
+        display: none !important;
+    }
+    body.App-sidebar-aura-collapsed .App-sidebar-aura-toggle {
+        display: none !important;  // 永远折叠, toggle 按钮没用也隐藏
+    }
+    body.App-sidebar-aura-collapsed .App-content {
+        margin-left: 0 !important;  // 跟 vendor 折叠状态一致, App-content 延展到 viewport 全宽
+    }
+}

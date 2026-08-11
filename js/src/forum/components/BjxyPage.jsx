@@ -44,6 +44,18 @@ export default class BjxyPage extends Component {
     // v0.1.0s 改: activeBoard 从 string 'single' 改成 index (0/1/2...)
     //   因为现在 boards 数组任意多类型, 不再固定 2 个
     this.activeBoard = 0;
+    // v0.2.0i.i 新 (辉哥 2026-08-12 07:42 反馈): bjxy 官网桌面端 sidebar 收起 + display:none
+    //   App-sidebar-aura 来源: ziven-theme-aura vendor 扩展 (vendor/ziiven/theme-aura/)
+    //   辉哥要: bjxy 官网桌面端 sidebar 不可见 (不是 vendor 折叠 transform 动画)
+    //   修法: page-level 控制 body class
+    //     - oninit add class 'App-sidebar-aura-collapsed' (跟 vendor 折叠状态 class 同名, 跟 vendor 折叠机制一致)
+    //     - onremove remove class (切回 /d /u /all 等其他路径, sidebar 恢复 vendor 默认)
+    //   CSS 配合 less/forum.less 桌面端段: body.App-sidebar-aura-collapsed .App-sidebar-aura { display: none !important }
+    //   风险: 跟 vendor localStorage 'ziven-aura-sidebar-collapsed' 独立, 不会冲突 (vendor modifySidebar.js L61-64 只看 localStorage, 不查 body class)
+    //   mobile 不动: CSS 套 @media (min-width: 992px), mobile 走 vendor 移动端 drawer
+    if (typeof document !== 'undefined' && document.body) {
+      document.body.classList.add('App-sidebar-aura-collapsed');
+    }
   }
 
   // v0.1.6: 评分转 ★☆ 字符串 (1-5 整数)
@@ -183,9 +195,16 @@ export default class BjxyPage extends Component {
 
   // 组件销毁时清理
   // v0.1.30 改: 多 swiper instance, events + coach 各自 destroy
+  // v0.2.0i.i 新: 同步移 body.App-sidebar-aura-collapsed class
+  //   切回 /d /u /all 等其他论坛路径时, sidebar 恢复 vendor 默认 (transform 折叠或展开)
+  //   不移除 class 会导致其他页面 sidebar 永远 hidden
   onremove() {
     this.destroySwiper();
     this.destroyCoachSwiper();
+    // v0.2.0i.i: 移 body class (配 oninit add)
+    if (typeof document !== 'undefined' && document.body) {
+      document.body.classList.remove('App-sidebar-aura-collapsed');
+    }
   }
 
   view() {
