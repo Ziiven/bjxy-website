@@ -4,68 +4,69 @@
 #   要求 key 含 namespace (e.g. 'ziven-dress-up.admin.permissions.allow_use')
 #   之前 bjxy yml 顶层没 namespace 包裹, key 是 'admin.home_page_option' (regex 不匹配, filter 排除)
 #   → 翻译 key 不进 admin-zh-Hans.js bundle, admin app translator.translations 找不到 key
-#   修法: 顶层加 'ziiven-bjxy-website:' 包裹, key 变成 'ziiven-bjxy-website.admin.home_page_option'
-#   setSetting trans() 调 'ziiven-bjxy-website.admin.home_page_option' (改回带 namespace)
-#   注意: extension.name/title/description 跟 ziiven-bjxy-website 顶层平级, namespace 包含他们
-#   extension: { name: ... } 实际 key 是 'ziiven-bjxy-website.extension.name' (跟 vendor 习惯一致)
+#   v0.2.0i.h.a 第一次修只 wrap 了 'extension:' (8d08e69), 错修
+#     forum:/admin:/bookings: 还是顶层平级, yml 多 root key, 实际 parse 失败
+#   v0.2.0i.h.b 整 yml 顶层 wrap 'ziiven-bjxy-website:' (这文件)
+#     所有 key 变成 'ziiven-bjxy-website.{forum|admin|extension}.*' 形式
+#     setSetting trans() 调 'ziiven-bjxy-website.admin.home_page_option'
 ziiven-bjxy-website:
   extension:
     name: 北极雪屿官网
     title: 北极雪屿官网
     description: 滑雪培训官网 (Flarum 2.0 page extension)
 
-forum:
-  # v0.2.0 (辉哥 2026-08-09 8:14 反馈): 预约体验 modal 翻译
-  booking_modal:
-    title: 预约体验
-    field_name: 名字
-    field_phone: 电话
-    field_age: 年龄 (可选)
-    field_has_ski_experience: 是否有滑雪基础
-    field_experience_type: 体验类型
-    field_booking_date: 预约日期
-    yes: 是
-    no: 否
-    type_single: 单板体验
-    type_double: 双板体验
-    submit: 提交预约
-    submitting: 提交中...
-    cancel: 取消
-    close: 关闭
-    success: 预约提交成功, 我们工作人员会尽快联系您
-    error_required: 请填写必填字段
+  forum:
+    # v0.2.0 (辉哥 2026-08-09 8:14 反馈): 预约体验 modal 翻译
+    booking_modal:
+      title: 预约体验
+      field_name: 名字
+      field_phone: 电话
+      field_age: 年龄 (可选)
+      field_has_ski_experience: 是否有滑雪基础
+      field_experience_type: 体验类型
+      field_booking_date: 预约日期
+      yes: 是
+      no: 否
+      type_single: 单板体验
+      type_double: 双板体验
+      submit: 提交预约
+      submitting: 提交中...
+      cancel: 取消
+      close: 关闭
+      success: 预约提交成功, 我们工作人员会尽快联系您
+      error_required: 请填写必填字段
 
-admin:
-  settings:
-    title: 北极雪屿官网配置
-    brand: 品牌信息
-    hero: Hero 区域
-    about: 关于我们
-    features: 办学特色
-    curriculum: 教学体系
-    coaches: 教练展示
-    contact: 联系方式
-    reviews: 学员评价
-    students: 学员展示
-    save: 保存
-    saved: 已保存
-    upload_logo: 上传 Logo
-    upload_banner: 上传 Banner
-    upload_avatar: 上传图片
-  # v0.2.0i.h (辉哥 2026-08-11 21:43 反馈): admin 论坛首页 radio 新增 /bjxy 选项 label
-  #   vendor BasicsPage.homePageItems() 初始只 add allDiscussions
-  #   js/src/admin/index.js 走 app.beforeMount + setSetting 注入这个选项
-  #   Flarum 论坛首页 setting = default_route, 选 /bjxy 后 / 走 bjxy route handler
-  home_page_option: bjxy 官网
-  # v0.2.0: 预约体验后台列表翻译
-  bookings:
-    title: 用户预约列表
-    empty: 暂无预约
-    col_id: ID
-    col_name: 名字
-    col_phone: 电话
-    col_age: 年龄
-    col_has_ski_experience: 是否有基础
-    col_experience_type: 体验类型
-    col_booking_date: 预约日期
-    col_created_at: 提交时间
+  admin:
+    settings:
+      title: 北极雪屿官网配置
+      brand: 品牌信息
+      hero: Hero 区域
+      about: 关于我们
+      features: 办学特色
+      curriculum: 教学体系
+      coaches: 教练展示
+      contact: 联系方式
+      reviews: 学员评价
+      students: 学员展示
+      save: 保存
+      saved: 已保存
+      upload_logo: 上传 Logo
+      upload_banner: 上传 Banner
+      upload_avatar: 上传图片
+    # v0.2.0i.h (辉哥 2026-08-11 21:43 反馈): admin 论坛首页 radio 新增 /bjxy 选项 label
+    #   vendor BasicsPage.homePageItems() 初始只 add allDiscussions
+    #   js/src/admin/index.js 走 app.beforeMount + setSetting 注入这个选项
+    #   Flarum 论坛首页 setting = default_route, 选 /bjxy 后 / 走 bjxy route handler
+    home_page_option: bjxy 官网
+    # v0.2.0: 预约体验后台列表翻译
+    bookings:
+      title: 用户预约列表
+      empty: 暂无预约
+      col_id: ID
+      col_name: 名字
+      col_phone: 电话
+      col_age: 年龄
+      col_has_ski_experience: 是否有基础
+      col_experience_type: 体验类型
+      col_booking_date: 预约日期
+      col_created_at: 提交时间
