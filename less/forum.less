@@ -748,7 +748,13 @@
     align-items: stretch;
 }
 .bjxy-coach-slide {
-    height: auto;  // 跟 swiper-slide 配合
+    // v0.2.0i.g 改 (辉哥 2026-08-11 08:35 反馈, v0.2.0i.g 第一轮 Puppeteer 自测 FAIL):
+    //   加 !important 覆盖 swiper 11 inline style="height: XXX" (loop + slidesPerView: 2 时 swiper 11 给所有 slide 量第一个 active slide 高度 apply)
+    //   Puppeteer 实测: swiper 给 slide 设 style="height: 264px" (WFL 第一张高度), 覆盖了 .bjxy-coach-slide { height: auto }
+    //   导致 5 张卡片高度 264/243/285/243/264, 短 bio slide 没被拉伸
+    //   改后 Puppeteer 实测: 5 张都 = 285 = wrapper 高度 = 最高 slide 高度 (PASS)
+    //   配合 .bjxy-coach-swiper .swiper-wrapper { align-items: stretch } 拉满 wrapper 高度
+    height: auto !important;  // v0.2.0i.g 加 !important (之前 v0.1.30 加的 height: auto 被 swiper inline style 覆盖)
 }
 .bjxy-coach {
     // v0.1.27 改: 统一详细卡片样式 (SOP 155)
