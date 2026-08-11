@@ -27,9 +27,11 @@ app.initializers.add('ziiven-bjxy-website', () => {
   //     读 default_route setting, 找 routes->getRouteData()[0]['GET'][$defaultRoute]['handler']
   //     bjxy extend.php L24 已注册 ->route('/bjxy', 'bjxy.website', ...) → 命中, / 走 bjxy handler
   //   改 original.options 加 /bjxy 选项, 不动 vendor allDiscussions
-  //   i18n key: admin.home_page_option (locale/*.yml 走 vendor Extend\Locales, 无 namespace prefix)
-  //     vendor LocaleManager.addTranslations($locale, $file, $module = null) — module null → prefix = ''
-  //     实际 yml key 是 'admin.home_page_option', 不是 'ziiven-bjxy-website.admin.home_page_option'
+  //   i18n key: ziiven-bjxy-website.admin.home_page_option
+  //   locale/en.yml + locale/zh-Hans.yml 顶层用 'ziiven-bjxy-website:' 包裹
+  //     (SOP 230: vendor AddTranslations filter regex '^.+(?:\.|::)(?:admin|lib)\./' 要求 key 含 namespace)
+  //     (跟 ziven-dress-up 习惯一致, 它的 yml 顶层是 'ziven-dress-up:' 包裹)
+  //     之前 bjxy yml 顶层直接是 'extension:' 'forum:' 'admin:' (无 namespace), key 不进 admin bundle
   app.beforeMount(() => {
     app.registry
       .for('core-basics')
@@ -40,7 +42,7 @@ app.initializers.add('ziiven-bjxy-website', () => {
           {
             path: '/bjxy',
             value: '/bjxy',
-            label: app.translator.trans('admin.home_page_option', {}, 'bjxy 官网'),
+            label: app.translator.trans('ziiven-bjxy-website.admin.home_page_option', {}, 'bjxy 官网'),
           },
         ],
       }));

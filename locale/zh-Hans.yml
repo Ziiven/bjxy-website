@@ -1,7 +1,18 @@
-extension:
-  name: 北极雪屿官网
-  title: 北极雪屿官网
-  description: 滑雪培训官网 (Flarum 2.0 page extension)
+# v0.2.0i.h: 顶层加 ziiven-bjxy-website: 包裹 (SOP 230)
+#   根因: vendor Frontend/AddTranslations.php L30-32 filter regex
+#     preg_match('/^.+(?:\.|::)(?:admin|lib|forum)\./', $id)
+#   要求 key 含 namespace (e.g. 'ziven-dress-up.admin.permissions.allow_use')
+#   之前 bjxy yml 顶层没 namespace 包裹, key 是 'admin.home_page_option' (regex 不匹配, filter 排除)
+#   → 翻译 key 不进 admin-zh-Hans.js bundle, admin app translator.translations 找不到 key
+#   修法: 顶层加 'ziiven-bjxy-website:' 包裹, key 变成 'ziiven-bjxy-website.admin.home_page_option'
+#   setSetting trans() 调 'ziiven-bjxy-website.admin.home_page_option' (改回带 namespace)
+#   注意: extension.name/title/description 跟 ziiven-bjxy-website 顶层平级, namespace 包含他们
+#   extension: { name: ... } 实际 key 是 'ziiven-bjxy-website.extension.name' (跟 vendor 习惯一致)
+ziiven-bjxy-website:
+  extension:
+    name: 北极雪屿官网
+    title: 北极雪屿官网
+    description: 滑雪培训官网 (Flarum 2.0 page extension)
 
 forum:
   # v0.2.0 (辉哥 2026-08-09 8:14 反馈): 预约体验 modal 翻译
