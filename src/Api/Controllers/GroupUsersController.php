@@ -43,9 +43,13 @@ class GroupUsersController implements RequestHandlerInterface
                     ->from('group_user')
                     ->whereIn('group_id', $ids);
             })
-            // v0.1.4: 排除未激活邮箱的用户 (admin 误创建的废账号)
-            ->where('is_email_confirmed', 1)
+            // v0.2.0i.a 改 (辉哥 07:55 反馈 B1 方案): 删 ->where('is_email_confirmed', 1) 过滤
+            //   之前 v0.1.4 加这个过滤是防 admin 误创建的废账号
+            //   现在改设计: modal 显示 group 全部 user, admin 自行勾选/取消 (bjxy_coach_user_ids 白名单保留)
+            //   废账号在 modal 显示, admin 一眼看出 + 不勾选即可 (不强求删废账号)
             ->distinct()
+            // v0.2.0i.a 加: sort 顺序, 已确认邮箱的 user 排前面 (admin 优先选)
+            ->orderBy('is_email_confirmed', 'desc')
             ->orderBy('id')
             ->get();
 

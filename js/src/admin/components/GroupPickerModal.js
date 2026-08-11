@@ -107,7 +107,8 @@ export default class GroupPickerModal extends Modal {
     return (
       <div className="Modal-body">
         <div className="GroupPickerModal-hint">
-          ① 左边拖拽调整顺序 + 勾选用户, ② 右边填教练简介 (bio/成就/专长, 头像自动用用户自己的), ③ 确认后保存
+          ① 左边勾选用户 (实时从教练组拉全部 user, 含未确认邮箱的废账号) + 拖拽调整顺序,
+          ② 右边填教练简介, ③ 确认后保存
         </div>
         <div className="GroupPickerModal-body">
           {/* 左列: user 列表 */}
