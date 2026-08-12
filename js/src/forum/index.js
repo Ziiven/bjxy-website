@@ -54,9 +54,16 @@ const installBjxyRouteHook = () => {
       try {
         const active = sessionStorage.getItem('ziven-bjxy-active');
         const bjxyPrev = sessionStorage.getItem('ziven-bjxy-prev-path');
-        // 只在 active='1' (用户在当前 SPA session 内访问过 bjxy) 才 push bjxy entry
-        // 防止 /d/1 → /u/ 副作用
-        if (active === '1' && bjxyPrev && app && app.history) {
+        // 三重 check 防 /d/1 → /u/ 副作用:
+        //   1. active='1' (用户在 SPA session 内访问过 bjxy)
+        //   2. bjxyPrev 存在
+        //   3. app.previous 是 bjxy 路径 (m.route.set 之前 mithril 内部已 setPrevious)
+        //   关键: sessionStorage 跨 page.goto 持续, 单独用 active 没法区分 /d/1 → /u/ (用户没访问过 bjxy 但 active='1' 还在)
+        //   app.previous 是 mithril 0.2.x 内部 PageState 跟踪上一路由, 在 m.route.set 调用时已更新
+        //   如果 app.previous routeName='bjxy', 说明用户真的是从 bjxy 跳过来的
+        //   如果 app.previous 是其他 (e.g. 'discussion'), 说明用户从其他页面来, 不该 push bjxy entry
+        // 注意: app.previous 可能是 undefined (第一次 mount), 这时不 push
+        if (active === '1' && bjxyPrev && app && app.history && app.previous && app.previous.get && app.previous.get('routeName') === 'bjxy') {
           // push 'bjxy' entry, History.push L57-58 检查 top 同名会覆盖, 不会 stack 重复
           app.history.push('bjxy', 'bjxy 官网', bjxyPrev);
         }
@@ -74,22 +81,34 @@ const maybePushBjxyOnBoot = () => {
   // 关键: splice 插入到 stack 倒数第 2 个位置 (user.posts 之前), 不能简单 push 否则 backUrl 错误
   //   错误: 简单 push → stack = [..., 'user.posts', 'bjxy'] → backUrl = '/u/wfl' (错!)
   //   正确: splice 插入 → stack = [..., 'bjxy', 'user.posts'] → backUrl = '/bjxy' (对)
+  // 二次 check 防 /d/1 → /u/ 副作用 (跟劫持逻辑一致, 三重 check)
+  // 特殊 case: 刷新 /u/{username} 场景, app.previous 是 null (第一次 mount), 走 noPrevious 路径
   setTimeout(() => {
     try {
       const active = sessionStorage.getItem('ziven-bjxy-active');
       const bjxyPrev = sessionStorage.getItem('ziven-bjxy-prev-path');
       const currentPath = window.location.pathname;
-      // 条件: 当前是 /u/{username} 用户页面 + active='1' + prev path 存在
-      if (active === '1' && bjxyPrev && currentPath.indexOf('/u/') === 0 && app && app.history) {
-        const stack = app.history.stack;
-        if (stack && stack.length > 0) {
-          const top = stack[stack.length - 1];
-          // 已经在倒数第 2 个位置是 bjxy (幂等) 就跳过
-          if (stack.length >= 2 && stack[stack.length - 2].name === 'bjxy') return;
-          // 用 splice 把 bjxy entry 插入到栈顶前面 (length-1 位置)
-          // stack.splice(length-1, 0, {name:'bjxy', url:bjxyPrev, title:'bjxy 官网'})
-          stack.splice(stack.length - 1, 0, { name: 'bjxy', url: bjxyPrev, title: 'bjxy 官网' });
-        }
+      const isUserPage = currentPath.indexOf('/u/') === 0;
+      // 场景 A: /u/ 路径 + 正常 previous 链 (SPA 内跳转) — app.previous='bjxy'
+      // 场景 B: /u/ 路径 + 无 previous (刷新场景) — app.previous 是 null/undefined
+      // 场景 C: 非 /u/ 路径 — 不补 push
+      if (!isUserPage) return;
+      if (!active || active !== '1' || !bjxyPrev || !app || !app.history) return;
+
+      const previousRoute = app.previous && app.previous.get ? app.previous.get('routeName') : null;
+      const isFromBjxy = previousRoute === 'bjxy';
+      const isFreshLoad = !previousRoute; // 第一次 mount (刷新场景)
+      // 场景 C 防误伤: 是 /u/ 路径但 previous 是 'tags' 或 'discussion' 等其他 (e.g. /d/1 跨 page 跳过来的 mithril 启动)
+      //   但这种情况 setTimeout 0 跑时, currentPath 应该是 /d/1 不是 /u/, 已经 return 了
+      //   所以 isFromBjxy || isFreshLoad 就够了
+      if (!isFromBjxy && !isFreshLoad) return;
+
+      const stack = app.history.stack;
+      if (stack && stack.length > 0) {
+        // 已经在倒数第 2 个位置是 bjxy (幂等) 就跳过
+        if (stack.length >= 2 && stack[stack.length - 2].name === 'bjxy') return;
+        // 用 splice 把 bjxy entry 插入到栈顶前面 (length-1 位置)
+        stack.splice(stack.length - 1, 0, { name: 'bjxy', url: bjxyPrev, title: 'bjxy 官网' });
       }
     } catch (e) {
       // 静默失败
