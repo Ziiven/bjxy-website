@@ -71,6 +71,9 @@ const installBjxyRouteHook = () => {
 const maybePushBjxyOnBoot = () => {
   // 启动补 push: 刷新 /u/{username} 场景, mithril 0.2.x 启动不调 m.route.set, 劫持错过
   // setTimeout 0 让 mithril 同步 mount 完成 (PostsUserPage.oninit + show + push user.posts) 后再补 push
+  // 关键: splice 插入到 stack 倒数第 2 个位置 (user.posts 之前), 不能简单 push 否则 backUrl 错误
+  //   错误: 简单 push → stack = [..., 'user.posts', 'bjxy'] → backUrl = '/u/wfl' (错!)
+  //   正确: splice 插入 → stack = [..., 'bjxy', 'user.posts'] → backUrl = '/bjxy' (对)
   setTimeout(() => {
     try {
       const active = sessionStorage.getItem('ziven-bjxy-active');
@@ -78,10 +81,14 @@ const maybePushBjxyOnBoot = () => {
       const currentPath = window.location.pathname;
       // 条件: 当前是 /u/{username} 用户页面 + active='1' + prev path 存在
       if (active === '1' && bjxyPrev && currentPath.indexOf('/u/') === 0 && app && app.history) {
-        // 检查 stack top 是不是 bjxy (避免重复 push)
-        const top = app.history.getCurrent();
-        if (top && top.name !== 'bjxy') {
-          app.history.push('bjxy', 'bjxy 官网', bjxyPrev);
+        const stack = app.history.stack;
+        if (stack && stack.length > 0) {
+          const top = stack[stack.length - 1];
+          // 已经在倒数第 2 个位置是 bjxy (幂等) 就跳过
+          if (stack.length >= 2 && stack[stack.length - 2].name === 'bjxy') return;
+          // 用 splice 把 bjxy entry 插入到栈顶前面 (length-1 位置)
+          // stack.splice(length-1, 0, {name:'bjxy', url:bjxyPrev, title:'bjxy 官网'})
+          stack.splice(stack.length - 1, 0, { name: 'bjxy', url: bjxyPrev, title: 'bjxy 官网' });
         }
       }
     } catch (e) {
