@@ -897,7 +897,13 @@ export default class BjxyPage extends Component {
       style.id = 'bjxy-hide-mobile-tab';
       // 同时隐藏 mobile tab + 移除 .App.affix 底部 padding (50px) + 移除 .App-content 底部 padding (20px)
       // 一起干掉, mobile tab 隐藏后页面底部跟 viewport 底完全贴合, 0 间距
-      style.textContent = 'nav.MobileTab { display: none !important; } #header {display:none} #app-navigation {display: none !important;} #app { padding-top: 63.8px !important } .App.affix { padding-bottom: 0 !important; } .App-content { padding-bottom: 0 !important; }';
+      // v0.2.0i.k.b 改: 删掉 #app-navigation { display: none !important } 段
+      //   辉哥 2026-08-12 17:35 反馈移动端 /bjxy → /u/用户名 没返回按钮
+      //   根因: 这段 ID selector (specificity 1,0,0) + !important 完全压制 bjxy less 段 `body .App-navigation { display: block !important }` (specificity 0,1,1)
+      //   ID selector specificity 100 永远比 class selector specificity 11 高, !important 不弥补 specificity 差距
+      //   修法: 删掉 #app-navigation 段 (跟 mobile tab 隐藏本来就没关系, 是误伤的副产品)
+      //   效果: bjxy less 段生效, .App-navigation 永远显示, 移动端返回按钮可见
+      style.textContent = 'nav.MobileTab { display: none !important; } #header {display:none} #app { padding-top: 63.8px !important } .App.affix { padding-bottom: 0 !important; } .App-content { padding-bottom: 0 !important; }';
       document.head.appendChild(style);
     }
   }
