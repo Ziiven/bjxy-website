@@ -789,7 +789,10 @@
     background: var(--bjxy-bg-soft);
     border: 1px solid var(--bjxy-border);
     border-radius: 8px;
-    cursor: default;
+    // v0.2.0i.j 改 (辉哥 2026-08-12 10:07 反馈): default → pointer 提示教练卡片可点
+    //   配合 BjxyPage.jsx v0.2.0i.j onclick: m.route.set('/u/' + c.username) 跳转用户页面
+    //   已有 hover bg 变化 + onclick 事件, 加 cursor pointer 视觉提示
+    cursor: pointer;
     transition: background 0.15s;
     height: 100%;
 }

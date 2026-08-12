@@ -684,7 +684,18 @@ export default class BjxyPage extends Component {
                   //   fof-user-bio 写了时: 隐藏 bio border-top 分割线 (下方没 specialties/achievements 段, 分割线没意义)
                   //   fof-user-bio 没写时: 保留分割线 (下方有 specialties/achievements 段, 分割线分隔)
                   //   辉哥 13:33 反馈: "还有个分割线的残留, 如果填了 fof user bio 的话这个分割线也去掉吧"
-                  m('div', { class: 'bjxy-coach' + (c.bio_from_fof_user_bio ? ' bjxy-coach--has-fof-user-bio' : '') }, [
+                  m('div', {
+                    class: 'bjxy-coach' + (c.bio_from_fof_user_bio ? ' bjxy-coach--has-fof-user-bio' : ''),
+                    // v0.2.0i.j 新 (辉哥 2026-08-12 10:07 反馈): 教练卡片 click 跳转 /u/{username} 用户页面
+                    //   修 v0.1.0 历史 feature gap: 之前 .bjxy-coach div 没绑 onclick, 点击无反应
+                    //   BjxyCoachModal.jsx 存在但没人调用 (保留, 跟现在 onclick 跳转共存不影响)
+                    //   跳 mithril 路由 /u/{username} 走 vendor Forum user page 渲染
+                    //   swiper 11 拖动 vs click 不冲突: swiper 默认 preventClicks: false, short tap 触发 click, long press 触发拖动
+                    //   mithril 0.2.x m() div 加 onclick 直接生效, 不用 wrap <a> 避免 vendor LinkButton 副作用
+                    //   5 教练卡片 [6,7,5,8,1] → /u/wfl /u/hyw /u/zsj /u/dsl /u/Ziven (跟 bjxy_coach_user_ids 顺序一致)
+                    //   路由切换: /bjxy unmount (onremove 跑 body class remove) → vendor user page 渲染, OK
+                    onclick: () => m.route.set('/u/' + c.username),
+                  }, [
                     // v0.1.36a 改回: 横向布局 (辉哥 22:15 反馈)
                     //   辉哥本意: avatar 单独在左, name + username 跟在 avatar 下方, info 还是在右侧
                     //   v0.1.36 Coder 改成全 vertical 堆叠是错的, 现在拆 .bjxy-coach-left column 包 avatar + meta
