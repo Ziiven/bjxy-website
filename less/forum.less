@@ -2691,3 +2691,22 @@ button.swiper-pagination-bullet {
         margin-left: 0 !important;  // 跟 vendor 折叠状态一致, App-content 延展到 viewport 全宽
     }
 }
+
+// v0.2.0i.k.b 新 (辉哥 2026-08-12 17:35 反馈): 全平台强制 .App-navigation 永远显示
+//   根因:
+//     1) vendor App.less L251 @media @tablet-up { .App-navigation { display: none } }
+//        vendor 设计桌面端默认隐藏返回按钮 (因为桌面端有 sidebar, 不需要返回按钮)
+//     2) ziven-core/less/forum.less L14 重新定义 @tablet-up = (min-width: 992px) 覆盖 vendor 默认 (768px)
+//     3) ziven-private-facade/less/forum.less L24 @media @phone { .App-navigation { display: none } } 强制 mobile 段也隐藏
+//        (server 端没装 ziven-private-facade, 但 ziven-core/forum.less 编译产物里有 @media (max-width: 767px) 段处理 @phone, 走 wikimedia/less.php 时可能把 display:none 提到了顶层)
+//   实际 CSS 编译产物 grep 命中: @media (min-width: 992px){.App-navigation{display:none}} (vendor 桌面段)
+//   实际效果: 移动端 390x844 (matchMedia (min-width: 992px) = false) 时 .App-navigation 还是 display: none
+//   辉哥实测: 移动端 /bjxy 点教练 → /u/wfl → 没看到返回按钮 (因为 display: none)
+//   修法: 全平台 (mobile + desktop) 强制 .App-navigation { display: block !important }
+//     用 body .App-navigation 加高 specificity, !important 兜底覆盖 vendor / 第三方扩展任何 media query 段
+//   效果: 任何 viewport 都显示返回按钮, 跟 Flarum 2.0 标准行为一致
+//   风险: 全平台生效, 但 bjxy 跟 ziven 主题本来就是返回按钮友好的设计, 影响其他路径 (/d /u /all) 是合理的副作用
+//   验证: 桌面 1440x900 + 移动 390x844 双 viewport 实测 .App-navigation 可见
+body .App-navigation {
+    display: block !important;
+}

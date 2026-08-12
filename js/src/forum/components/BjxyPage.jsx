@@ -46,6 +46,18 @@ export default class BjxyPage extends Component {
     //   返回按钮跳回 /bjxy (直接路径, 不依赖 default_route 配置)
     //   适用: 任何 bjxy 自定义 page 都要 push history entry, 否则跳其他页面没返回按钮
     app.history.push('bjxy', 'bjxy 官网', '/bjxy');
+    // v0.2.0i.k.b 新 (辉哥 2026-08-12 17:35 反馈): sessionStorage 持久化 bjxy path
+    //   背景: vendor History 是 session-only 内存, 刷新后 mithril 重建 stack, bjxy entry 丢
+    //   辉哥实测: 刷新 /u/wfl → stack 变成 [user.posts], 没 bjxy entry, 返回按钮跳 / (首页)
+    //   修法: 把 bjxy path 写到 sessionStorage, forum/index.js 劫持 m.route.set 在跳 /u/... 时 push bjxy entry
+    //   sessionStorage 在 SPA session 内持续, 跨 tab 独立 (跟 SPA 行为一致, 比 localStorage 更精确)
+    //   onremove 移除 (切走 /bjxy 不再需要 bjxy prev path 提示)
+    //   配合: forum/index.js 注入 m.route.set 劫持器, 在 /u/ 跳转前 push bjxy entry
+    try {
+      sessionStorage.setItem('ziven-bjxy-prev-path', '/bjxy');
+    } catch (e) {
+      // sessionStorage 可能被禁用 (隐私模式), 静默失败
+    }
     this.coaches = [];
     this.loadingCoaches = true;
     // v0.1.0s 改: activeBoard 从 string 'single' 改成 index (0/1/2...)
