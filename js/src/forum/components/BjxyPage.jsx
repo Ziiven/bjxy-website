@@ -39,6 +39,13 @@ export default class BjxyPage extends Component {
 
   oninit(vnode) {
     super.oninit(vnode);
+    // v0.2.0i.k 新 (辉哥 2026-08-12 16:05 反馈): oninit push history 让返回按钮能跳回 bjxy
+    //   根因: vendor Navigation 组件 L33 canGoBack() = stack.length > 1, 没 push 就不显示
+    //   修法: 跟 vendor IndexPage L57 / PostsPage L33 / UserPage L85 模式一致
+    //   History.push() L41-46 检查 top 同名会覆盖, 不会 stack 重复
+    //   返回按钮跳回 /bjxy (直接路径, 不依赖 default_route 配置)
+    //   适用: 任何 bjxy 自定义 page 都要 push history entry, 否则跳其他页面没返回按钮
+    app.history.push('bjxy', 'bjxy 官网', '/bjxy');
     this.coaches = [];
     this.loadingCoaches = true;
     // v0.1.0s 改: activeBoard 从 string 'single' 改成 index (0/1/2...)
