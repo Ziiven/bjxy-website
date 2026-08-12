@@ -227,26 +227,17 @@ export default class BjxyPage extends Component {
     if (typeof document !== 'undefined' && document.body) {
       document.body.classList.remove('App-sidebar-aura-collapsed');
     }
-    // v0.2.0i.k.b: 清 sessionStorage bjxy active flag (跟 oninit 配对)
-    //   为什么 onremove 要清: 避免 /d/1 → /u/ 副作用
-    //   实际场景: 用户在 bjxy → /d/1 → /u/wfl (全 SPA 内跳转)
-    //     - bjxy onremove 触发 (因为离开 bjxy 页面)
-    //     - 清 active flag = '0'
-    //     - /d/1 → /u/wfl 跳触发劫持 m.route.set('/u/wfl')
-    //     - 劫持 check active = '0', 不 push bjxy entry
-    //     - 走 vendor 默认: stack = [..., 'd/1', 'user.posts'], back 跳 /d/1 ✅
-    //   同步 mithril 流程 (确保劫持跟 onremove 顺序):
-    //     1. mithril hijack click → 调劫持 m.route.set('/u/wfl')
-    //     2. 我们的劫持: check active='1' (因为 bjxy onremove 还没触发, 同步执行) → push bjxy entry
-    //     3. 调 originalRouteSet → mithril 内部 mount newPage + unmount oldPage
-    //     4. unmount oldPage: bjxy.onremove() → 清 active='0'
-    //   bjxy → /u/wfl 直接跳: 劫持先 push, onremove 后清 ✅
-    //   bjxy → /d/1 → /u/wfl: 劫持在 /d/1 → /u/wfl 跳时 check active='0' (因为 bjxy → /d/1 时已清), 不 push ✅
-    try {
-      sessionStorage.setItem('ziven-bjxy-active', '0');
-    } catch (e) {
-      // 静默失败
-    }
+    // v0.2.0i.k.b.6 改: 不清 sessionStorage bjxy active flag
+    //   之前 v0.2.0i.k.b.3 设计是 onremove 清 active='0', 但这跟"刷新场景补 push"冲突
+    //   实际场景:
+    //     - bjxy → /u/wfl (SPA 内): 劫持同步 push bjxy, 然后 bjxy onremove 触发
+    //       如果 onremove 清 active='0', 立即 page.reload 刷新 /u/wfl:
+    //         setTimeout 0 check active='0' → 不补 push → 走 vendor 默认 back '/' 错误
+    //     - bjxy → /d/1 → /u/wfl (SPA 内): 劫持 check app.previous 三重 check, 不依赖 active
+    //       即使不清 active, app.previous='discussion' 也不会 push bjxy ✅
+    //   结论: 不清 active, 严格依赖 app.previous 三重 check 修副作用
+    //   风险: 用户在 bjxy → /d/1 → /u/wfl, sessionStorage active='1' 还在, 但劫持只 check app.previous='discussion', 不 push ✅
+    //   好处: 刷新 /u/wfl 场景, sessionStorage active='1', setTimeout 0 fresh load 路径补 push ✅
   }
 
   view() {
