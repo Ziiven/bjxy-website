@@ -5,28 +5,39 @@ import { extend } from 'flarum/common/extend';
 import BjxyPage from './components/BjxyPage';
 import BjxyCoachModal from './components/BjxyCoachModal';
 
-// v0.2.0i.k.b 新 (辉哥 2026-08-12 17:35 反馈): 劫持 m.route.set, 跳 /u/{username} 时自动 push bjxy entry
+// v0.2.0i.k.b 新 (辉哥 2026-08-12 17:35 反馈): 劫持 m.route.set + 启动补 push, 解决 /u/{username} 返回按钮 + 刷新跳 /bjxy
 //   背景:
 //     vendor History 是 session-only 内存, 刷新后 mithril 重建 stack, bjxy entry 丢
 //     辉哥实测: 刷新 /u/wfl → stack 变成 [user.posts], 没 bjxy entry, 返回按钮跳 / (首页)
-//   修法:
-//     1) BjxyPage oninit 写 sessionStorage.setItem('ziven-bjxy-prev-path', '/bjxy') (SPA session 内持续)
-//     2) 劫持 m.route.set, 当新 path 匹配 /u/{username} 时, 读 sessionStorage 自动 push bjxy entry
-//        这样 /u/wfl 加载完成后 stack = [bjxy, user.posts] length 2, canGoBack = true, 返回跳 /bjxy
-//   劫持时机:
-//     - bjxy oninit push bjxy entry (stack = [bjxy])
-//     - 用户点教练 → m.route.set('/u/wfl')
-//     - 劫持: 读 sessionStorage → push bjxy entry (但 stack top 已经是 bjxy, History.push L57-58 会覆盖)
-//     - mithril 内部 mount PostsUserPage → show() push 'user.posts' → stack = [bjxy, user.posts]
+//   修法 3 件套:
+//     1) BjxyPage oninit 写 sessionStorage: 'ziven-bjxy-prev-path' = '/bjxy' + 'ziven-bjxy-active' = '1'
+//     2) 劫持 m.route.set: 跳 /u/... 时, IF active='1' THEN push bjxy entry
+//     3) 启动补 push: initializer 末尾 setTimeout 0, check 当前 url 是 /u/... 且 active='1', push bjxy entry
+//   为什么需要 active flag (不是只用 prev-path):
+//     防止 /d/1 → /u/ 副作用: 用户没访问过 bjxy, 但劫持无脑 push 会让返回跳 /bjxy 而不是 /d/1
+//     active flag 只在 BjxyPage oninit 写, onremove 清, 严格反映"当前 SPA session 内当前路由链是否经过 bjxy"
+//   劫持时机 (SOP 2025-08-12 mithril 0.2.x 实战):
+//     - bjxy oninit push bjxy entry (stack = [tags, bjxy])
+//     - 用户点 /u/wfl link → mithril hijack → 调劫持 m.route.set('/u/wfl')
+//     - 我们的劫持: check active='1' (因为 bjxy onremove 还没触发) → push bjxy entry
+//     - 调 originalRouteSet → mithril 内部 mount newPage + unmount oldPage (同步)
+//     - unmount oldPage: bjxy.onremove() → 清 active='0'
+//     - mount newPage: PostsUserPage.oninit → show() push 'user.posts' → stack = [tags, bjxy, user.posts]
 //     - canGoBack = true ✅, back() 跳 stack[length-2] = bjxy url = '/bjxy' ✅
-//   刷新场景:
-//     - 用户从 bjxy → /u/wfl, sessionStorage 还在
-//     - 刷新 /u/wfl → mithril 重建 → mithril 内部 m.route.set('/u/wfl') 触发劫持 → push bjxy entry
-//     - PostsUserPage mount → push user.posts → stack = [bjxy, user.posts]
-//     - 同样返回跳 /bjxy ✅
-//   非 bjxy 场景 (用户从 / 跳 /u/wfl):
-//     - sessionStorage 没 bjxy prev path (没进 bjxy)
-//     - 劫持不 push → 走 vendor 默认行为, stack = [user.posts] length 1, canGoBack = false
+//   启动补 push (刷新场景):
+//     - 用户刷新 /u/wfl (同 tab, sessionStorage 还在, active='1')
+//     - 浏览器新加载 JS, mithril 启动 m.route() 直接 mount default route
+//     - mithril 内部 mount PostsUserPage → oninit → show() push 'user.posts' → stack = [tags, user.posts]
+//     - 注意: mithril 0.2.x 启动不调 m.route.set, 直接 mount, 所以劫持没被触发 (错过了)
+//     - 我们 initializer setTimeout 0 异步 check: 当前 url = /u/wfl, active='1' → push bjxy entry
+//     - 异步 push 后 stack = [tags, bjxy, user.posts], backUrl = /bjxy ✅
+//   /d/1 → /u/ 场景 (重要!):
+//     - 用户在 /d/1, sessionStorage active='0' (没访问过 bjxy)
+//     - 点 user 链接 → 劫持 m.route.set('/u/wfl') → check active='0' → 不 push
+//     - 走 vendor 默认: stack = [..., 'd/1', 'user.posts'], back 跳 /d/1 ✅
+//   跨 tab 场景:
+//     - tab A 进 bjxy, tab B 直接打开 /u/wfl
+//     - tab B sessionStorage 独立, active='0' → 劫持不 push ✅
 //   注意:
 //     - 用 global m (Flarum 2.0 注入, 跟 bjxy admin 同款, 跟 vendor patchMithril.js L4 一致)
 //     - 劫持只执行一次 (用 closure flag 防止多次 initializer 重入)
@@ -41,8 +52,11 @@ const installBjxyRouteHook = () => {
     // 只在跳 /u/{username} 用户页面时插桩 (其他路径不影响)
     if (typeof path === 'string' && path.indexOf('/u/') === 0) {
       try {
+        const active = sessionStorage.getItem('ziven-bjxy-active');
         const bjxyPrev = sessionStorage.getItem('ziven-bjxy-prev-path');
-        if (bjxyPrev && app && app.history) {
+        // 只在 active='1' (用户在当前 SPA session 内访问过 bjxy) 才 push bjxy entry
+        // 防止 /d/1 → /u/ 副作用
+        if (active === '1' && bjxyPrev && app && app.history) {
           // push 'bjxy' entry, History.push L57-58 检查 top 同名会覆盖, 不会 stack 重复
           app.history.push('bjxy', 'bjxy 官网', bjxyPrev);
         }
@@ -54,10 +68,33 @@ const installBjxyRouteHook = () => {
   };
 };
 
+const maybePushBjxyOnBoot = () => {
+  // 启动补 push: 刷新 /u/{username} 场景, mithril 0.2.x 启动不调 m.route.set, 劫持错过
+  // setTimeout 0 让 mithril 同步 mount 完成 (PostsUserPage.oninit + show + push user.posts) 后再补 push
+  setTimeout(() => {
+    try {
+      const active = sessionStorage.getItem('ziven-bjxy-active');
+      const bjxyPrev = sessionStorage.getItem('ziven-bjxy-prev-path');
+      const currentPath = window.location.pathname;
+      // 条件: 当前是 /u/{username} 用户页面 + active='1' + prev path 存在
+      if (active === '1' && bjxyPrev && currentPath.indexOf('/u/') === 0 && app && app.history) {
+        // 检查 stack top 是不是 bjxy (避免重复 push)
+        const top = app.history.getCurrent();
+        if (top && top.name !== 'bjxy') {
+          app.history.push('bjxy', 'bjxy 官网', bjxyPrev);
+        }
+      }
+    } catch (e) {
+      // 静默失败
+    }
+  }, 0);
+};
+
 app.initializers.add('ziven-bjxy-website', () => {
-  // v0.2.0i.k.b: 在 initializer 启动时装 m.route.set 劫持
+  // v0.2.0i.k.b: 在 initializer 启动时装 m.route.set 劫持 + 启动补 push
   //   initializer 在 forum JS bundle 启动时执行一次, 时机早于任何 component mount
   installBjxyRouteHook();
+  maybePushBjxyOnBoot();
   app.routes.bjxy = {
     path: '/bjxy',
     component: BjxyPage,

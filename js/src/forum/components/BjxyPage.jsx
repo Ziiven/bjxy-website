@@ -46,15 +46,18 @@ export default class BjxyPage extends Component {
     //   返回按钮跳回 /bjxy (直接路径, 不依赖 default_route 配置)
     //   适用: 任何 bjxy 自定义 page 都要 push history entry, 否则跳其他页面没返回按钮
     app.history.push('bjxy', 'bjxy 官网', '/bjxy');
-    // v0.2.0i.k.b 新 (辉哥 2026-08-12 17:35 反馈): sessionStorage 持久化 bjxy path
+    // v0.2.0i.k.b 新 (辉哥 2026-08-12 17:35 反馈): sessionStorage 持久化 bjxy 路径 + active flag
     //   背景: vendor History 是 session-only 内存, 刷新后 mithril 重建 stack, bjxy entry 丢
     //   辉哥实测: 刷新 /u/wfl → stack 变成 [user.posts], 没 bjxy entry, 返回按钮跳 / (首页)
-    //   修法: 把 bjxy path 写到 sessionStorage, forum/index.js 劫持 m.route.set 在跳 /u/... 时 push bjxy entry
-    //   sessionStorage 在 SPA session 内持续, 跨 tab 独立 (跟 SPA 行为一致, 比 localStorage 更精确)
-    //   onremove 移除 (切走 /bjxy 不再需要 bjxy prev path 提示)
-    //   配合: forum/index.js 注入 m.route.set 劫持器, 在 /u/ 跳转前 push bjxy entry
+    //   修法: 把 bjxy path + active flag 写到 sessionStorage, forum/index.js 劫持 m.route.set 在跳 /u/... 时 push bjxy entry
+    //   两个 key 用途不同:
+    //     - 'ziven-bjxy-prev-path' = '/bjxy': 持久化 prev path (备用, 实际劫持用 active flag)
+    //     - 'ziven-bjxy-active' = '1': 标志用户在当前 SPA session 内访问过 bjxy (劫持判断条件, 区分 /d/1 → /u/ 副作用)
+    //   配合: forum/index.js 注入 m.route.set 劫持器, 在 /u/ 跳转前 push bjxy entry (仅当 active='1')
+    //   关键: onremove 清 active (避免 /d/1 → /u/ 副作用, 详见 forum/index.js 注释)
     try {
       sessionStorage.setItem('ziven-bjxy-prev-path', '/bjxy');
+      sessionStorage.setItem('ziven-bjxy-active', '1');
     } catch (e) {
       // sessionStorage 可能被禁用 (隐私模式), 静默失败
     }
@@ -223,6 +226,26 @@ export default class BjxyPage extends Component {
     // v0.2.0i.i: 移 body class (配 oninit add)
     if (typeof document !== 'undefined' && document.body) {
       document.body.classList.remove('App-sidebar-aura-collapsed');
+    }
+    // v0.2.0i.k.b: 清 sessionStorage bjxy active flag (跟 oninit 配对)
+    //   为什么 onremove 要清: 避免 /d/1 → /u/ 副作用
+    //   实际场景: 用户在 bjxy → /d/1 → /u/wfl (全 SPA 内跳转)
+    //     - bjxy onremove 触发 (因为离开 bjxy 页面)
+    //     - 清 active flag = '0'
+    //     - /d/1 → /u/wfl 跳触发劫持 m.route.set('/u/wfl')
+    //     - 劫持 check active = '0', 不 push bjxy entry
+    //     - 走 vendor 默认: stack = [..., 'd/1', 'user.posts'], back 跳 /d/1 ✅
+    //   同步 mithril 流程 (确保劫持跟 onremove 顺序):
+    //     1. mithril hijack click → 调劫持 m.route.set('/u/wfl')
+    //     2. 我们的劫持: check active='1' (因为 bjxy onremove 还没触发, 同步执行) → push bjxy entry
+    //     3. 调 originalRouteSet → mithril 内部 mount newPage + unmount oldPage
+    //     4. unmount oldPage: bjxy.onremove() → 清 active='0'
+    //   bjxy → /u/wfl 直接跳: 劫持先 push, onremove 后清 ✅
+    //   bjxy → /d/1 → /u/wfl: 劫持在 /d/1 → /u/wfl 跳时 check active='0' (因为 bjxy → /d/1 时已清), 不 push ✅
+    try {
+      sessionStorage.setItem('ziven-bjxy-active', '0');
+    } catch (e) {
+      // 静默失败
     }
   }
 
