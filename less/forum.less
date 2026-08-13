@@ -129,7 +129,15 @@
     //   position: relative + isolation: isolate 创建新的 stacking context,
     //   但 z-index: -1 + relative 父级已经够了, 这里加 isolation 保险
     position: relative;
+    // v0.2.0i.m: 提 .bjxy-page 自身 z-index 1100 (跟 .bjxy-nav 同层, 高过 App-navigation 1000)
+    //   v0.2.0i.l 只改 .bjxy-nav z=1100 不够, 因为 .bjxy-page 的 isolation: isolate
+    //   让 bjxy-nav 1100 关在 .bjxy-page stacking context 内部, 跟外部 App-navigation 1000 比
+    //   时是 .bjxy-page(z=auto/0) vs App-navigation(1000), 0<1000 → App-navigation 永远压上面
+    //   修法: 把 .bjxy-page 自身 z-index 提到 1100, 整个 stacking context 一起浮起来
+    //   桌面端 #app-navigation 是 position: static, 不进 stacking context, 无冲突
+    //   离开 /bjxy .bjxy-page 自动 unmount, App-navigation 1000 恢复正常
     isolation: isolate;
+    z-index: 1100;
 }
 
 .bjxy-page * { box-sizing: border-box; }
