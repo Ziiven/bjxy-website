@@ -2775,3 +2775,40 @@ body.bjxy-page-active {
 html.with-fancybox .bjxy-page {
     z-index: 1 !important;
 }
+
+// v0.2.0i.q 新 (辉哥 2026-08-13 18:05 反馈): 修 v0.2.0i.m 的 .bjxy-page z-index 1100 盖住 vendor Modal 1050
+//   现象: /bjxy 点导航"预约体验"按钮, modal 元素存在 (display: block, rect 160/533/375/541),
+//     但视觉上整个被 .bjxy-page stacking context 盖住, 看不到 modal 内容 → 用户"点不出 modal"
+//   根因 (Mavis 调研确认, Puppeteer 实测 + vendor 源码 grep 确认):
+//     - vendor ModalManager z-index: calc(1050 + modal-number) (vendor/flarum/core/less/common/Modal.less L47)
+//     - vendor Modal-backdrop z-index: calc(1050 + modal-count - 2) (Modal.less L30)
+//     - vendor Modal z-index: 2 (Modal.less L10, 跟 ModalManager 同 stacking context 内视觉 1050)
+//     - bjxy-page z-index: 1100 (v0.2.0i.m 加的, isolation: isolate stacking context)
+//     - 1100 > 1050+modal-number, bjxy-page 整个 stacking context 盖住 modal 系统
+//   Puppeteer 实测 (修前): elementsFromPoint(720, 450) 第一元素是 .bjxy-page/.bjxy-hero, modal 在最底层
+//   v0.2.0i.m over-engineering 第二次发现 (副作用):
+//     - 第一次 (v0.2.0i.p): 盖住 Fancybox 1050 → 已修 (见上段 html.with-fancybox)
+//     - 第二次 (本次): 盖住 vendor Modal 1050 → 本段修
+//     根本原因: v0.2.0i.m 加的 .bjxy-page z-index 1100 over-engineering, 实际 v0.2.0i.l bjxy-nav 1100
+//       (position: fixed 自建 stacking context) 已经够压 App-navigation 1000, 不需要 .bjxy-page 自身浮
+//   修法 (辉哥 18:05 拍板 A 方案): 不动历史 commit, bjxy less 加 1 段降级逻辑
+//     - vendor Flarum ModalManager.tsx L47: className="ModalManager modal" (双 class, vendor 1.8 确认)
+//     - 用 :has() 伪类匹配 body 有 .ModalManager.modal 子元素 (modal 弹时), bjxy-page 降级到 1
+//     - 关闭时 modalManager 节点 unmount, :has() 不再匹配, cascade 自动恢复 1100
+//     - 跟 v0.2.0i.p 套路一样 (一个用 html class, 一个用 :has()), 不动 vendor, 不动 JS, 纯 less 段
+//   为什么 1 不是 0: bjxy-page-bg z-index: -1 (在 bjxy-page stacking context 内), bjxy-page z=1
+//     让 bjxy-page-bg 仍能正常显示在 bjxy 内容下面 (bjxy 内容 z-index: auto > bjxy-page-bg -1)
+//   副作用: modal 弹时 bjxy-page 1 < App-navigation 1000, App-navigation 也在 modal 下面 —
+//     但 ModalManager 1050 > App-navigation 1000, modal 视觉 OK (modal 自己的 backdrop 1048 也能盖住 App-nav)
+//   specificity: body:has(.ModalManager.modal) (0,1,1) + .bjxy-page (0,1,0) = (0,2,1), 高过 .bjxy-page 单独 (0,1,0).
+//     用 !important 兜底, 任何位置都生效 (跟 v0.2.0i.p 一致, 双重保险)
+//   :has() 浏览器支持: Chrome 105+, Safari 15.4+, Firefox 121+ (geek.ski 现代浏览器 OK)
+//   适用: 任何 bjxy/zpc 加 z-index > 1000 (Fancybox 1050 / ModalManager 1050 等第三方库) 时,
+//     必查是否盖住 vendor 弹窗; 用第三方 class/.ModalManager.modal + :has() / 降级 z-index 修法
+//   实战教训 (SOP 249 升级): **z-index 改动必查所有 z-index > 1000 的第三方库**
+//     (Fancybox 1050, ModalManager 1050, Modal-backdrop 1048, Modal 2-with-context 等)
+//     **第三方弹窗的 'open' 状态标记 (body/html class) 必查 vendor 源码, 不能靠记忆**
+//     (v0.2.0i.m 错记 body, v0.2.0i.p.a 又错一次 — 但 :has() 伪类直接查 DOM, 不用记 class 加在哪里, 更安全)
+body:has(.ModalManager.modal) .bjxy-page {
+    z-index: 1 !important;
+}
