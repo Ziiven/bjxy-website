@@ -154,14 +154,35 @@ export default class BjxyPage extends Component {
       //   events 段 tablet + desktop 都 2 卡 (跟 v0.1.38 行为不变, 显式分段)
       slidesPerView: 1,
       spaceBetween: 16,
+      // v0.2.0i.o 改: 移动端 events swiper 修法 (辉哥 16:00 反馈 /bjxy 最新活动图片 fancybox 不弹)
+      //   根因: swiper 11 移动端默认配置, 第一个 slide 在 viewport 左侧外 (Puppeteer x=-179)
+      //   + swiper 11 默认 preventClicks=true 拦截 photo click
+      //   修法: centeredSlides + initialSlide + preventClicks: false + noSwipingClass 4 件套
+      //   - centeredSlides: 移动端首张居中, 解决"首张在 viewport 外"问题
+      //   - initialSlide: 0: 强制从第 0 张开始, 跟 loop: true 兼容
+      //   - preventClicks: false: 不拦截 photo click, 走 onclick 调 fancybox
+      //     注意: preventClicks 是顶层 config, 不能在 breakpoints 里覆盖
+      //   - noSwipingClass: photo 跳过 swiping 拦截, 万一上面一个不够
+      //   桌面端不受影响 (desktop slidesPerView=2 + 鼠标 click 不走 touchstart, swiper 不拦截)
+      //   桌面端 breakpoints 显式关 centeredSlides (桌面 slidesPerView=2, 居中没意义还会挤)
+      centeredSlides: true,
+      initialSlide: 0,
+      preventClicks: false,
+      noSwipingClass: 'bjxy-event-photo',
       breakpoints: {
         768: {
           // v0.2.0h: tablet 768-1024, 2 卡
           slidesPerView: 2,
+          // v0.2.0i.o: 桌面端关 centeredSlides (tablet slidesPerView=2, 居中没意义还会挤)
+          centeredSlides: false,
+          noSwipingClass: 'bjxy-event-photo',
         },
         1024: {
           // v0.2.0h: desktop >= 1024, 2 卡 (跟 tablet 一样, 显式分段方便后续单独调整)
           slidesPerView: 2,
+          // v0.2.0i.o: desktop 关 centeredSlides
+          centeredSlides: false,
+          noSwipingClass: 'bjxy-event-photo',
         },
       },
       pagination: { el: vnode.dom.querySelector('.swiper-pagination'), clickable: true },
@@ -171,6 +192,15 @@ export default class BjxyPage extends Component {
         disableOnInteraction: false,
       },
     });
+    // v0.2.0i.o 实战: 4 件套就够, 不需要 on.init slideToLoop 补丁
+    //   之前试过 this.swiper.slideTo(0, 0) + on.init slideToLoop(0) 都被 swiper 11 loop normalize 覆盖
+    //   实际 centeredSlides + loop 模式下:
+    //     - DOM 顺序: [副本 (events[3]), events[0], events[1], events[2]]
+    //     - activeIndex = 1, realIndex = 0
+    //     - active slide (events[0]) 居中, x=17 width=356 在 viewport 内 ✅
+    //     - mouse.click active slide photo → fancybox 弹 ✅
+    //   注意: 测 photo 位置要查 .swiper-slide-active 里的 photo, 不是 DOM 第一个
+    //     (DOM 第一个是 loop 副本, 永远在 viewport 左侧外)
   }
 
   // v0.1.30 改: 教练列表 swiper peek carousel (辉哥 11:08 反馈, 11:10 拍板 B 方案)
