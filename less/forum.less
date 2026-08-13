@@ -2743,3 +2743,35 @@ body.bjxy-page-active {
     .App.affix { padding-bottom: 0 !important; }
     .App-content { padding-bottom: 0 !important; }
 }
+
+// v0.2.0i.p 新 (辉哥 2026-08-13 17:40 反馈): 修 v0.2.0i.m 的 .bjxy-page z-index 1100 盖住 Fancybox 1050
+//   现象: 移动端 /bjxy 所有 fancybox 弹窗 (评价多图 / 活动 swiper) 被 bjxy-page (z=1100) 完全遮挡,
+//     DOM fancyboxImage=true 元素存在, 但视觉上 fancybox 弹窗被 bjxy-page 盖住看不到 → 用户"点击不显示"
+//   根因 (Mavis 调研确认, Puppeteer 实测 + fancybox.umd.js 源码 L11 grep 确认):
+//     - fancybox__container zIndex = 1050 (vendor Fancybox v6.1.14 默认)
+//     - bjxy-page zIndex = 1100 (v0.2.0i.m 加的, isolation: isolate stacking context)
+//     - 1100 > 1050, bjxy-page 整个 stacking context 压住 fancybox
+//   v0.2.0i.m 错判回顾: 当时以为 v0.2.0i.l bjxy-nav z=1100 不够, 加了 .bjxy-page z=1100 一起浮起来.
+//     实际上 v0.2.0i.l bjxy-nav `position: fixed` 自己创建独立 stacking context, z=1100 已经能直接压
+//     App-navigation (1000). v0.2.0i.m 多加的 .bjxy-page z=1100 是 over-engineering, 副作用就是盖住 Fancybox.
+//   修法 (辉哥拍板 A 方案): 不动历史 commit, bjxy less 加 1 段降级逻辑
+//     - vendor Fancybox 弹时给 documentElement (<html>) 加 .with-fancybox class
+//       (fancybox.umd.js L11: `document.documentElement.classList.add(vt)`, vt=`with-fancybox`)
+//       关闭时移除 (`document.documentElement.classList.remove(vt)`)
+//     - 之前 v0.2.0i.p.a (这次返工前) 错判: 写成 `body.with-fancybox`, 但 vendor 实际加在 <html>,
+//       永远不匹配. Puppeteer 4a 验证 bodyHasClass('with-fancybox') 永远 false, bjxy-page 仍 1100
+//     - 修法: 改 `html.with-fancybox .bjxy-page { z-index: 1 !important }`, cascade 让 bjxy-page 降级
+//     - fancybox 关闭后 html.with-fancybox 移除, bjxy-page 自动恢复 1100 (cascade)
+//   为什么 1 不是 0: bjxy-page-bg z-index: -1 (在 bjxy-page stacking context 内), bjxy-page z=1
+//     让 bjxy-page-bg 仍能正常显示在 bjxy 内容下面 (bjxy 内容 z-index: auto > bjxy-page-bg -1)
+//   副作用: fancybox 弹时 bjxy-page 1 < App-navigation 1000, App-navigation 也在 fancybox 下面 —
+//     但 fancybox 1050 > App-navigation 1000, 弹窗视觉 OK (fancybox 自己的 backdrop 1050 也能盖住 App-nav)
+//   specificity: html.className (0,1,0) + .bjxy-page (0,1,0) = (0,2,0), 高过 .bjxy-page 单独 (0,1,0).
+//     用 !important 兜底, 任何位置都生效 (SOP 234 套路: page-level 控制走 html class + less 段)
+//   适用: 任何 bjxy/zpc 加 z-index > 1000 (Fancybox 1050 / ModalManager 1100 等第三方库) 时,
+//     必查是否盖住 vendor 弹窗; 用 html 第三方 class (.with-fancybox 等) + 降级 z-index 修法
+//   实战教训: **z-index 改动必查所有 z-index > 1000 的第三方库** (Fancybox 1050, ModalManager 1100 等)
+//     **第三方弹窗的 'open' 状态标记 (body/html class) 必查 vendor 源码, 不能靠记忆** (v0.2.0i.m 错记 body, v0.2.0i.p.a 又错一次)
+html.with-fancybox .bjxy-page {
+    z-index: 1 !important;
+}
