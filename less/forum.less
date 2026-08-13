@@ -193,7 +193,9 @@
     left: 0;
     right: 0;
     top: 0;
-    z-index: 100;
+    // v0.2.0i.l: 1100 > 移动端 vendor App-navigation 1000 (辉哥 09:00 反馈 /bjxy banner 被压)
+    // 桌面端 #app-navigation 是 position: static, 不进 stacking context, 自定义 z-index 无冲突
+    z-index: 1100;
     backdrop-filter: blur(8px);
 }
 .bjxy-logo {
