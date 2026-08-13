@@ -75,8 +75,17 @@ export default class BjxyPage extends Component {
     //   CSS 配合 less/forum.less 桌面端段: body.App-sidebar-aura-collapsed .App-sidebar-aura { display: none !important }
     //   风险: 跟 vendor localStorage 'ziven-aura-sidebar-collapsed' 独立, 不会冲突 (vendor modifySidebar.js L61-64 只看 localStorage, 不查 body class)
     //   mobile 不动: CSS 套 @media (min-width: 992px), mobile 走 vendor 移动端 drawer
+    // v0.2.0i.n 新 (辉哥 2026-08-13 12:00 反馈): page-level body class 控制 mobile tab 隐藏 + #app padding-top
+    //   走 SOP 234 page-level 套路, 跟 v0.2.0i.i App-sidebar-aura-collapsed 一致
+    //   之前 v0.1.17~v0.2.0i.l 都用 oncreate 注入 <style id="bjxy-hide-mobile-tab">, 漏 onremove 清理
+    //     跨路由污染下一个页面 (移动端 /u/wfl 多 17.8px padding)
+    //   修法: 改成 less 段 + body class, oninit add class, onremove remove class
+    //   配套 less 段: body.bjxy-page-active { nav.MobileTab hide; #app padding-top 63.8; ... }
+    //   老 fallback: onremove 兜底 getElementById("bjxy-hide-mobile-tab")?.remove() 兼容老 user 老 cache
     if (typeof document !== 'undefined' && document.body) {
       document.body.classList.add('App-sidebar-aura-collapsed');
+      // v0.2.0i.n: 加 page-level class
+      document.body.classList.add('bjxy-page-active');
     }
   }
 
@@ -224,8 +233,16 @@ export default class BjxyPage extends Component {
     this.destroySwiper();
     this.destroyCoachSwiper();
     // v0.2.0i.i: 移 body class (配 oninit add)
+    // v0.2.0i.n: 移 bjxy-page-active class + 兜底删老 <style id="bjxy-hide-mobile-tab"> 节点
+    //   跟 oninit add bjxy-page-active 对应, 切回 /d /u /all 等路径时 body class 移除
+    //   兜底删老节点: 兼容老 user 老 cache (deploy 前已经注入的 inline style 节点)
     if (typeof document !== 'undefined' && document.body) {
       document.body.classList.remove('App-sidebar-aura-collapsed');
+      // v0.2.0i.n: 移 page-level class
+      document.body.classList.remove('bjxy-page-active');
+      // v0.2.0i.n: 兜底删老 inline style 节点 (双保险, 兼容老 user 老 cache)
+      const oldStyle = document.getElementById('bjxy-hide-mobile-tab');
+      if (oldStyle) oldStyle.remove();
     }
     // v0.2.0i.k.b.6 改: 不清 sessionStorage bjxy active flag
     //   之前 v0.2.0i.k.b.3 设计是 onremove 清 active='0', 但这跟"刷新场景补 push"冲突
@@ -896,30 +913,13 @@ export default class BjxyPage extends Component {
     //   override 后变成 '北极雪屿 · 室内滑雪 · 全国连锁' (跟后台 '品牌信息' tab 设置联动)
     this.setTitle();
     this.loadCoaches();
-    // v0.1.17: 通用设置 - '显示底部 Tab' 开关 (bjxy_show_mobile_tab = '1' 隐藏 mobile tab)
-    //   辉哥 19:37+ 拍板: "开启状态时，会在bjxy的前端页面，把下方的mobile tab移除"
-    //   acpl-mobile-tab 扩展渲染 <nav className="MobileTab"> 元素
-    //   默认 '0' (false) = 显示 mobile tab, '1' (true) = 隐藏
-    //   CSS hide 不用改 mobile tab 扩展内部代码, 不动 DOM 避免 mobile tab JS 报错
-    // v0.1.18 改: 同步移除 .App.affix 的 padding-bottom: 50px (vendor Flarum core 给 .App.affix 加的
-    //   底部 padding 留给 mobile tab 高度, mobile tab 隐藏后这个 padding 仍存在 → 页面下方留白)
-    // v0.1.19 改: 还需移除 .App-content 的 padding-bottom: 20px (vendor Flarum core
-    //   `#app .App-content { padding-bottom: 20px }` 加的, main/.App-content 底部留 20px 间距)
-    //   辉哥 09:12 反馈: "开启移除tab后，前端页面底部还是有间距"
-    if (app.forum.attribute('bjxy_show_mobile_tab') === '1') {
-      const style = document.createElement('style');
-      style.id = 'bjxy-hide-mobile-tab';
-      // 同时隐藏 mobile tab + 移除 .App.affix 底部 padding (50px) + 移除 .App-content 底部 padding (20px)
-      // 一起干掉, mobile tab 隐藏后页面底部跟 viewport 底完全贴合, 0 间距
-      // v0.2.0i.k.b 改: 删掉 #app-navigation { display: none !important } 段
-      //   辉哥 2026-08-12 17:35 反馈移动端 /bjxy → /u/用户名 没返回按钮
-      //   根因: 这段 ID selector (specificity 1,0,0) + !important 完全压制 bjxy less 段 `body .App-navigation { display: block !important }` (specificity 0,1,1)
-      //   ID selector specificity 100 永远比 class selector specificity 11 高, !important 不弥补 specificity 差距
-      //   修法: 删掉 #app-navigation 段 (跟 mobile tab 隐藏本来就没关系, 是误伤的副产品)
-      //   效果: bjxy less 段生效, .App-navigation 永远显示, 移动端返回按钮可见
-      style.textContent = 'nav.MobileTab { display: none !important; } #header {display:none} #app { padding-top: 63.8px !important } .App.affix { padding-bottom: 0 !important; } .App-content { padding-bottom: 0 !important; }';
-      document.head.appendChild(style);
-    }
+    // v0.2.0i.n 删 (辉哥 2026-08-13 12:00 反馈): 移除 oncreate 注入 inline style 代码
+    //   之前 v0.1.17 时代实现 (怕 mobile tab 扩展内部代码要改), v0.1.18/19/20/22 都在这个 inline style 上加规则
+    //   v0.2.0i.l 才发现 #app-navigation 段误伤, v0.2.0i.m 才发现 mobile tab 隐藏切到 /u/wfl 残留 17.8px padding
+    //   根除: 改成 less 段 + body class 控制 (oninit add bjxy-page-active, onremove remove), 走 SOP 234 page-level 套路
+    //   老 fallback 节点 <style id="bjxy-hide-mobile-tab"> 在 onremove 段兜底移除 (兼容老 user 老 cache)
+    //   if (app.forum.attribute('bjxy_show_mobile_tab') === '1') { ... } 段整段删除
+    //   配套 less 段: body.bjxy-page-active { nav.MobileTab hide; #header hide; #app padding-top 63.8; .App.affix pb 0; .App-content pb 0; }
   }
 
   loadCoaches() {

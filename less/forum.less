@@ -2720,3 +2720,26 @@ button.swiper-pagination-bullet {
 body .App-navigation {
     display: block !important;
 }
+
+// v0.2.0i.n 新 (辉哥 2026-08-13 12:00 反馈): page-level body class 控制 mobile tab 隐藏 + #app padding-top
+//   根因: 之前 v0.1.17~v0.2.0i.l 都用 oncreate 注入 <style id="bjxy-hide-mobile-tab">, 漏 onremove 清理
+//     inline style 跨路由污染下一个页面 (移动端 /u/wfl 多 17.8px padding, 63.8 - 46 = bjxy-nav 高度差)
+//     修法: 走 page-level body class + less 段 (SOP 234 套路, 跟 v0.2.0i.i App-sidebar-aura-collapsed 一致)
+//   配套:
+//     - BjxyPage.jsx oninit add class 'bjxy-page-active'
+//     - BjxyPage.jsx onremove remove class + 兜底 getElementById("bjxy-hide-mobile-tab")?.remove()
+//   4 段效果 (跟 v0.1.17~v0.1.22 inline style 内容对齐):
+//     1) nav.MobileTab 隐藏 (bjxy 内部隐藏 mobile tab)
+//     2) #header 隐藏 (vendor App-header 顶部 bar)
+//     3) #app padding-top 63.8 (给 bjxy-nav 63.8 高度留位置)
+//     4) .App.affix padding-bottom 0 (vendor 给 mobile tab 留 50px, 隐藏后清掉)
+//     5) .App-content padding-bottom 0 (vendor 给 main 留 20px, 隐藏后清掉)
+//   specificity: body.className (0,1,1) 高过 ID selector (1,0,0) 用 !important 兜底, 跟 vendor / 第三方扩展 any cascade
+//   适用: 任何 bjxy/zpc 改 vendor 行为 (跨路由), 必走 page-level body class 控制
+body.bjxy-page-active {
+    nav.MobileTab { display: none !important; }
+    #header { display: none !important; }
+    #app { padding-top: 63.8px !important; }
+    .App.affix { padding-bottom: 0 !important; }
+    .App-content { padding-bottom: 0 !important; }
+}
