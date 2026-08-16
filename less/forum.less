@@ -2718,7 +2718,9 @@ button.swiper-pagination-bullet {
 //   风险: 全平台生效, 但 bjxy 跟 ziven 主题本来就是返回按钮友好的设计, 影响其他路径 (/d /u /all) 是合理的副作用
 //   验证: 桌面 1440x900 + 移动 390x844 双 viewport 实测 .App-navigation 可见
 body .App-navigation {
+  @media @phone {
     display: block !important;
+  }
 }
 
 // v0.2.0i.n 新 (辉哥 2026-08-13 12:00 反馈): page-level body class 控制 mobile tab 隐藏 + #app padding-top
@@ -2736,12 +2738,23 @@ body .App-navigation {
 //     5) .App-content padding-bottom 0 (vendor 给 main 留 20px, 隐藏后清掉)
 //   specificity: body.className (0,1,1) 高过 ID selector (1,0,0) 用 !important 兜底, 跟 vendor / 第三方扩展 any cascade
 //   适用: 任何 bjxy/zpc 改 vendor 行为 (跨路由), 必走 page-level body class 控制
-body.bjxy-page-active {
-    nav.MobileTab { display: none !important; }
-    #header { display: none !important; }
-    #app { padding-top: 63.8px !important; }
-    .App.affix { padding-bottom: 0 !important; }
-    .App-content { padding-bottom: 0 !important; }
+// v0.2.0i.r 修 (辉哥 2026-08-16 22:55 反馈): 上面 v0.2.0i.n 5 段没包 @media, iPad/桌面顶部 60px 空白 + vendor App-header 被隐藏
+//   现象: iPad 竖向 768x1024 / iPad 横向 1024x768 / 桌面 1440x900 顶部都有"很大一块空白区域" + 顶部 vendor App-header (logo/搜索/通知/头像) 被隐藏
+//   根因 (Mavis 调研 22:55 确认): v0.2.0i.n (7669637) 改的 5 段全平台生效 — iPad/桌面没 bjxy-nav 浮在顶部 (没 z-index: fixed 63.8), 也不需要隐藏 vendor App-header
+//     - #app padding-top 63.8 → iPad/桌面 顶部 60px 空白 ❌
+//     - #header display: none → iPad/桌面 vendor App-header 整个被隐藏 (logo/搜索/通知/头像 看不到) ❌
+//   修法: 把 5 段包 @media @phone (max-width 767), iPad/桌面走 vendor 默认 (vendor App-header 可见, #app padding-top 0)
+//   mobile (iPhone ≤ 767px): 走 v0.2.0i.n 5 段, 行为不变 (隐藏 vendor App-header + 隐藏 vendor MobileTab + #app padding-top 63.8)
+//   iPad (≥ 768) + 桌面: 不进 @media, body.bjxy-page-active 类不生效, 走 vendor 默认
+//   适用: 任何 bjxy/zpc 改 vendor 行为 (跨路由) 时, 必先确认: 改动是否需要限定到 mobile? 跨 mobile+desktop 一律先包 @media @phone, 避免 v0.2.0i.n 漏包翻车
+@media @phone {
+    body.bjxy-page-active {
+        nav.MobileTab { display: none !important; }
+        #header { display: none !important; }
+        #app { padding-top: 63.8px !important; }
+        .App.affix { padding-bottom: 0 !important; }
+        .App-content { padding-bottom: 0 !important; }
+    }
 }
 
 // v0.2.0i.p 新 (辉哥 2026-08-13 17:40 反馈): 修 v0.2.0i.m 的 .bjxy-page z-index 1100 盖住 Fancybox 1050
